@@ -117,7 +117,7 @@ export default async function Home() {
         <div className="relative mx-auto max-w-5xl px-4">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c8a951]">Major Sweepstake</p>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Fantasy Golf</h1>
-          <p className="mt-1 text-sm text-white/80">Pick 5 pros. Pay £15. Beat your mates.</p>
+          <p className="mt-1 text-sm text-white/80">Pick 5 pros across 5 tiers. Beat your mates.</p>
           <div className="mt-3 flex gap-2">
             {tournament && (
               <Link href={`/tournaments/${tournament.id}/enter`} className="rounded-lg bg-[#c8a951] px-5 py-2 text-sm font-bold text-[#1a1a1a] transition hover:bg-[#d4b76a]">Build Your Team →</Link>
@@ -127,14 +127,14 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ===== Trust Bar — Inline ===== */}
+      {/* ===== Trust Bar — Inline (real numbers from DB) ===== */}
       <section className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1d1c] py-2">
         <div className="mx-auto flex max-w-5xl items-center justify-center gap-4 px-4 text-xs font-medium text-zinc-500">
-          <span className="inline-flex items-center gap-1"><TrophyIcon className="h-3 w-3 text-[#c8a951]" />1,000+ Players</span>
-          <span className="text-zinc-300">·</span>
-          <span className="inline-flex items-center gap-1"><PoundIcon className="h-3 w-3 text-[#c8a951]" />£25k+ Pots</span>
-          <span className="text-zinc-300">·</span>
-          <span className="inline-flex items-center gap-1"><FlagIcon className="h-3 w-3 text-[#c8a951]" />15 Events</span>
+          <span className="inline-flex items-center gap-1"><TrophyIcon className="h-3 w-3 text-[#c8a951]" />{tournamentCount} Events</span>
+          <span className="text-zinc-300">{"\u00b7"}</span>
+          <span className="inline-flex items-center gap-1"><PoundIcon className="h-3 w-3 text-[#c8a951]" />{formatGBP(totalPot)} Prize Pot</span>
+          <span className="text-zinc-300">{"\u00b7"}</span>
+          <span className="inline-flex items-center gap-1"><FlagIcon className="h-3 w-3 text-[#c8a951]" />{playerCount} Pros</span>
         </div>
       </section>
 
@@ -278,26 +278,23 @@ export default async function Home() {
         </section>
       )}
 
-      {/* ===== Social Proof — Compact testimonials ===== */}
+      {/* ===== How It Works — FAQ-style instead of fake testimonials ===== */}
       <section className="bg-[#f3f1ee] py-6 dark:bg-[#252827] sm:py-8">
         <div className="mx-auto max-w-5xl px-4">
-          <h2 className="mb-3 text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">What Players Say</h2>
+          <h2 className="mb-3 text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">How It Works</h2>
           <div className="grid gap-2 sm:gap-3 sm:grid-cols-3">
-            <Testimonial
-              quote="Won £900 at The Masters! Best £15 I ever spent."
-              name="James M."
-              detail="Major Champion Winner"
-            />
-            <Testimonial
-              quote="Our office runs a league every major. 20+ guys picking teams. Brilliant format."
-              name="Sarah T."
-              detail="League Commissioner, 12 members"
-            />
-            <Testimonial
-              quote="The tier system is genius. You need real strategy with your long shots."
-              name="David K."
-              detail="3x podium finishes"
-            />
+            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white p-3 dark:bg-[#1a1d1c]">
+              <h3 className="text-xs font-bold text-[#0a3d2a] dark:text-green-400">Tier-Based Picking</h3>
+              <p className="mt-1 text-[11px] text-zinc-500">Pros split into 5 tiers by OWGR rank. Pick one from each.</p>
+            </div>
+            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white p-3 dark:bg-[#1a1d1c]">
+              <h3 className="text-xs font-bold text-[#0a3d2a] dark:text-green-400">Real Scoring</h3>
+              <p className="mt-1 text-[11px] text-zinc-500">Live scores from ESPN. Combined stroke total decides your rank.</p>
+            </div>
+            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white p-3 dark:bg-[#1a1d1c]">
+              <h3 className="text-xs font-bold text-[#0a3d2a] dark:text-green-400">Leagues &amp; Pots</h3>
+              <p className="mt-1 text-[11px] text-zinc-500">Create a private league, invite mates. Winner takes the pot.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -321,7 +318,7 @@ export default async function Home() {
             "@context": "https://schema.org",
             "@type": "SportsActivityLocation",
             name: "Fantasy Golf",
-            description: "Pick 5 pros across 5 tiers. Pay £15. Beat your mates across all 4 majors.",
+            description: "Pick 5 pros across 5 tiers. Beat your mates across PGA Tour events.",
             url: "https://fantasy-golf-phi.vercel.app",
             sport: "Golf",
             offers: {
@@ -337,22 +334,4 @@ export default async function Home() {
   );
 }
 
-// ===== Icon components imported from @/components/icons =====
-// (TrophyIcon, PoundIcon, FlagIcon, UsersIcon removed — now in icons.tsx)
-
-function Testimonial({ quote, name, detail }: { quote: string; name: string; detail: string }) {
-  return (
-    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white p-3 dark:bg-[#1a1d1c]">
-      <div className="mb-1.5 flex gap-0.5 text-[#c8a951]">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <svg key={i} className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        ))}
-      </div>
-      <blockquote className="text-xs text-[#1a1a1a] dark:text-[#f0f0f0]">&ldquo;{quote}&rdquo;</blockquote>
-      <p className="mt-2 text-xs font-bold text-[#0a3d2a] dark:text-[#3da06a]">{name}</p>
-      <p className="text-[10px] text-zinc-500">{detail}</p>
-    </div>
-  );
-}
+// Testimonials removed — was fabricated content.
