@@ -50,7 +50,12 @@ Fix data sync issues, player page defaults, and missing venue/tournament data.
 - Update this file: move task to Completed, update Next Action
 
 ## Completed
-(empty)
+
+### T1: Players page default filter → "All" ✅
+- Changed `useState<string>("ranked")` → `useState<string>("all")` in PlayersTable.tsx
+- The old "ranked" value didn't match any TIER_CHIPS entry, so no chip was active on load
+- Committed: `576aaee`
+- Note: Build has pre-existing Supabase prerender error (no local .env) — TypeScript + compilation pass fine
 
 ## Next Action
-T1: Players page default filter → "All"
+T2: Fix 9 ESPN tournament name mismatches
