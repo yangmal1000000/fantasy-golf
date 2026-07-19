@@ -26,8 +26,7 @@ Fix the tournament detail page and restore the leaderboard/scoreboard for comple
 - Top 20 shown by default, "Show Full Field" button to expand
 - Build must pass
 
-### T2: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
-### T2-ORIGINAL: Course profile section
+### T2: ✅ DONE — Course profile section
 - In `src/app/tournaments/[id]/page.tsx`, add a "Course Profile" section below the header
 - Show: course name, par, yardage (if available in schema — if field doesn't exist, skip gracefully), location
 - Display as an info card with a map pin icon
@@ -68,4 +67,4 @@ Fix the tournament detail page and restore the leaderboard/scoreboard for comple
 - **T1**: Fix empty leaderboard for completed tournaments — Created `TournamentLeaderboard.tsx` client component that shows real PGA Tour player scores sorted by total strokes. Shows top 20 with "Show Full Field" toggle, winner highlighted with gold + trophy. Responsive desktop table + mobile cards. Integrated into leaderboard page when no fantasy teams exist.
 
 ## Next Action
-T2: Tournament detail — add course profile section
+T3: Winner card — add winner/runner-up card for completed tournaments
