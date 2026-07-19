@@ -8,6 +8,7 @@ import MobileNav from "@/components/MobileNav";
 import SignInButton from "@/components/SignInButton";
 import PushRegistration from "@/components/PushRegistration";
 import { AuthProvider } from "@/components/AuthProvider";
+import { GolfFlagIcon } from "@/components/icons";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -67,8 +68,8 @@ function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-2 sm:px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-base tracking-tight shrink-0">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#c8a951] text-xs">
-            ⛳
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#c8a951] text-[#0a3d2a]">
+            <GolfFlagIcon className="h-4 w-4" />
           </span>
           <span className="hidden xs:inline sm:inline">Fantasy Golf</span>
         </Link>

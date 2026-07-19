@@ -7,6 +7,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { TrophyIcon } from "@/components/icons";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import Flag from "@/components/Flag";
 import TierBadge from "@/components/TierBadge";
@@ -223,6 +224,16 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
   const hasAnyBestFinish = players.some((p) => p.bestFinish != null);
   const hasAnyForm = players.some((p) => p.form.length > 0);
 
+  // Build tier-specific rank map: when filtering by a specific tier,
+  // show position within that tier (1, 2, 3...) instead of overall rank
+  const tierRankMap = new Map<string, number>();
+  if (tierFilter !== "all") {
+    const tierPlayers = players
+      .filter((p) => p.tier === tierFilter)
+      .sort((a, b) => (a.dataGolfRank ?? 999) - (b.dataGolfRank ?? 999));
+    tierPlayers.forEach((p, i) => tierRankMap.set(p.id, i + 1));
+  }
+
   return (
     <div>
       {/* ── Search & Filters ── */}
@@ -320,6 +331,9 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
               {sorted.map((p, i) => {
                 const tierCfg = p.tier ? TIER_CONFIG[p.tier] : null;
                 const rankColor = tierCfg?.gradFrom ?? "#6b7280";
+                const displayRank = tierFilter !== "all"
+                  ? (tierRankMap.get(p.id) ?? p.dataGolfRank ?? "—")
+                  : (p.dataGolfRank ?? "—");
                 return (
                   <tr
                     key={p.id}
@@ -329,12 +343,19 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
                   >
                     {/* Rank */}
                     <td className="px-3 py-2.5">
-                      <span
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white"
-                        style={{ backgroundColor: rankColor }}
-                      >
-                        {p.dataGolfRank ?? "—"}
-                      </span>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white"
+                          style={{ backgroundColor: rankColor }}
+                        >
+                          {displayRank}
+                        </span>
+                        {tierFilter !== "all" && p.dataGolfRank != null && (
+                          <span className="text-[10px] text-zinc-400" title="Data Golf world rank">
+                            #{p.dataGolfRank}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     {/* Player */}
                     <td className="px-3 py-2.5">
@@ -400,7 +421,7 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
                                     : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
                           }`}
                           >
-                            {p.bestFinish === 1 ? "🏆" : p.bestFinish}
+                            {p.bestFinish === 1 ? <TrophyIcon className="inline h-3 w-3" /> : p.bestFinish}
                           </span>
                         ) : (
                           <span className="text-zinc-300">—</span>
@@ -424,6 +445,9 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
       {/* ── Mobile Cards ── */}
       <div className="space-y-2 md:hidden">
         {sorted.map((p) => {
+          const displayRank = tierFilter !== "all"
+            ? (tierRankMap.get(p.id) ?? p.dataGolfRank ?? "—")
+            : (p.dataGolfRank ?? "—");
           return (
             <Link
               key={p.id}
@@ -438,7 +462,7 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
                     <Flag countryCode={p.country} size="sm" />
                     {p.tier && <TierBadge tier={p.tier} size="sm" />}
                     {p.dataGolfRank && (
-                      <span className="text-xs text-zinc-400">#{p.dataGolfRank}</span>
+                      <span className="text-xs text-zinc-400">#{displayRank}</span>
                     )}
                   </div>
                 </div>
@@ -450,7 +474,7 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
                   )}
                   {p.bestFinish != null && (
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Best: <span className="font-bold">{p.bestFinish === 1 ? "🏆 Win" : `T${p.bestFinish}`}</span>
+                      Best: <span className="font-bold">{p.bestFinish === 1 ? "Win" : `T${p.bestFinish}`}</span>
                     </p>
                   )}
                 </div>

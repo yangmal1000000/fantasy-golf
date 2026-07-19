@@ -1,5 +1,7 @@
 "use client";
 
+import { GolferIcon } from "@/components/icons";
+
 export default function GlobalError({
   error,
   reset,
@@ -9,7 +11,7 @@ export default function GlobalError({
 }) {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-      <div className="text-6xl">🏌️</div>
+      <GolferIcon className="h-16 w-16 text-[#0a3d2a] dark:text-green-400" />
       <h1 className="mt-4 text-2xl font-bold text-[#0f3d20] dark:text-white">
         Out of bounds
       </h1>

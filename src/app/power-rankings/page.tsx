@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { calculateLeaderboard } from "@/lib/scoring";
 import Link from "next/link";
+import { TrendingUpIcon, StarIcon, TrendingDownIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 300;
@@ -154,7 +155,9 @@ export default async function PowerRankingsPage() {
       {/* Header */}
       <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6 text-white shadow-lg">
         <p className="text-xs uppercase tracking-wide text-white/60">Weekly AI Rankings</p>
-        <h1 className="mt-1 text-2xl font-bold">📈 The Power Rankings</h1>
+        <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold">
+          <TrendingUpIcon className="h-6 w-6" /> The Power Rankings
+        </h1>
         <p className="mt-1 text-sm text-white/70">
           Top 20 fantasy teams across all active tournaments, ranked by scoring vs par.
         </p>
@@ -164,8 +167,8 @@ export default async function PowerRankingsPage() {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {teamOfTheWeek && (
           <div className="rounded-2xl border-2 border-[#d4a843]/40 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
-              ⭐ Team of the Week
+            <p className="text-xs font-bold uppercase tracking-wide text-amber-700 flex items-center gap-1">
+              <StarIcon className="h-3 w-3" /> Team of the Week
             </p>
             <p className="mt-1 text-base font-bold text-[#0f3d20]">{teamOfTheWeek.teamName}</p>
             <p className="text-xs text-zinc-600">
@@ -179,8 +182,8 @@ export default async function PowerRankingsPage() {
 
         {bust && (
           <div className="rounded-2xl border-2 border-red-200 bg-gradient-to-br from-red-50 to-white p-4 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wide text-red-700">
-              📉 Bust of the Week
+            <p className="text-xs font-bold uppercase tracking-wide text-red-700 flex items-center gap-1">
+              <TrendingDownIcon className="h-3 w-3" /> Bust of the Week
             </p>
             <p className="mt-1 text-base font-bold text-[#0f3d20]">{bust.playerName}</p>
             <p className="text-xs text-zinc-600">
@@ -201,8 +204,8 @@ export default async function PowerRankingsPage() {
 
         {rankedWithMeta.length === 0 ? (
           <div className="rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-purple-100 text-2xl dark:bg-purple-900/30">
-              📈
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+              <TrendingUpIcon className="h-6 w-6" />
             </div>
             <p className="text-base font-bold text-zinc-700 dark:text-zinc-300">No rankings yet</p>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">

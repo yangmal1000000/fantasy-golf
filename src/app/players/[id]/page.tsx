@@ -8,6 +8,7 @@ import TierBadge from "@/components/TierBadge";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import Flag from "@/components/Flag";
 import Sparkline from "@/components/Sparkline";
+import { GolferIcon, ChartBarIcon, MoneyIcon, StarIcon, TrendingUpIcon, BoltIcon, FinishFlagIcon, TargetIcon, TrophyIcon, IconByName } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -64,8 +65,8 @@ export default async function PlayerDetailPage({
   if (!player) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center sm:py-24">
-        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#0a3d2a]/10 text-4xl">
-          🏌️
+        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#0a3d2a]/10">
+          <GolferIcon className="h-10 w-10 text-[#0a3d2a]" />
         </div>
         <h1 className="text-2xl font-bold text-[#0a3d2a] dark:text-green-400 sm:text-3xl">
           Player not found
@@ -380,7 +381,7 @@ export default async function PlayerDetailPage({
       {/* ── Main grid ── */}
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         {/* ── Season Stats ── */}
-        <Card title="Season Stats" icon="📊">
+        <Card title="Season Stats" icon="chart_bar">
           {scoringAverage == null ? (
             <EmptyState text="No scoring data yet." />
           ) : (
@@ -462,7 +463,7 @@ export default async function PlayerDetailPage({
         </Card>
 
         {/* ── Fantasy Impact ── */}
-        <Card title="Fantasy Impact" icon="💰">
+        <Card title="Fantasy Impact" icon="money">
           {totalSelections === 0 ? (
             <EmptyState text="No fantasy teams have picked this player yet." />
           ) : (
@@ -496,8 +497,8 @@ export default async function PlayerDetailPage({
                       </p>
                     </div>
                     {tierRank <= 3 && (
-                      <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                        ⭐ Top Value
+                      <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 inline-flex items-center gap-1">
+                        <StarIcon className="h-3 w-3" /> Top Value
                       </span>
                     )}
                   </div>
@@ -544,7 +545,7 @@ export default async function PlayerDetailPage({
         </Card>
 
         {/* ── Round Tendencies ── */}
-        <Card title="Round Tendencies" icon="📈">
+        <Card title="Round Tendencies" icon="trending_up">
           {scoringAverage == null ? (
             <EmptyState text="No round data yet." />
           ) : (
@@ -566,15 +567,14 @@ export default async function PlayerDetailPage({
                     Tendency
                   </span>
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
                       tendency === "Fast Starter"
                         ? "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300"
                         : tendency === "Strong Finisher"
                           ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"
                           : "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
-                    }`}
-                  >
-                    {tendency === "Fast Starter" ? "⚡ " : tendency === "Strong Finisher" ? "🏁 " : "🎯 "}
+                    }`}>
+                    {tendency === "Fast Starter" ? <BoltIcon className="h-3 w-3" /> : tendency === "Strong Finisher" ? <FinishFlagIcon className="h-3 w-3" /> : <TargetIcon className="h-3 w-3" />}
                     {tendency}
                   </span>
                 </div>
@@ -634,7 +634,7 @@ export default async function PlayerDetailPage({
         </Card>
 
         {/* ── Career Summary ── */}
-        <Card title="Career Summary" icon="🏆">
+        <Card title="Career Summary" icon="trophy">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <StatBox label="Tournaments" value={player.tournaments.length.toString()} />
             <StatBox label="Cuts Made" value={
@@ -713,7 +713,7 @@ export default async function PlayerDetailPage({
                               : positionColor(f.position)
                           }`}
                         >
-                          {f.position === 1 ? "🏆" : f.position}
+                          {f.position === 1 ? <TrophyIcon className="inline h-3 w-3" /> : f.position}
                         </span>
                       </td>
                       {f.rounds.map((r, i) => {
@@ -798,7 +798,7 @@ export default async function PlayerDetailPage({
                             : positionColor(f.position)
                         }`}
                       >
-                        {f.position === 1 ? "🏆" : f.position}
+                        {f.position === 1 ? <TrophyIcon className="inline h-3 w-3" /> : f.position}
                       </span>
                     </div>
                     {/* Round scores */}
@@ -888,7 +888,7 @@ function Card({
   return (
     <div className="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 shadow-sm sm:p-5">
       <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-zinc-900 dark:text-white sm:text-lg">
-        <span className="text-lg">{icon}</span>
+        <IconByName name={icon} className="h-5 w-5 text-[#0a3d2a] dark:text-green-400" />
         {title}
       </h3>
       {children}

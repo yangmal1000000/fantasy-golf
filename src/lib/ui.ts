@@ -17,7 +17,7 @@ export const TIER_CONFIG: Record<
     badgeClass: "bg-amber-100 text-amber-800 border-amber-300",
     cardClass: "border-amber-300 bg-amber-50",
     description: "Elite — the top 10 in the world",
-    icon: "👑",
+    icon: "crown",
     gradFrom: "#fbbf24",
     gradTo: "#b45309",
     short: "T1",
@@ -27,7 +27,7 @@ export const TIER_CONFIG: Record<
     badgeClass: "bg-blue-100 text-blue-800 border-blue-300",
     cardClass: "border-blue-300 bg-blue-50",
     description: "Strong contenders ranked 11–20",
-    icon: "⭐",
+    icon: "star",
     gradFrom: "#94a3b8",
     gradTo: "#1e3a5f",
     short: "T2",
@@ -37,7 +37,7 @@ export const TIER_CONFIG: Record<
     badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-300",
     cardClass: "border-emerald-300 bg-emerald-50",
     description: "Proven talent ranked 21–30",
-    icon: "🛡️",
+    icon: "shield",
     gradFrom: "#c2410c",
     gradTo: "#166534",
     short: "T3",
@@ -47,7 +47,7 @@ export const TIER_CONFIG: Record<
     badgeClass: "bg-purple-100 text-purple-800 border-purple-300",
     cardClass: "border-purple-300 bg-purple-50",
     description: "Dark horses ranked 31–50",
-    icon: "💎",
+    icon: "diamond",
     gradFrom: "#7c3aed",
     gradTo: "#4c1d95",
     short: "T4",
@@ -57,7 +57,7 @@ export const TIER_CONFIG: Record<
     badgeClass: "bg-zinc-100 text-zinc-700 border-zinc-300",
     cardClass: "border-zinc-300 bg-zinc-50",
     description: "Long shots ranked 51+. Hidden gems!",
-    icon: "⚡",
+    icon: "bolt",
     gradFrom: "#6b7280",
     gradTo: "#1f2937",
     short: "T5",
@@ -116,11 +116,11 @@ export const COURSE_IMAGES: Record<string, string> = {
 };
 
 export const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string; icon: string }> = {
-  major: { label: "Major", badgeClass: "bg-amber-100 text-amber-800 border-amber-300", icon: "🏆" },
-  signature: { label: "Signature", badgeClass: "bg-purple-100 text-purple-800 border-purple-300", icon: "⭐" },
-  playoff: { label: "Playoff", badgeClass: "bg-blue-100 text-blue-800 border-blue-300", icon: "🎯" },
-  dpwt: { label: "DP World Tour", badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-300", icon: "🌍" },
-  lpga_major: { label: "LPGA Major", badgeClass: "bg-pink-100 text-pink-800 border-pink-300", icon: "🎀" },
+  major: { label: "Major", badgeClass: "bg-amber-100 text-amber-800 border-amber-300", icon: "trophy" },
+  signature: { label: "Signature", badgeClass: "bg-purple-100 text-purple-800 border-purple-300", icon: "star" },
+  playoff: { label: "Playoff", badgeClass: "bg-blue-100 text-blue-800 border-blue-300", icon: "target" },
+  dpwt: { label: "DP World Tour", badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-300", icon: "globe" },
+  lpga_major: { label: "LPGA Major", badgeClass: "bg-pink-100 text-pink-800 border-pink-300", icon: "star" },
 };
 
 export function courseImage(tournamentId: string): string {
