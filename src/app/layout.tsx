@@ -8,6 +8,7 @@ import MobileNav from "@/components/MobileNav";
 import SignInButton from "@/components/SignInButton";
 import PushRegistration from "@/components/PushRegistration";
 import { AuthProvider } from "@/components/AuthProvider";
+import NavLinks from "@/components/NavLinks";
 import { GolfFlagIcon } from "@/components/icons";
 
 const inter = Inter({
@@ -75,14 +76,7 @@ function Navbar() {
         </Link>
 
         {/* Desktop Nav links */}
-        <nav className="hidden items-center gap-0.5 sm:flex">
-          <NavLink href="/tournaments" label="Tournaments" />
-          <NavLink href="/players" label="Players" />
-          <NavLink href="/my-teams" label="My Teams" />
-          <NavLink href="/leagues" label="Leagues" />
-          <NavLink href="/tournaments/the-open-2026/leaderboard" label="Leaderboard" hideOnMd />
-          <NavLink href="/how-to-play" label="How to Play" hideOnMd />
-        </nav>
+        <NavLinks />
 
         {/* Right side: actions always visible */}
         <div className="flex items-center gap-1 sm:gap-2">
@@ -92,27 +86,6 @@ function Navbar() {
         </div>
       </div>
     </header>
-  );
-}
-
-/** Desktop nav link with gold accent on hover */
-function NavLink({
-  href,
-  label,
-  hideOnMd = false,
-}: {
-  href: string;
-  label: string;
-  hideOnMd?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-white/65 transition hover:bg-white/10 hover:text-white relative group ${hideOnMd ? "hidden md:block" : ""}`}
-    >
-      {label}
-      <span className="pointer-events-none absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[#c8a951] scale-x-0 group-hover:scale-x-100 transition-transform duration-200" />
-    </Link>
   );
 }
 
