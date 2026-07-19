@@ -846,21 +846,20 @@ export async function cleanupYearBranding(): Promise<SyncResult> {
       const existing = await prisma.tournament.findUnique({ where: { id: cleanId } });
 
       if (existing) {
-        // Merge: move scores, teams, TPs to the clean tournament
+        // Clean tournament already exists (from sync). Just delete the old one.
+        // Scores and TPs on the clean tournament are already correct from sync.
         try {
-          await prisma.$transaction([
-            prisma.score.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
-            prisma.tournamentPlayer.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
-            prisma.team.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
-            prisma.broadcastMessage.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
-            prisma.sideBet.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
-            prisma.tournamentSidePot.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
-          ]);
-          // Delete old tournament
+          // First delete related records from the old tournament
+          await prisma.score.deleteMany({ where: { tournamentId: t.id } });
+          await prisma.tournamentPlayer.deleteMany({ where: { tournamentId: t.id } });
+          await prisma.team.deleteMany({ where: { tournamentId: t.id } });
+          await prisma.broadcastMessage.deleteMany({ where: { tournamentId: t.id } });
+          await prisma.sideBet.deleteMany({ where: { tournamentId: t.id } });
+          await prisma.tournamentSidePot.deleteMany({ where: { tournamentId: t.id } });
           await prisma.tournament.delete({ where: { id: t.id } });
           merged++;
         } catch (e) {
-          errors.push(`Failed to merge ${t.id}: ${e instanceof Error ? e.message : String(e)}`);
+          errors.push(`Failed to delete old ${t.id}: ${e instanceof Error ? e.message : String(e)}`);
         }
       } else {
         // Rename: update ID directly via raw SQL (Prisma can't update ID field directly)
