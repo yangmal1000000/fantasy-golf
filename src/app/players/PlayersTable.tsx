@@ -302,25 +302,24 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
       </div>
 
       {/* ── Desktop Table (hidden on mobile) ── */}
-      {/* Hide Sel %, Avg, Best, Form columns entirely when none of the players have that data */}
-      <div className="hidden md:block overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm">
+      <div className="hidden md:block overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                <th className="px-3 py-3 text-left font-semibold">{sortableHeader("rank", "Rank", "left")}</th>
-                <th className="px-3 py-3 text-left font-semibold">{sortableHeader("name", "Player", "left")}</th>
-                <th className="px-3 py-3 text-center font-semibold">Country</th>
-                <th className="px-3 py-3 text-center font-semibold">{sortableHeader("tier", "Tier")}</th>
-                <th className="px-3 py-3 text-center font-semibold">{sortableHeader("tournaments", "Events")}</th>
+              <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30 text-[10px] uppercase tracking-wide text-zinc-500">
+                <th className="px-2.5 py-2 text-left font-semibold">{sortableHeader("rank", "Rank", "left")}</th>
+                <th className="px-2.5 py-2 text-left font-semibold">{sortableHeader("name", "Player", "left")}</th>
+                <th className="px-2 py-2 text-center font-semibold">Country</th>
+                <th className="px-2 py-2 text-center font-semibold">{sortableHeader("tier", "Tier")}</th>
+                <th className="px-2 py-2 text-center font-semibold">{sortableHeader("tournaments", "Events")}</th>
                 {hasAnySelectionData && (
-                  <th className="px-3 py-3 text-center font-semibold">{sortableHeader("selectionRate", "Sel %")}</th>
+                  <th className="px-2 py-2 text-center font-semibold">{sortableHeader("selectionRate", "Sel %")}</th>
                 )}
                 {hasAnyAvgScore && (
-                  <th className="px-3 py-3 text-center font-semibold">{sortableHeader("avgScore", "Avg")}</th>
+                  <th className="px-2 py-2 text-center font-semibold">{sortableHeader("avgScore", "Avg")}</th>
                 )}
                 {hasAnyBestFinish && (
-                  <th className="px-3 py-3 text-center font-semibold">{sortableHeader("bestFinish", "Best")}</th>
+                  <th className="px-2 py-2 text-center font-semibold">{sortableHeader("bestFinish", "Best")}</th>
                 )}
                 {hasAnyForm && (
                   <th className="px-3 py-3 text-center font-semibold">Form</th>
@@ -337,15 +336,15 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
                 return (
                   <tr
                     key={p.id}
-                    className={`border-b border-zinc-100 dark:border-zinc-800 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/30 ${
-                      i % 2 === 1 ? "bg-zinc-50/30 dark:bg-zinc-900/30" : ""
+                    className={`border-b border-zinc-100 dark:border-zinc-800/50 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/30 ${
+                      i % 2 === 1 ? "bg-zinc-50/20 dark:bg-zinc-900/20" : ""
                     }`}
                   >
                     {/* Rank */}
-                    <td className="px-3 py-2.5">
-                      <div className="flex flex-col items-center gap-0.5">
+                    <td className="px-2.5 py-1.5">
+                      <div className="flex items-center gap-1">
                         <span
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white"
+                          className="inline-flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold text-white shrink-0"
                           style={{ backgroundColor: rankColor }}
                         >
                           {displayRank}
