@@ -466,6 +466,104 @@ export async function recalculateAllTiers(): Promise<{ tiersChanged: number; tot
   return { tiersChanged, totalChecked };
 }
 
+// ── Shared competitor processing helper ───────────────────────────────────
+
+/**
+ * processESPNCompetitors
+ * -----------------------
+ * Batch-processes ESPN competitors for a tournament: ensures players exist,
+ * links them to the tournament, and upserts round scores.
+ * Loads all existing players at once for O(1) lookups.
+ */
+async function processESPNCompetitors(
+  tournamentId: string,
+  competitors: ESPNCompetitor[]
+): Promise<{ playersLinked: number; scoresCreated: number; scoresUpdated: number }> {
+  let playersLinked = 0;
+  let scoresCreated = 0;
+  let scoresUpdated = 0;
+
+  // 1. Load all existing players into a map (case-insensitive)
+  const existingPlayers = await prisma.player.findMany();
+  const playerMap = new Map<string, typeof existingPlayers[number]>();
+  for (const p of existingPlayers) {
+    playerMap.set(p.name.toLowerCase().trim(), p);
+  }
+
+  // Track names we've already processed (avoid dups within same tournament)
+  const processedNames = new Set<string>();
+
+  for (const comp of competitors) {
+    const playerName = comp.athlete?.fullName;
+    if (!playerName || playerName.trim().length === 0) continue;
+
+    const key = playerName.toLowerCase().trim();
+    if (processedNames.has(key)) continue;
+    processedNames.add(key);
+
+    const existing = playerMap.get(key);
+    let playerId: string;
+    const country = countryFromFlag(comp.athlete?.flag);
+
+    if (existing) {
+      playerId = existing.id;
+      // Update country if missing
+      if (!existing.country && country) {
+        await prisma.player.update({ where: { id: playerId }, data: { country } });
+      }
+    } else {
+      // Create new player
+      const created = await prisma.player.create({
+        data: { name: playerName, country },
+      });
+      playerId = created.id;
+      playerMap.set(key, created);
+    }
+
+    // Determine madeCut and tier
+    const madeCut = comp.thru !== "CUT" && comp.status?.type?.name !== "STATUS_CUT";
+    const rank = playerMap.get(key)?.dataGolfRank;
+    const tierVal = tierForRank(rank);
+
+    // Upsert tournament link
+    try {
+      await prisma.tournamentPlayer.upsert({
+        where: { tournamentId_playerId: { tournamentId, playerId } },
+        create: { tournamentId, playerId, tier: tierVal, madeCut },
+        update: { madeCut, tier: tierVal },
+      });
+      playersLinked++;
+    } catch {
+      // Race condition — ignore
+    }
+
+    // Process round scores (only period 1-4, not hole-by-hole)
+    const linescores = comp.linescores ?? [];
+    for (const ls of linescores) {
+      if (ls.period >= 1 && ls.period <= 4 && ls.value > 0) {
+        const round = ls.period;
+        const strokes = Math.round(ls.value);
+
+        try {
+          const before = await prisma.score.findUnique({
+            where: { tournamentId_playerId_round: { tournamentId, playerId, round } },
+          });
+          await prisma.score.upsert({
+            where: { tournamentId_playerId_round: { tournamentId, playerId, round } },
+            create: { tournamentId, playerId, round, strokes, isEstimated: false },
+            update: { strokes, isEstimated: false },
+          });
+          if (before) scoresUpdated++; else scoresCreated++;
+        } catch {
+          // Race condition — skip
+        }
+      }
+    }
+  }
+
+  return { playersLinked, scoresCreated, scoresUpdated };
+}
+
 // ── Tournament Results Sync ────────────────────────────────────────────────
 
 /**
@@ -527,96 +625,11 @@ export async function syncTournamentResults(tournamentId?: string): Promise<Sync
 
       const competitors = matchingEvent.competitions?.[0]?.competitors ?? [];
 
-      // Process each competitor
-      for (const comp of competitors) {
-        const playerName = comp.athlete?.fullName;
-        if (!playerName) continue;
-
-        // Find or create the player
-        let player = await prisma.player.findFirst({
-          where: { name: { equals: playerName, mode: "insensitive" } },
-        });
-
-        if (!player) {
-          player = await prisma.player.create({
-            data: {
-              name: playerName,
-              country: countryFromFlag(comp.athlete?.flag),
-            },
-          });
-        }
-
-        // Link player to tournament
-        let tournamentPlayer = await prisma.tournamentPlayer.findUnique({
-          where: {
-            tournamentId_playerId: {
-              tournamentId: tournament.id,
-              playerId: player.id,
-            },
-          },
-        });
-
-        if (!tournamentPlayer) {
-          tournamentPlayer = await prisma.tournamentPlayer.create({
-            data: {
-              tournamentId: tournament.id,
-              playerId: player.id,
-              tier: tierForRank(player.dataGolfRank),
-              madeCut: comp.status?.type?.name !== "STATUS_CUT",
-            },
-          });
-          totalPlayersLinked++;
-        } else {
-          // Update madeCut
-          const madeCut = comp.status?.type?.name !== "STATUS_CUT" && comp.thru !== "CUT";
-          if (tournamentPlayer.madeCut !== madeCut) {
-            await prisma.tournamentPlayer.update({
-              where: { id: tournamentPlayer.id },
-              data: { madeCut },
-            });
-          }
-        }
-
-        // Process round scores from linescores
-        const linescores = comp.linescores ?? [];
-        for (const ls of linescores) {
-          if (ls.period >= 1 && ls.period <= 4 && ls.value > 0) {
-            const round = ls.period;
-            const strokes = Math.round(ls.value);
-
-            const existingScore = await prisma.score.findUnique({
-              where: {
-                tournamentId_playerId_round: {
-                  tournamentId: tournament.id,
-                  playerId: player.id,
-                  round,
-                },
-              },
-            });
-
-            if (existingScore) {
-              if (existingScore.strokes !== strokes) {
-                await prisma.score.update({
-                  where: { id: existingScore.id },
-                  data: { strokes, isEstimated: false },
-                });
-                totalScoresUpdated++;
-              }
-            } else {
-              await prisma.score.create({
-                data: {
-                  tournamentId: tournament.id,
-                  playerId: player.id,
-                  round,
-                  strokes,
-                  isEstimated: false,
-                },
-              });
-              totalScoresCreated++;
-            }
-          }
-        }
-      }
+      // Process all competitors using batch helper
+      const result = await processESPNCompetitors(tournament.id, competitors);
+      totalPlayersLinked += result.playersLinked;
+      totalScoresCreated += result.scoresCreated;
+      totalScoresUpdated += result.scoresUpdated;
 
       tournamentsProcessed++;
     } catch (e) {
@@ -707,84 +720,10 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
         });
       }
 
-      for (const comp of competitors) {
-        const playerName = comp.athlete?.fullName;
-        if (!playerName) continue;
-
-        let player = await prisma.player.findFirst({
-          where: { name: { equals: playerName, mode: "insensitive" } },
-        });
-
-        if (!player) {
-          player = await prisma.player.create({
-            data: {
-              name: playerName,
-              country: countryFromFlag(comp.athlete?.flag),
-            },
-          });
-        }
-
-        // Ensure tournament link
-        let tournamentPlayer = await prisma.tournamentPlayer.findUnique({
-          where: {
-            tournamentId_playerId: {
-              tournamentId: tournament.id,
-              playerId: player.id,
-            },
-          },
-        });
-
-        if (!tournamentPlayer) {
-          tournamentPlayer = await prisma.tournamentPlayer.create({
-            data: {
-              tournamentId: tournament.id,
-              playerId: player.id,
-              tier: tierForRank(player.dataGolfRank),
-              madeCut: comp.thru !== "CUT",
-            },
-          });
-        }
-
-        // Process round scores
-        const linescores = comp.linescores ?? [];
-        for (const ls of linescores) {
-          if (ls.period >= 1 && ls.period <= 4 && ls.value > 0) {
-            const round = ls.period;
-            const strokes = Math.round(ls.value);
-
-            const existingScore = await prisma.score.findUnique({
-              where: {
-                tournamentId_playerId_round: {
-                  tournamentId: tournament.id,
-                  playerId: player.id,
-                  round,
-                },
-              },
-            });
-
-            if (existingScore) {
-              if (existingScore.strokes !== strokes) {
-                await prisma.score.update({
-                  where: { id: existingScore.id },
-                  data: { strokes, isEstimated: false },
-                });
-                totalScoresUpdated++;
-              }
-            } else {
-              await prisma.score.create({
-                data: {
-                  tournamentId: tournament.id,
-                  playerId: player.id,
-                  round,
-                  strokes,
-                  isEstimated: false,
-                },
-              });
-              totalScoresCreated++;
-            }
-          }
-        }
-      }
+      // Process all competitors using batch helper
+      const result = await processESPNCompetitors(tournament.id, competitors);
+      totalScoresCreated += result.scoresCreated;
+      totalScoresUpdated += result.scoresUpdated;
 
       tournamentsProcessed++;
     } catch (e) {
