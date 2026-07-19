@@ -1,56 +1,59 @@
-# Stream 2: Tournaments List & Homepage — Progress Tracker
+# Stream 3: Tournament Detail & Leaderboard — Progress Tracker
 
 ## Goal
-Fix tournaments page filtering and homepage credibility issues.
+Fix the tournament detail page and restore the leaderboard/scoreboard for completed events.
 
 ## Architecture
-- Project: /Users/harry/Projects/fantasy-golf-s2 (git worktree on branch `dev/tournaments-home`)
+- Project: /Users/harry/Projects/fantasy-golf-s3 (git worktree on branch `dev/tournament-detail`)
 - Build: `npm install && npm run build`
 - Main repo: /Users/harry/Projects/fantasy-golf (DO NOT touch — other streams working there)
 
 ## File Ownership (ONLY touch these)
-- `src/app/tournaments/page.tsx`
-- `src/app/page.tsx`
-- `src/lib/ui.ts` (STATUS_CONFIG only)
+- `src/app/tournaments/[id]/page.tsx`
+- `src/app/tournaments/[id]/leaderboard/page.tsx`
+- `src/app/tournaments/[id]/leaderboard/LeaderboardRefresh.tsx`
 
 ## Tasks (do in order)
 
-### T1: Tournaments page — default to upcoming/live, hide completed
-- In `src/app/tournaments/page.tsx`, the page currently shows ALL tournaments chronologically
-- Change default view: filter OUT completed tournaments (status === "completed")
-- Show only: upcoming, entries_open, in_progress
-- Add a "Show Past Events" toggle button at the top of the list
-- This should be a client-side toggle — use a URL search param like `?past=1` or a simple client component
-- Since the page is a server component, easiest approach: read `?past` from searchParams. Default = no past events. When user clicks "Show Past Events", link to `?past=1`
+### T1: Fix empty leaderboard for completed tournaments
+- The leaderboard page at `/tournaments/[id]/leaderboard` shows "0 Teams, No teams yet" even for completed tournaments with real scores
+- The issue: leaderboard depends on TEAMS (user entries) existing. No users = no teams = empty leaderboard
+- Fix: when no teams exist, show the REAL PGA TOUR LEADERBOARD instead — the actual player scores from the Score table
+- Create a "Tournament Leaderboard" section that shows ALL players in the field sorted by total strokes (R1-R4, total, to par)
+- Show: position, player name, country, R1 R2 R3 R4, total, to par
+- Highlight the winner (position 1)
+- This is the "scoreboard" that was missing
+- Top 20 shown by default, "Show Full Field" button to expand
 - Build must pass
 
-### T2: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
-### T2-ORIGINAL: Fix price inconsistency
-- In `src/app/page.tsx` homepage:
-  - Hero says "Pay £15" in the "How It Works" section (the 3-column strip with Pick 5 / Pay £15 / Win)
-  - But tournament entry fees are £10 (1000 pence)
-  - Fix: change the "Pay £15" to dynamically reflect the most common entry fee, OR just say "Entry from £10"
-  - Also fix JSON-LD structured data price from "15" to "10"
-  - Also fix any remaining "£15" references in page.tsx
+### T2: Tournament detail — add course profile section
+- In `src/app/tournaments/[id]/page.tsx`, add a "Course Profile" section below the header
+- Show: course name, par, yardage (if available in schema — if field doesn't exist, skip gracefully), location
+- Display as an info card with a map pin icon
+- If data not available, show "Course details TBA"
 - Build must pass
 
-### T3: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
-### T3-ORIGINAL: Homepage hide empty pot
-- In `src/app/page.tsx`, the trust bar shows "£0.00 Prize Pot" when totalPot === 0
-- When totalPot is 0, hide the prize pot span entirely or replace with something like "Free to preview"
-- Better: if pot is 0, show number of tournaments with entries open instead
+### T3: Tournament detail — add winner card for completed events
+- In `src/app/tournaments/[id]/page.tsx`, for completed tournaments:
+  - Query the Score table to find the player with the lowest total strokes
+  - Display a "Winner" card with: trophy icon, player name, country flag, total score, to par
+  - Show runner-up too (2nd place)
 - Build must pass
 
-### T4: Tournaments page — add status filter chips
-- Add filter chips above the tournament list: "Upcoming" / "Live" / "All" (in addition to category filters already there)
-- Default should be "Upcoming" (shows upcoming + entries_open + in_progress, hides completed)
-- "Live" shows only in_progress
-- "All" shows everything including completed
-- These work alongside existing category and year filters
+### T4: Tournament detail — add cut line info
+- For completed/in-progress tournaments:
+  - Calculate or display the cut line (typically top 65 + ties after R2)
+  - Show "Cut Line: +X" or "Made the Cut: N players"
+- Build must pass
+
+### T5: Tournament detail — improve field display for upcoming tournaments
+- When a tournament has no linked players (field is empty):
+  - Show a proper empty state: "Field will be announced closer to the event"
+  - Don't render empty tier sections
 - Build must pass
 
 ## Rules
-- ONLY work in /Users/harry/Projects/fantasy-golf-s2
+- ONLY work in /Users/harry/Projects/fantasy-golf-s3
 - NEVER touch /Users/harry/Projects/fantasy-golf or other worktrees
 - One task per run — implement, build, verify, update this file
 - If build fails, fix it before marking task done
@@ -58,36 +61,11 @@ Fix tournaments page filtering and homepage credibility issues.
 - Update this file: move task to Completed, update Next Action
 
 ## Completed
-
-### T1: Tournaments page — default to upcoming/live, hide completed ✅
-- Added `past` search param to page's searchParams type
-- Completed tournaments filtered out by default (when `past` not `1`)
-- "Show Past Events (N)" / "Hide Past Events" toggle button added above list
-- Past state preserved across tour/category/year filter navigation via `buildHref` param
-- Commit: `27e3b7f`
-- Follow-up fix (`bbc9dee`): `completedCount` was computed after filtering out completed tournaments, so the toggle never appeared — moved count before the past-filter
-- Note: Build has pre-existing prerender failures on `/contact`, `/achievements`, `/_not-found` (missing Supabase env vars) — unrelated, TypeScript compiles clean
-
-### T2: Fix price inconsistency (£15 vs £10) ✅
-- "Pay £15" → "Entry £10" in How It Works strip
-- JSON-LD structured data price "15" → "10"
-- No other £15 references found in page.tsx
-- Commit: `bbc9dee` (bundled with T1 completedCount fix)
-
-### T3: Homepage — hide £0 prize pot when empty ✅
-- When totalPot === 0, trust bar shows "{N} Open to Enter" (entries-open count) or "Free to Preview"
-- Added `entriesOpenCount` query (`prisma.tournament.count({ where: { status: "entries_open" } })`)
-- Commit: `17e64bb`
-
-### T4: Tournaments page — add status filter chips ✅
-- Added `?status=` searchParam: "upcoming" (default), "live", "all"
-- Backward compat: `?past=1` maps to `status=all`
-- Replaced "Show/Hide Past Events" toggle with 3 chips: Upcoming / Live / All
-- "Upcoming" = upcoming + entries_open + in_progress (hides completed)
-- "Live" = in_progress only
-- "All" = everything
-- Context-aware empty state messages per status
-- Commit: `1a2da04`
+- T1: Fix empty leaderboard for completed tournaments — show real PGA Tour scores when no fantasy teams exist (TournamentLeaderboard.tsx client component + leaderboard page integration)
+- T2: Add Course Profile section to tournament detail page (course name, par, tour, dates with graceful empty state)
+- T3: Add winner & runner-up cards for completed tournaments on detail page (trophy + medal with scores)
+- T4: Add cut line info section with made/missed cut counts on tournament detail page
+- T5: Add proper empty state ("Field will be announced closer to the event") for tournaments with no players
 
 ## Next Action
-All tasks (T1–T4) complete. No further work needed.
+All tasks complete. Ready for review/merge.
