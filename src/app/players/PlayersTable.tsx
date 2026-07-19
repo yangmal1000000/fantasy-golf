@@ -100,7 +100,7 @@ const COUNTRY_NAMES: Record<string, string> = {
 
 export default function PlayersTable({ players, countries }: PlayersTableProps) {
   const [search, setSearch] = useState("");
-  const [tierFilter, setTierFilter] = useState<string>("ranked");
+  const [tierFilter, setTierFilter] = useState<string>("all");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [sortColumn, setSortColumn] = useState<SortColumn>("rank");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
