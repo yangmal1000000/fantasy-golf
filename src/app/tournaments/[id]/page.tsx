@@ -183,6 +183,36 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </Link>
       )}
 
+      {/* Course Profile */}
+      <div className="mt-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+        <div className="flex items-center gap-2">
+          <MapPinIcon className="h-4 w-4 text-[#0a3d2a] dark:text-green-400" />
+          <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500">Course Profile</h2>
+        </div>
+        {tournament.course ? (
+          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2">
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Course</p>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.course}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Par</p>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.par}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Tour</p>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 uppercase">{tournament.tour}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Dates</p>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{formatDateRange(tournament.startDate, tournament.endDate)}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-zinc-400">Course details TBA</p>
+        )}
+      </div>
+
       {/* The Field — players by tier */}
       <div className="mt-6">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-zinc-500">The Field</h2>
