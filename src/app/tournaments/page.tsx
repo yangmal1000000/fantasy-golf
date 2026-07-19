@@ -28,6 +28,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
   const showPast = params.past === "1";
 
   let tournaments: TournamentRow[] = [];
+  let completedCount = 0;
   try {
     const all = await prisma.tournament.findMany({
       orderBy: { startDate: "asc" },
@@ -39,7 +40,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
       filtered = filtered.filter((t) => new Date(t.startDate).getFullYear().toString() === activeYear);
     }
     // Count completed BEFORE filtering them out (for toggle label)
-    const completedCount = filtered.filter((t) => t.status === "completed").length;
+    completedCount = filtered.filter((t) => t.status === "completed").length;
     // Hide completed tournaments by default; show when ?past=1
     if (!showPast) {
       filtered = filtered.filter((t) => t.status !== "completed");
