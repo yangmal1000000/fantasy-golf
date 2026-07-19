@@ -10,7 +10,7 @@ import { formatDateRange, STATUS_CONFIG, courseImage, CATEGORY_CONFIG } from "@/
 import CountdownTimer from "@/components/CountdownTimer";
 import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
-import { GolfFlagIcon, MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, StarIcon } from "@/components/icons";
+import { GolfFlagIcon, MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, StarIcon, IconByName } from "@/components/icons";
 
 type TournamentRow = {
   id: string; name: string; course: string | null;
@@ -49,21 +49,25 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     <Suspense fallback={<TournamentListSkeleton />}>
       <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
         {/* Header */}
-        <h1 className="text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-green-400 sm:text-2xl">Tournaments</h1>
-        <p className="mt-0.5 text-xs text-zinc-500">{tournaments.length} {showWomen ? "women's" : "men's"} events</p>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-green-400 sm:text-2xl">Tournaments</h1>
+            <p className="mt-0.5 text-xs text-zinc-500">{tournaments.length} {showWomen ? "women's" : "men's"} events</p>
+          </div>
+        </div>
 
-        {/* Tour toggle */}
-        <div className="mt-3 flex gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/60 p-0.5">
-          <Link href="/tournaments?tour=men" className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${!showWomen ? "bg-[#0a3d2a] text-white" : "text-zinc-500"}`}>
-            <GolfFlagIcon className="h-3.5 w-3.5" /> Men&apos;s
+        {/* Tour toggle — stronger contrast */}
+        <div className="mt-2 flex gap-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-1">
+          <Link href="/tournaments?tour=men" className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${!showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+            <GolfFlagIcon className="h-4 w-4" /> Men&apos;s
           </Link>
-          <Link href="/tournaments?tour=women" className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${showWomen ? "bg-[#0a3d2a] text-white" : "text-zinc-500"}`}>
-            <StarIcon className="h-3.5 w-3.5" /> Women&apos;s
+          <Link href="/tournaments?tour=women" className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+            <StarIcon className="h-4 w-4" /> Women&apos;s
           </Link>
         </div>
 
-        {/* Category chips */}
-        <div className="mt-2 mb-4 flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+        {/* Category chips — stronger */}
+        <div className="mt-3 mb-4 flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {categoryKeys.map((catKey) => {
             const catCfg = catKey === "all" ? null : CATEGORY_CONFIG[catKey];
             const label = catKey === "all" ? "All" : catCfg?.label ?? catKey;
@@ -72,76 +76,104 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
             const isActive = activeCategory === catKey;
             return (
               <Link key={catKey} href={`/tournaments?tour=${tour}${catParam}`}>
-                <span className={`whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ${isActive ? "bg-[#0a3d2a] text-white" : "bg-white text-zinc-500 border border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800"}`}>
-                  {label} {count > 0 && <span className={isActive ? "text-white/65" : "text-zinc-400"}>{count}</span>}
+                <span className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition ${isActive ? "bg-[#0a3d2a] text-white" : "bg-white text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"}`}>
+                  {label}{count > 0 && <span className={`ml-1.5 ${isActive ? "text-white/60" : "text-zinc-400"}`}>{count}</span>}
                 </span>
               </Link>
             );
           })}
         </div>
 
-        {/* Tournament list — compact horizontal rows */}
+        {/* Tournament list */}
         {visibleTournaments.length === 0 ? (
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-8 text-center">
             <ChartBarIcon className="mx-auto h-8 w-8 text-zinc-300" />
             <p className="mt-3 text-sm font-semibold text-zinc-600">No tournaments available</p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {visibleTournaments.map((t) => {
               const status = STATUS_CONFIG[t.status] ?? STATUS_CONFIG.upcoming;
               const canEnter = t.status === "entries_open" || t.status === "upcoming";
               const isLive = t.status === "in_progress";
+              const cat = CATEGORY_CONFIG[t.category];
+              const potValue = t.entryFee * t._count.teams;
+              const daysUntil = Math.ceil((t.startDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
               return (
                 <Link
                   key={t.id}
                   href={canEnter ? `/tournaments/${t.id}/enter` : `/tournaments/${t.id}/leaderboard`}
-                  className="group flex items-center gap-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2 py-1.5 transition hover:border-zinc-300 dark:hover:border-zinc-700 sm:gap-3 sm:px-3 sm:py-2"
+                  className="group flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2.5 transition hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-md sm:gap-4 sm:p-3"
                 >
                   {/* Thumbnail */}
-                  <div className="h-[56px] w-[56px] shrink-0 overflow-hidden rounded-md sm:h-[64px] sm:w-[80px]">
+                  <div className="relative h-[64px] w-[64px] shrink-0 overflow-hidden rounded-lg sm:h-[72px] sm:w-[96px]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={courseImage(t.id)}
-                      alt={t.course || t.name}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={courseImage(t.id)} alt={t.course || t.name} loading="lazy" className="h-full w-full object-cover" />
+                    {isLive && (
+                      <div className="absolute left-1 top-1 flex items-center gap-0.5 rounded bg-[#c44545] px-1 py-0.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                        <span className="text-[9px] font-bold text-white">LIVE</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Data */}
+                  {/* Data — fills available space */}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <h2 className="truncate text-[13px] font-bold text-zinc-900 dark:text-white">{t.name}</h2>
-                      {isLive && (
-                        <span className="flex shrink-0 items-center gap-0.5 rounded bg-[#c44545] px-1 py-0.5">
-                          <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
-                          <span className="text-[9px] font-bold text-white">LIVE</span>
-                        </span>
-                      )}
+                    {/* Row 1: Name + status badge */}
+                    <div className="flex items-center gap-2">
+                      <h2 className="truncate text-sm font-bold text-zinc-900 dark:text-white group-hover:text-[#0a3d2a] dark:group-hover:text-green-400">{t.name}</h2>
+                      <span className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${status.badgeClass}`}>{status.label}</span>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+
+                    {/* Row 2: Course + date */}
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                      <MapPinIcon className="h-3 w-3 shrink-0 text-zinc-400" />
                       <span className="truncate">{t.course ?? "TBD"}</span>
-                      <span className="text-zinc-300">·</span>
+                      <span className="text-zinc-300 dark:text-zinc-600">·</span>
                       <span className="whitespace-nowrap tabular">{formatDateRange(t.startDate, t.endDate)}</span>
                     </div>
-                    <div className="mt-1 flex items-center gap-2.5 text-[11px]">
+
+                    {/* Row 3: Stats — uses remaining space well */}
+                    <div className="mt-1.5 flex items-center gap-3 text-xs">
                       <span className="inline-flex items-center gap-1">
-                        <span className="font-semibold tabular text-zinc-700 dark:text-zinc-300">{t._count.teams}</span>
+                        <UsersIcon className="h-3 w-3 text-zinc-400" />
+                        <span className="font-bold tabular text-zinc-700 dark:text-zinc-300">{t._count.teams}</span>
                         <span className="text-zinc-400">teams</span>
                       </span>
+                      <span className="text-zinc-300 dark:text-zinc-700">|</span>
                       <span className="inline-flex items-center gap-1">
                         <PoundIcon className="h-3 w-3 text-[#c8a951]" />
-                        <span className="font-semibold tabular text-[#c8a951]">£{(t.entryFee / 100).toFixed(0)}</span>
+                        <span className="font-bold tabular text-[#c8a951]">£{(t.entryFee / 100).toFixed(0)}</span>
                       </span>
-                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${status.badgeClass}`}>{status.label}</span>
+                      {potValue > 0 && (
+                        <>
+                          <span className="text-zinc-300 dark:text-zinc-700">|</span>
+                          <span className="text-zinc-500 dark:text-zinc-400 tabular">Pot £{potValue.toLocaleString()}</span>
+                        </>
+                      )}
+                      {cat && (
+                        <>
+                          <span className="text-zinc-300 dark:text-zinc-700">|</span>
+                          <span className="text-zinc-500 dark:text-zinc-400">{cat.label}</span>
+                        </>
+                      )}
                     </div>
+
+                    {/* Countdown for open tournaments */}
+                    {canEnter && daysUntil > 0 && (
+                      <div className="mt-1 text-[11px] font-medium text-[#0a3d2a] dark:text-green-400">
+                        Starts in {daysUntil} day{daysUntil === 1 ? "" : "s"}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Arrow */}
-                  <div className="shrink-0 self-center text-zinc-300 transition group-hover:text-[#0a3d2a] dark:group-hover:text-green-400">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                  {/* CTA — strong, right-aligned */}
+                  <div className="flex shrink-0 flex-col items-center gap-1 pl-1">
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${canEnter ? "bg-[#0a3d2a] dark:bg-green-600 group-hover:bg-[#1a5c3e]" : "bg-zinc-100 dark:bg-zinc-800"}`}>
+                      <svg className={`h-4 w-4 ${canEnter ? "text-white" : "text-zinc-400"}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </div>
+                    <span className="text-[9px] font-semibold text-zinc-400 group-hover:text-[#0a3d2a] dark:group-hover:text-green-400">{canEnter ? "Enter" : "View"}</span>
                   </div>
                 </Link>
               );
