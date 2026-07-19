@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP } from "@/lib/ui";
-import { MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, GolfFlagIcon, TrophyIcon, TargetIcon, BoltIcon } from "@/components/icons";
+import { MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, GolfFlagIcon, TrophyIcon, TargetIcon, BoltIcon, FlagIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +50,33 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     entry.madeCut = entry.roundsPlayed >= 3; // Made cut if they played R3
   }
   const hasScores = scores.length > 0;
+
+  // Compute winner and runner-up for completed tournaments
+  const sortedScorers = [...scoreMap.entries()]
+    .filter(([, s]) => s.roundsPlayed > 0)
+    .sort((a, b) => a[1].total - b[1].total);
+  const winnerEntry = sortedScorers[0];
+  const runnerUpEntry = sortedScorers[1];
+  // Build playerId -> name map for winner display
+  const playerNameMap = new Map<string, string>();
+  const playerCountryMap = new Map<string, string | null>();
+  for (const tp of tournament.players) {
+    playerNameMap.set(tp.playerId, tp.player.name);
+    playerCountryMap.set(tp.playerId, tp.player.country);
+  }
+  const isCompleted = tournament.status === "completed";
+
+  // Cut line info: count players who made the cut (played R3) vs total
+  const totalScorers = sortedScorers.length;
+  const madeCutCount = sortedScorers.filter(([, s]) => s.madeCut).length;
+  const missedCutCount = totalScorers - madeCutCount;
+  const showCutInfo = hasScores && (tournament.status === "completed" || tournament.status === "in_progress") && totalScorers > 0;
+  // R2 leader score (top score after 2 rounds) for cut context
+  const r2Scores = sortedScorers
+    .map(([pid, s]) => ({ pid, r2Total: (s.rounds[0] ?? Infinity) + (s.rounds[1] ?? Infinity) }))
+    .filter((x) => x.r2Total < Infinity)
+    .sort((a, b) => a.r2Total - b.r2Total);
+  const cutScore = r2Scores.length > 0 ? r2Scores[Math.min(64, r2Scores.length - 1)]?.r2Total : null;
 
   const status = STATUS_CONFIG[tournament.status] ?? STATUS_CONFIG.upcoming;
   const cat = CATEGORY_CONFIG[tournament.category];
@@ -128,6 +155,26 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </div>
       </div>
 
+      {/* Cut line info for in-progress / completed */}
+      {hasScores && (isCompleted || isLive) && (() => {
+        const madeCutCount = [...scoreMap.values()].filter(s => s.madeCut).length;
+        const missedCutCount = [...scoreMap.values()].filter(s => s.roundsPlayed > 0 && !s.madeCut).length;
+        if (madeCutCount === 0 && missedCutCount === 0) return null;
+        return (
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2">
+            <BoltIcon className="h-4 w-4 text-[#0a3d2a] dark:text-green-400" />
+            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              Made the Cut: <span className="text-[#0a3d2a] dark:text-green-400">{madeCutCount}</span> {madeCutCount === 1 ? "player" : "players"}
+            </span>
+            {missedCutCount > 0 && (
+              <span className="text-xs text-zinc-400">
+                · Missed: {missedCutCount}
+              </span>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Prize pool + countdown */}
       {potValue > 0 && (
         <div className="mt-2 flex items-center justify-between rounded-lg border border-[#c8a951]/30 bg-gradient-to-r from-[#c8a951]/10 to-transparent p-3">
@@ -146,6 +193,35 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           )}
         </div>
       )}
+
+      {/* Course Profile */}
+      <div className="mt-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <FlagIcon className="h-4 w-4 text-[#0a3d2a] dark:text-green-400" />
+          <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500">Course Profile</h2>
+        </div>
+        {tournament.course ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Course</p>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                <MapPinIcon className="h-3.5 w-3.5 text-zinc-400" />
+                {tournament.course}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Par</p>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.par}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Tour</p>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 uppercase">{tournament.tour}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-400">Course details TBA</p>
+        )}
+      </div>
 
       {/* Action buttons */}
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -183,9 +259,110 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </Link>
       )}
 
+      {/* Winner card for completed tournaments */}
+      {isCompleted && winnerEntry && (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {/* Winner */}
+          <div className="flex items-center gap-3 rounded-xl border-2 border-[#c8a951]/40 bg-gradient-to-br from-[#c8a951]/10 to-transparent p-4 shadow-sm">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#c8a951] text-2xl shadow-md">
+              🏆
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#c8a951]">Winner</p>
+              <p className="truncate text-base font-bold text-zinc-800 dark:text-zinc-100">
+                {playerNameMap.get(winnerEntry[0]) ?? "Unknown"}
+              </p>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
+                  {winnerEntry[1].total}
+                </span>
+                <span className={`font-semibold ${
+                  winnerEntry[1].toPar < 0 ? "text-green-600" :
+                  winnerEntry[1].toPar === 0 ? "text-zinc-500" : "text-red-500"
+                }`}>
+                  ({winnerEntry[1].toPar === 0 ? "E" : `${winnerEntry[1].toPar > 0 ? "+" : ""}${winnerEntry[1].toPar}`})
+                </span>
+                {playerCountryMap.get(winnerEntry[0]) && (
+                  <span className="text-xs text-zinc-400">{playerCountryMap.get(winnerEntry[0])}</span>
+                )}
+              </div>
+            </div>
+          </div>
+          {/* Runner-up */}
+          {runnerUpEntry && (
+            <div className="flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 text-xl">
+                🥈
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">Runner-up</p>
+                <p className="truncate text-base font-bold text-zinc-800 dark:text-zinc-100">
+                  {playerNameMap.get(runnerUpEntry[0]) ?? "Unknown"}
+                </p>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-bold tabular text-zinc-700 dark:text-zinc-300">
+                    {runnerUpEntry[1].total}
+                  </span>
+                  <span className={`font-semibold ${
+                    runnerUpEntry[1].toPar < 0 ? "text-green-600" :
+                    runnerUpEntry[1].toPar === 0 ? "text-zinc-500" : "text-red-500"
+                  }`}>
+                    ({runnerUpEntry[1].toPar === 0 ? "E" : `${runnerUpEntry[1].toPar > 0 ? "+" : ""}${runnerUpEntry[1].toPar}`})
+                  </span>
+                  {playerCountryMap.get(runnerUpEntry[0]) && (
+                    <span className="text-xs text-zinc-400">{playerCountryMap.get(runnerUpEntry[0])}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Cut line info */}
+      {showCutInfo && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 text-sm shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-base">✂️</span>
+            <span className="font-bold uppercase text-xs tracking-wide text-zinc-500">Cut Line</span>
+          </div>
+          {tournament.cutLine != null ? (
+            <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
+              {tournament.cutLine > tournament.par * 2 ? "+" : ""}{tournament.cutLine - tournament.par * 2 === 0 ? "E" : tournament.cutLine - tournament.par * 2}
+            </span>
+          ) : cutScore != null ? (
+            <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
+              {cutScore - tournament.par * 2 === 0 ? "E" : `${cutScore - tournament.par * 2 > 0 ? "+" : ""}${cutScore - tournament.par * 2}`}
+              <span className="ml-1 text-xs font-normal text-zinc-400">(est. top 65)</span>
+            </span>
+          ) : (
+            <span className="text-zinc-400">Not yet determined</span>
+          )}
+          <span className="text-zinc-500 dark:text-zinc-400">
+            Made the cut: <strong className="text-[#0a3d2a] dark:text-green-400">{madeCutCount}</strong> players
+          </span>
+          {missedCutCount > 0 && (
+            <span className="text-zinc-500 dark:text-zinc-400">
+              Missed: <strong className="text-red-500">{missedCutCount}</strong>
+            </span>
+          )}
+        </div>
+      )}
+
       {/* The Field — players by tier */}
       <div className="mt-6">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-zinc-500">The Field</h2>
+        {tournament.players.length === 0 ? (
+          <div className="rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-8 text-center">
+            <div className="mb-2 text-3xl">⛳</div>
+            <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+              Field will be announced closer to the event
+            </p>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Check back closer to tournament week for the full player field.
+            </p>
+          </div>
+        ) : (
         <div className="space-y-3">
           {tierOrder.map((tier) => {
             const players = playersByTier[tier];
@@ -246,6 +423,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );
