@@ -57,5 +57,25 @@ Fix data sync issues, player page defaults, and missing venue/tournament data.
 - Committed: `576aaee`
 - Note: Build has pre-existing Supabase prerender error (no local .env) — TypeScript + compilation pass fine
 
+### T2: Fix 9 ESPN tournament name mismatches ✅
+- Added `TOURNAMENT_ALIASES` map covering all 9 mismatched tournaments (Masters, Chevron, Mexico Open, Wells Fargo, Byron Nelson, Rocket Mortgage, Charles Schwab, KPMG Women's PGA, U.S. Women's Open)
+- Added `normalizeTournamentName()` for fuzzy matching (strips The/championship/classic/etc.)
+- Added `findMatchingESPNEvent()` helper: exact → alias → substring → normalized → slug
+- Replaced inline matching in both `syncTournamentResults` and `syncLiveScores`
+- TypeScript + compilation pass
+
+### T3: Fix missing venue data for TBD tournaments ✅
+- Added `STATIC_COURSE_DATA` map with known course names for ~30 PGA/DPWT events
+- Covers AT&T Pebble Beach, Puerto Rico Open, Texas Children's Houston Open + many more
+- Added `fixVenues()` export in data-sync.ts
+- Created `POST /api/sync/fix-venues` endpoint
+
+### T4: Add course yardage and architect fields to schema + sync ✅
+- Added `yardage Int?`, `architect String?`, `courseLocation String?` to Tournament model in prisma/schema.prisma
+- Ran `npx prisma generate` successfully (no migration — Supabase pooler not available locally)
+- Extended `STATIC_COURSE_DATA` with yardage, architect, and location for all entries
+- Extended `fixVenues()` to populate yardage, architect, courseLocation fields
+- All committed together: `0cba227`
+
 ## Next Action
-T2: Fix 9 ESPN tournament name mismatches
+All Stream 1 tasks complete. Ready for deployment + `prisma db push` or migration on Supabase.
