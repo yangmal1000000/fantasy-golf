@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import PlayersTable, { type PlayerRowData, type FormResult } from "./PlayersTable";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Player Rankings — Fantasy Golf",
+  description: "Browse all fantasy golf players by world ranking, tier, scoring average, and recent form. Filter by tour, country, and more.",
+};
 
 /* ───────────────────────── helpers ───────────────────────── */
 
@@ -239,6 +245,11 @@ export default async function PlayersPage({
           {totalPlayers} {isWomen ? "women's" : "men's"} tour players
           {totalWithScores > 0 && ` · ${totalWithScores} with scoring data`}
         </p>
+        {totalWithScores === 0 && (
+          <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+            Rankings shown by Data Golf world rank. Scoring columns appear once tournaments begin.
+          </p>
+        )}
       </div>
 
       {/* ── Tour Tabs ── */}

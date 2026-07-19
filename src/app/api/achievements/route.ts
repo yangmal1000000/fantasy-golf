@@ -1,10 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { ensureSchema, genId } from "@/lib/db-ensure";
 import { ACHIEVEMENT_DEFS, evaluateAchievements, type AchievementStats } from "@/lib/achievements";
 
 export const dynamic = "force-dynamic";
+
+interface EarnedAchievementRow {
+  type: string;
+  earnedAt: Date;
+}
+
+interface CountRow {
+  count: number;
+}
+
+interface StreakRow {
+  max_streak: number;
+}
 
 // GET — current user's achievements with progress
 export async function GET() {
@@ -17,7 +30,7 @@ export async function GET() {
     await ensureSchema();
 
     // Fetch existing earned achievements
-    const earned: any[] = await prisma.$queryRawUnsafe(
+    const earned: EarnedAchievementRow[] = await prisma.$queryRawUnsafe(
       `SELECT type, "earnedAt" FROM "UserAchievement" WHERE "userId" = $1`,
       user.id,
     );
@@ -34,7 +47,7 @@ export async function GET() {
     ]);
 
     // Major teams this year (approximate — category "major" only)
-    const majorTeamsRows: any[] = await prisma.$queryRawUnsafe(
+    const majorTeamsRows: CountRow[] = await prisma.$queryRawUnsafe(
       `SELECT COUNT(DISTINCT t."tournamentId")::int AS count
          FROM "Team" t
          JOIN "Tournament" tour ON tour.id = t."tournamentId"
@@ -47,20 +60,20 @@ export async function GET() {
     const majorTeamsCount = Number(majorTeamsRows[0]?.count ?? 0);
 
     // Top 3 finishes (position field on Team)
-    const top3Rows: any[] = await prisma.$queryRawUnsafe(
+    const top3Rows: CountRow[] = await prisma.$queryRawUnsafe(
       `SELECT COUNT(*)::int AS count FROM "Team" WHERE "userId" = $1 AND position IS NOT NULL AND position <= 3`,
       user.id,
     );
     const top3Finishes = Number(top3Rows[0]?.count ?? 0);
 
-    const winsRows: any[] = await prisma.$queryRawUnsafe(
+    const winsRows: CountRow[] = await prisma.$queryRawUnsafe(
       `SELECT COUNT(*)::int AS count FROM "Team" WHERE "userId" = $1 AND position = 1`,
       user.id,
     );
     const wins = Number(winsRows[0]?.count ?? 0);
 
     // First entry (earliest createdAt in tournament)
-    const firstEntryRows: any[] = await prisma.$queryRawUnsafe(
+    const firstEntryRows: CountRow[] = await prisma.$queryRawUnsafe(
       `SELECT COUNT(DISTINCT t."tournamentId")::int AS count
          FROM "Team" t
          WHERE t."userId" = $1
@@ -74,7 +87,7 @@ export async function GET() {
     const firstEntryTournaments = Number(firstEntryRows[0]?.count ?? 0);
 
     // Prediction streak (best run from DailyPrediction)
-    const streakRows: any[] = await prisma.$queryRawUnsafe(
+    const streakRows: StreakRow[] = await prisma.$queryRawUnsafe(
       `SELECT MAX(streak)::int AS max_streak FROM (
          SELECT round,
                 "userId",

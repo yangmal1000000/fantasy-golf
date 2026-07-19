@@ -7,7 +7,7 @@ interface ShareRoundButtonProps {
   text: string;
 }
 
-export default function ShareRoundButton({ tournamentId, text }: ShareRoundButtonProps) {
+export default function ShareRoundButton({ text }: ShareRoundButtonProps) {
   const [copied, setCopied] = useState(false);
 
   async function shareToChat() {

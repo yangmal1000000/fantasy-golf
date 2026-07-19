@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import SignInPrompt from "@/components/SignInPrompt";
 
 interface AchievementItem {
   type: string;
@@ -41,8 +42,8 @@ export default function AchievementsPage() {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8">
         <div className="animate-pulse space-y-3">
-          <div className="h-24 rounded-2xl bg-zinc-200" />
-          <div className="h-48 rounded-2xl bg-zinc-100" />
+          <div className="h-24 rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-48 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50" />
         </div>
       </div>
     );
@@ -50,10 +51,19 @@ export default function AchievementsPage() {
 
   if (!data) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
-          Please sign in to view achievements.
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
+        {/* Header */}
+        <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6 text-white shadow-lg">
+          <p className="text-xs uppercase tracking-wide text-white/60">Your Trophy Room</p>
+          <h1 className="text-2xl font-bold">🏆 Achievements</h1>
+          <p className="mt-1 text-sm text-white/70">
+            Unlock badges for wins, podiums, upsets, and milestones as you play.
+          </p>
         </div>
+        <SignInPrompt
+          title="Sign in to earn badges"
+          message="Track your fantasy golf achievements, from first entry to major champion. Unlock badges for wins, podiums, upsets, and consistency across tournaments."
+        />
       </div>
     );
   }

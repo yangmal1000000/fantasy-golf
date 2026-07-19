@@ -61,24 +61,27 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
   const [error, setError] = useState<string | null>(null);
   const [pickMode, setPickMode] = useState<number | null>(null); // which round we're picking
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (): Promise<Data | null> => {
     try {
       const res = await fetch(`/api/daily-prediction?tournamentId=${encodeURIComponent(tournamentId)}`);
-      if (res.ok) {
-        const json = await res.json();
-        setData(json);
-      }
+      if (res.ok) return await res.json();
     } catch {
       /* ignore */
-    } finally {
-      setLoading(false);
     }
+    return null;
   }, [tournamentId]);
 
   useEffect(() => {
-    fetchData();
-    const t = setInterval(fetchData, 60_000);
-    return () => clearInterval(t);
+    let active = true;
+    const load = async () => {
+      const d = await fetchData();
+      if (!active) return;
+      if (d) setData(d);
+      setLoading(false);
+    };
+    load();
+    const t = setInterval(load, 60_000);
+    return () => { active = false; clearInterval(t); };
   }, [fetchData]);
 
   async function savePick(playerId: string, round: number) {
@@ -99,7 +102,8 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
         setError(j.error ?? "Failed to save pick");
       } else {
         setPickMode(null);
-        await fetchData();
+        const d = await fetchData();
+        if (d) setData(d);
       }
     } finally {
       setSubmitting(false);

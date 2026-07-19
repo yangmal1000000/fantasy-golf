@@ -57,7 +57,7 @@ function roundEmoji(strokes: number | null, par: number): string {
 
 export default function LiveTrackerClient(props: Props) {
   const [pulse, setPulse] = useState(false);
-  const [data, setData] = useState(props);
+  const [data] = useState(props);
 
   // Pulse animation every 5s while live
   useEffect(() => {

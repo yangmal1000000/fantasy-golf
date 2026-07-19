@@ -76,7 +76,6 @@ export default function TierBadge({
   }[size];
 
   const gradId = `tier-grad-${tier}`;
-  const iconId = `tier-icon-${tier}`;
 
   return (
     <span className="inline-flex items-center gap-1.5 align-middle">

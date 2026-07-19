@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Sign in required" },
+        { status: 401 }
+      );
+    }
+    const userId = user.id;
+
     const body = await request.json();
-    const { tournamentId, userId, type, playerId, roundNumber } = body;
+    const { tournamentId, type, playerId, roundNumber } = body;
 
     // Validate required fields
-    if (!tournamentId || !userId || !type) {
+    if (!tournamentId || !type) {
       return NextResponse.json(
-        { error: "Missing required fields: tournamentId, userId, type" },
+        { error: "Missing required fields: tournamentId, type" },
         { status: 400 }
       );
     }
@@ -30,15 +40,6 @@ export async function POST(request: NextRequest) {
     if (!tournament) {
       return NextResponse.json(
         { error: "Tournament not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check user exists
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
         { status: 404 }
       );
     }

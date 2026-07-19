@@ -1,27 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Sign in required" },
+        { status: 401 }
+      );
+    }
+    const userId = user.id;
+
     const { id: tournamentId } = await params;
     const body = await req.json();
 
-    const { teamName, userId, selections } = body as {
+    const { teamName, selections } = body as {
       teamName: string;
-      userId: string;
       selections: string[]; // tournamentPlayerIds
     };
 
     // Validate
     if (!teamName?.trim()) {
       return NextResponse.json({ error: "Team name required" }, { status: 400 });
-    }
-
-    if (!userId) {
-      return NextResponse.json({ error: "User required" }, { status: 400 });
     }
 
     if (!selections || selections.length !== 5) {

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import SignInPrompt from "@/components/SignInPrompt";
 
 interface Referral {
   id: string;
@@ -41,19 +42,25 @@ export default function ReferralsPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const fetch_ = useCallback(async () => {
+  const fetch_ = useCallback(async (): Promise<Data | null> => {
     try {
       const res = await fetch("/api/referrals");
-      if (res.ok) setData(await res.json());
+      if (res.ok) return await res.json();
     } catch {
       /* ignore */
-    } finally {
-      setLoading(false);
     }
+    return null;
   }, []);
 
   useEffect(() => {
-    fetch_();
+    let active = true;
+    (async () => {
+      const d = await fetch_();
+      if (!active) return;
+      if (d) setData(d);
+      setLoading(false);
+    })();
+    return () => { active = false; };
   }, [fetch_]);
 
   async function invite(e: React.FormEvent) {
@@ -71,7 +78,8 @@ export default function ReferralsPage() {
       if (res.ok) {
         setMsg(`✅ Invitation sent to ${email.trim()}`);
         setEmail("");
-        await fetch_();
+        const d = await fetch_();
+        if (d) setData(d);
       } else {
         setMsg(`❌ ${j.error ?? "Failed to invite"}`);
       }
@@ -104,8 +112,8 @@ export default function ReferralsPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
         <div className="animate-pulse space-y-3">
-          <div className="h-32 rounded-2xl bg-zinc-200" />
-          <div className="h-48 rounded-2xl bg-zinc-100" />
+          <div className="h-32 rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-48 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50" />
         </div>
       </div>
     );
@@ -113,18 +121,23 @@ export default function ReferralsPage() {
 
   if (!data) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
-          Please sign in to view referrals.
-        </div>
+      <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
+        <h1 className="text-2xl font-bold text-[#0f3d20] dark:text-green-400">🤝 Refer a Friend</h1>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          Invite friends to Fantasy Golf and you&apos;ll both get a <strong>50% off voucher</strong> when they enter their first paid team.
+        </p>
+        <SignInPrompt
+          title="Sign in to get your invite link"
+          message="Earn 50% off vouchers for every friend who enters a paid team. Share your link via WhatsApp, email, or Twitter."
+        />
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
-      <h1 className="text-2xl font-bold text-[#0f3d20]">🤝 Refer a Friend</h1>
-      <p className="mt-1 text-sm text-zinc-600">
+      <h1 className="text-2xl font-bold text-[#0f3d20] dark:text-green-400">🤝 Refer a Friend</h1>
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         Invite friends — you&apos;ll both get a <strong>50% off voucher</strong> when they enter their first paid team.
       </p>
 
@@ -136,10 +149,10 @@ export default function ReferralsPage() {
           { label: "Vouchers", value: data.stats.vouchersEarned, icon: "🎟️" },
           { label: "Used", value: data.stats.vouchersUsed, icon: "💸" },
         ].map((s) => (
-          <div key={s.label} className="rounded-xl bg-white p-3 text-center shadow-sm">
+          <div key={s.label} className="rounded-xl bg-white p-3 text-center shadow-sm dark:bg-zinc-900">
             <p className="text-xl">{s.icon}</p>
-            <p className="text-lg font-bold text-[#0f3d20]">{s.value}</p>
-            <p className="text-xs text-zinc-500">{s.label}</p>
+            <p className="text-lg font-bold text-[#0f3d20] dark:text-green-400">{s.value}</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">{s.label}</p>
           </div>
         ))}
       </div>
@@ -179,15 +192,15 @@ export default function ReferralsPage() {
       </div>
 
       {/* Manual invite */}
-      <form onSubmit={invite} className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
-        <h3 className="text-sm font-bold text-[#0f3d20]">Send an invite by email</h3>
+      <form onSubmit={invite} className="mt-6 rounded-2xl bg-white p-5 shadow-sm dark:bg-zinc-900">
+        <h3 className="text-sm font-bold text-[#0f3d20] dark:text-green-400">Send an invite by email</h3>
         <div className="mt-2 flex gap-2">
           <input
             type="email"
             placeholder="friend@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#1a6b3c]"
+            className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#1a6b3c] dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
           />
           <button
             type="submit"
@@ -202,11 +215,11 @@ export default function ReferralsPage() {
 
       {/* Vouchers */}
       <div className="mt-6 rounded-2xl bg-white shadow-sm">
-        <div className="border-b border-zinc-100 p-4">
-          <h2 className="text-base font-bold text-[#0f3d20]">🎟️ Your Vouchers</h2>
+        <div className="border-b border-zinc-100 p-4 dark:border-zinc-800">
+          <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">🎟️ Your Vouchers</h2>
         </div>
         {data.vouchers.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-400">No vouchers yet — invite a friend to earn one!</p>
+          <p className="p-4 text-sm text-zinc-400 dark:text-zinc-500">No vouchers yet — invite a friend to earn one!</p>
         ) : (
           <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {data.vouchers.map((v) => (
@@ -232,11 +245,11 @@ export default function ReferralsPage() {
 
       {/* Referrals list */}
       <div className="mt-6 rounded-2xl bg-white shadow-sm">
-        <div className="border-b border-zinc-100 p-4">
-          <h2 className="text-base font-bold text-[#0f3d20]">📨 Referral History</h2>
+        <div className="border-b border-zinc-100 p-4 dark:border-zinc-800">
+          <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">📨 Referral History</h2>
         </div>
         {data.referrals.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-400">No invitations sent yet.</p>
+          <p className="p-4 text-sm text-zinc-400 dark:text-zinc-500">No invitations sent yet.</p>
         ) : (
           <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {data.referrals.map((r) => (

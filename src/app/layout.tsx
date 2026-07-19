@@ -6,6 +6,7 @@ import NotificationBell from "./NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
 import SignInButton from "@/components/SignInButton";
+import PushRegistration from "@/components/PushRegistration";
 import { AuthProvider } from "@/components/AuthProvider";
 
 const inter = Inter({
@@ -35,6 +36,18 @@ export const metadata: Metadata = {
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [{ url: "/icon-192.png", sizes: "192x192" }],
+  },
+  openGraph: {
+    title: "Fantasy Golf — The Open 2026",
+    description: "Pick your dream team for The Open Championship 2026. £15 entry, winner takes all.",
+    url: "https://fantasy-golf-phi.vercel.app",
+    siteName: "Fantasy Golf",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fantasy Golf — The Open 2026",
+    description: "Pick your dream team for The Open Championship 2026. £15 entry, winner takes all.",
   },
 };
 
@@ -94,7 +107,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`rounded-md px-3 py-1.5 text-sm font-medium text-white/85 transition hover:bg-white/10 hover:text-white relative group ${hideOnMd ? "hidden md:block" : ""}`}
+      className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-white/85 transition hover:bg-white/10 hover:text-white relative group ${hideOnMd ? "hidden md:block" : ""}`}
     >
       {label}
       <span className="pointer-events-none absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[#c8a951] scale-x-0 group-hover:scale-x-100 transition-transform duration-200" />
@@ -104,19 +117,24 @@ function NavLink({
 
 function Footer() {
   return (
-    <footer className="mt-auto bg-[#0a3d2a] py-8 text-center text-sm text-white/50">
+    <footer className="mt-auto bg-[#0a3d2a] py-8 text-center text-sm text-white/70">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
           <Link href="/how-to-play" className="transition hover:text-[#c8a951]">How to Play</Link>
-          <span className="text-white/20">·</span>
+          <span className="text-white/30">·</span>
           <Link href="/tournaments" className="transition hover:text-[#c8a951]">Tournaments</Link>
-          <span className="text-white/20">·</span>
+          <span className="text-white/30">·</span>
+          <Link href="/players" className="transition hover:text-[#c8a951]">Players</Link>
+          <span className="text-white/30">·</span>
           <Link href="/leagues" className="transition hover:text-[#c8a951]">Leagues</Link>
-          <span className="text-white/20">·</span>
+          <span className="text-white/30">·</span>
+          <Link href="/blog" className="transition hover:text-[#c8a951]">Blog</Link>
+          <span className="text-white/30">·</span>
           <Link href="/contact" className="transition hover:text-[#c8a951]">Contact</Link>
         </div>
         <p className="mt-3 text-xs">Fantasy Golf &middot; The Open Championship 2026 &middot; Royal Birkdale</p>
-        <p className="mt-1 text-xs text-white/30">For entertainment purposes only. Not affiliated with the R&amp;A, PGA Tour, or DP World Tour.</p>
+        <p className="mt-1 text-xs text-white/50">For entertainment purposes only. Not affiliated with the R&amp;A, PGA Tour, or DP World Tour.</p>
+        <p className="mt-1 text-xs text-white/45">Course images are artistic impressions, not actual photographs.</p>
       </div>
     </footer>
   );
@@ -138,6 +156,7 @@ export default function RootLayout({
       </head>
       <body className="flex min-h-full flex-col bg-[#faf9f6] dark:bg-[#0d0f0e]">
         <AuthProvider>
+          <PushRegistration />
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />

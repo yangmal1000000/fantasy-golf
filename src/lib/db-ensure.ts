@@ -84,6 +84,18 @@ const DDL = [
    )`,
   `CREATE INDEX IF NOT EXISTS "idx_blog_slug" ON "BlogPost"(slug)`,
   `CREATE INDEX IF NOT EXISTS "idx_blog_published" ON "BlogPost"("publishedAt")`,
+
+  // --- Push subscriptions ---
+  `CREATE TABLE IF NOT EXISTS "PushSubscription" (
+     id TEXT PRIMARY KEY,
+     "userId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+     endpoint TEXT NOT NULL,
+     p256dh TEXT NOT NULL,
+     auth TEXT NOT NULL,
+     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+     CONSTRAINT "push_sub_unique" UNIQUE ("userId", endpoint)
+   )`,
+  `CREATE INDEX IF NOT EXISTS "idx_push_sub_user" ON "PushSubscription"("userId")`,
 ];
 
 export async function ensureSchema(): Promise<void> {
@@ -106,9 +118,9 @@ export async function ensureSchema(): Promise<void> {
 export function genId(): string {
   // crypto.randomUUID is available in Node 16.7+
   try {
-    const c = globalThis.crypto as any;
-    if (typeof c?.randomUUID === "function") {
-      return c.randomUUID().replace(/-/g, "");
+    const uuid = globalThis.crypto?.randomUUID?.();
+    if (uuid) {
+      return uuid.replace(/-/g, "");
     }
   } catch {
     /* ignore */

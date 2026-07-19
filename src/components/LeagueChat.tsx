@@ -45,22 +45,28 @@ export default function LeagueChat({ leagueId, leagueName, currentUserId }: Leag
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const fetchMessages = useCallback(async () => {
+  const fetchMessages = useCallback(async (): Promise<ChatMessage[]> => {
     try {
       const res = await fetch(`/api/league-messages?leagueId=${encodeURIComponent(leagueId)}`);
       if (res.ok) {
         const data = await res.json();
-        setMessages(data.messages ?? []);
+        return data.messages ?? [];
       }
     } catch {
       // ignore
     }
+    return [];
   }, [leagueId]);
 
   useEffect(() => {
-    fetchMessages();
-    const t = setInterval(fetchMessages, 5000);
-    return () => clearInterval(t);
+    let active = true;
+    const load = async () => {
+      const msgs = await fetchMessages();
+      if (active) setMessages(msgs);
+    };
+    load();
+    const t = setInterval(load, 5000);
+    return () => { active = false; clearInterval(t); };
   }, [fetchMessages]);
 
   // Auto-scroll to bottom on new messages

@@ -18,7 +18,7 @@ interface BoardPlayer {
 
 export default function DraftBoardClient({
   boardData,
-  totalTeams,
+  totalTeams: _totalTeams,
 }: {
   boardData: BoardPlayer[];
   totalTeams: number;

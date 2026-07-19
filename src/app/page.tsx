@@ -3,7 +3,6 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { formatGBP, formatDateRange, STATUS_CONFIG, courseImage } from "@/lib/ui";
 import CountdownTimer from "@/components/CountdownTimer";
-import StatusRibbon from "@/components/StatusRibbon";
 
 export default async function Home() {
   let tournament: {
@@ -108,7 +107,7 @@ export default async function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0a3d2a]" />
         <div className="absolute inset-0 flex items-center">
           <div className="mx-auto w-full max-w-5xl px-4 text-center text-white">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#c8a951] sm:mb-3 sm:text-sm">
+            <p className="mb-2 text-sm font-bold uppercase tracking-[0.3em] text-[#c8a951] sm:mb-3 sm:text-base md:text-lg drop-shadow-lg">
               The 2026 Major Sweepstake
             </p>
             <h1 className="text-4xl font-extrabold tracking-tight drop-shadow-2xl sm:text-5xl md:text-7xl">
@@ -128,7 +127,7 @@ export default async function Home() {
               )}
               <Link
                 href="/how-to-play"
-                className="rounded-full border-2 border-white/50 bg-white/5 px-8 py-3 text-center text-base font-semibold text-white backdrop-blur-sm transition hover:bg-white/15"
+                className="rounded-full bg-white px-8 py-3 text-center text-base font-semibold text-[#0a3d2a] shadow-xl transition hover:scale-105 hover:bg-white/90"
               >
                 How to Play
               </Link>
@@ -341,43 +340,47 @@ export default async function Home() {
           <h2 className="mb-4 text-center text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-[#3da06a] sm:mb-6 sm:text-2xl">
             Coming Up
           </h2>
-          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-            {upcomingTournaments.map((t) => (
-              <Link
-                key={t.id}
-                href={`/tournaments/${t.id}/enter`}
-                className="group min-w-[200px] max-w-[220px] shrink-0 overflow-hidden rounded-2xl bg-white shadow-md card-hover dark:bg-[#1a1d1c]"
-                style={{ boxShadow: "var(--shadow-md)" }}
-              >
-                <div className="relative h-24 overflow-hidden">
-                  <Image
-                    src={courseImage(t.id)}
-                    alt={t.course || t.name}
-                    fill
-                    loading="lazy"
-                    className="object-cover transition group-hover:scale-105"
-                    sizes="220px"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a3d2a]/80 to-transparent" />
-                  <p className="absolute bottom-1.5 left-3 right-3 truncate text-sm font-bold text-white">
-                    {t.name}
-                  </p>
-                </div>
-                <div className="p-3">
-                  <p className="truncate text-xs text-[#6b6b6b] dark:text-[#999999]">
-                    {formatDateRange(t.startDate, t.endDate)}
-                  </p>
-                  <div className="mt-1.5 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#0a3d2a] dark:text-[#3da06a] tabular">
-                      {t._count.teams} teams
-                    </span>
-                    <span className="text-xs font-bold text-[#c8a951] tabular">
-                      {formatGBP(t.entryFee)}
-                    </span>
+          <div className="relative">
+            {/* Scroll fade indicators */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-2 z-10 w-12 bg-gradient-to-l from-[#faf9f6] dark:from-[#0d0f0e] to-transparent" />
+            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 pl-1 pr-4 snap-x snap-mandatory">
+              {upcomingTournaments.map((t) => (
+                <Link
+                  key={t.id}
+                  href={`/tournaments/${t.id}/enter`}
+                  className="group min-w-[200px] max-w-[220px] shrink-0 snap-start overflow-hidden rounded-2xl bg-white shadow-md card-hover dark:bg-[#1a1d1c]"
+                  style={{ boxShadow: "var(--shadow-md)" }}
+                >
+                  <div className="relative h-24 overflow-hidden">
+                    <Image
+                      src={courseImage(t.id)}
+                      alt={t.course || t.name}
+                      fill
+                      loading="lazy"
+                      className="object-cover transition group-hover:scale-105"
+                      sizes="220px"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a3d2a]/80 to-transparent" />
+                    <p className="absolute bottom-1.5 left-3 right-3 truncate text-sm font-bold text-white">
+                      {t.name}
+                    </p>
                   </div>
-                </div>
-              </Link>
-            ))}
+                  <div className="p-3">
+                    <p className="truncate text-xs text-[#6b6b6b] dark:text-[#999999]">
+                      {formatDateRange(t.startDate, t.endDate)}
+                    </p>
+                    <div className="mt-1.5 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-[#0a3d2a] dark:text-[#3da06a] tabular">
+                        {t._count.teams} teams
+                      </span>
+                      <span className="text-xs font-bold text-[#c8a951] tabular">
+                        {formatGBP(t.entryFee)}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -426,23 +429,28 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ===== Footer ===== */}
-      <footer className="bg-[#0a3d2a] py-8 text-center text-sm text-white/50">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
-            <Link href="/how-to-play" className="transition hover:text-[#c8a951]">How to Play</Link>
-            <span className="text-white/20">·</span>
-            <Link href="/tournaments" className="transition hover:text-[#c8a951]">Tournaments</Link>
-            <span className="text-white/20">·</span>
-            <Link href="/leagues" className="transition hover:text-[#c8a951]">Leagues</Link>
-            <span className="text-white/20">·</span>
-            <a href="mailto:support@fantasygolf.app" className="transition hover:text-[#c8a951]">Contact</a>
-          </div>
-          <p className="mt-3 text-xs">Fantasy Golf · The Open Championship 2026 · Royal Birkdale</p>
-          <p className="mt-1 text-xs text-white/30">For entertainment purposes only. Not affiliated with the R&A, PGA Tour, or DP World Tour.</p>
-          <p className="mt-1 text-xs text-white/25">Course images are artistic impressions, not actual photographs.</p>
-        </div>
-      </footer>
+      {/* Footer is rendered globally by RootLayout */}
+
+      {/* JSON-LD structured data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SportsActivityLocation",
+            name: "Fantasy Golf — The Open 2026",
+            description: "Pick 5 pros across 5 tiers. Pay £15. Beat your mates across all 4 majors.",
+            url: "https://fantasy-golf-phi.vercel.app",
+            sport: "Golf",
+            offers: {
+              "@type": "Offer",
+              price: "15",
+              priceCurrency: "GBP",
+              availability: "https://schema.org/InStock",
+            },
+          }),
+        }}
+      />
     </div>
   );
 }

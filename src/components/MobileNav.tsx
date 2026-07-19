@@ -61,7 +61,7 @@ export default function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sm:hidden safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-200 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)] dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] sm:hidden safe-area-bottom">
       <div className="flex items-stretch justify-around">
         {TABS.map((tab) => {
           const isActive =
@@ -76,7 +76,7 @@ export default function MobileNav() {
               className={`flex min-h-[48px] flex-1 flex-col items-center justify-center gap-0.5 py-1.5 transition ${
                 isActive
                   ? "text-[#0a3d2a] dark:text-green-400"
-                  : "text-zinc-400 dark:text-zinc-500"
+                  : "text-zinc-500 dark:text-zinc-400"
               }`}
             >
               {tab.icon}

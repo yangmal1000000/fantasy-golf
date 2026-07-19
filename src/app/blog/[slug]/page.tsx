@@ -1,9 +1,35 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ensureSchema } from "@/lib/db-ensure";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPost(slug);
+  if (!post) return { title: "Article Not Found — Fantasy Golf" };
+  return {
+    title: `${post.title} — Fantasy Golf Blog`,
+    description: post.excerpt ?? `By ${post.author}`,
+  };
+}
+
+interface BlogPostRow {
+  id: string;
+  title: string;
+  slug: string;
+  body: string;
+  author: string;
+  excerpt: string | null;
+  publishedAt: Date | null;
+  tags: string[];
+}
 
 interface BlogPost {
   id: string;
@@ -18,7 +44,7 @@ interface BlogPost {
 
 async function getPost(slug: string): Promise<BlogPost | null> {
   await ensureSchema();
-  const rows: any[] = await prisma.$queryRawUnsafe(
+  const rows: BlogPostRow[] = await prisma.$queryRawUnsafe(
     `SELECT id, title, slug, body, author, excerpt, "publishedAt", tags
        FROM "BlogPost"
       WHERE slug = $1 AND "publishedAt" IS NOT NULL

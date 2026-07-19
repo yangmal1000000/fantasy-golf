@@ -5,6 +5,27 @@ import { ensureSchema, genId } from "@/lib/db-ensure";
 
 export const dynamic = "force-dynamic";
 
+interface DailyPredictionRow {
+  id: string;
+  playerId: string;
+  round: number;
+  createdAt: Date;
+}
+
+interface PickRow {
+  userId: string;
+  playerId: string;
+  strokes: number | null;
+}
+
+interface PredictionLeaderboardRow {
+  userId: string;
+  userName: string | null;
+  userAvatar: string | null;
+  picks: number;
+  total: number;
+}
+
 // GET — current user's predictions for a tournament, the user's current streak,
 // the daily leaderboard, and the tournament players to choose from.
 export async function GET(req: NextRequest) {
@@ -30,7 +51,7 @@ export async function GET(req: NextRequest) {
   const activeRound = Math.max(1, tournament.currentRound || 1);
 
   // Fetch user's predictions for this tournament
-  let myPredictions: any[] = [];
+  let myPredictions: DailyPredictionRow[] = [];
   if (user) {
     myPredictions = await prisma.$queryRawUnsafe(
       `SELECT id, "playerId", round, "createdAt"
@@ -48,7 +69,7 @@ export async function GET(req: NextRequest) {
   let streak = 0;
   if (user) {
     for (let r = 1; r <= 4; r++) {
-      const picks: any[] = await prisma.$queryRawUnsafe(
+      const picks: PickRow[] = await prisma.$queryRawUnsafe(
         `SELECT dp."userId", dp."playerId", s.strokes
            FROM "DailyPrediction" dp
            LEFT JOIN "Score" s
@@ -64,7 +85,7 @@ export async function GET(req: NextRequest) {
       if (picks.some((p) => p.strokes == null)) break;
 
       // Lowest strokes among all pickers that round
-      const lowest = Math.min(...picks.map((p) => p.strokes));
+      const lowest = Math.min(...picks.map((p) => p.strokes!));
       const myPick = picks.find((p) => p.userId === user.id);
       if (myPick && myPick.strokes === lowest) {
         streak++;
@@ -76,7 +97,7 @@ export async function GET(req: NextRequest) {
 
   // Daily Prediction leaderboard — sum of strokes for each user across all
   // rounds where they made a pick (lower is better).
-  const leaderboardRows: any[] = await prisma.$queryRawUnsafe(
+  const leaderboardRows: PredictionLeaderboardRow[] = await prisma.$queryRawUnsafe(
     `SELECT dp."userId",
             u.name AS "userName",
             u.avatar AS "userAvatar",

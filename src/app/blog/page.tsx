@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Blog — Fantasy Golf",
+  description: "Tournament previews, strategy guides, and golf insights from The Clubhouse.",
+};
 
 interface PostListItem {
   id: string;

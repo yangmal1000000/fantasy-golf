@@ -1,11 +1,8 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   TIER_CONFIG,
-  tierLabel,
-  formatDateRange,
-  STATUS_CONFIG,
 } from "@/lib/ui";
 import TierBadge from "@/components/TierBadge";
 import PlayerAvatar from "@/components/PlayerAvatar";
@@ -14,14 +11,12 @@ import Sparkline from "@/components/Sparkline";
 
 export const dynamic = "force-dynamic";
 
-/* ───────────────────────── helpers ───────────────────────── */
+export const metadata: Metadata = {
+  title: "Player Profile — Fantasy Golf",
+  description: "View player stats, season averages, recent results, and fantasy impact.",
+};
 
-function formatToPar(strokes: number, par: number): { text: string; color: string } {
-  const diff = strokes - par;
-  if (diff === 0) return { text: "E", color: "text-zinc-500 dark:text-zinc-400" };
-  if (diff < 0) return { text: `${diff}`, color: "text-green-600 dark:text-green-400 font-bold" };
-  return { text: `+${diff}`, color: "text-red-500 dark:text-red-400" };
-}
+/* ───────────────────────── helpers ───────────────────────── */
 
 function positionColor(pos: number): string {
   if (pos === 1) return "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300";
@@ -66,7 +61,28 @@ export default async function PlayerDetailPage({
     },
   });
 
-  if (!player) notFound();
+  if (!player) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16 text-center sm:py-24">
+        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#0a3d2a]/10 text-4xl">
+          🏌️
+        </div>
+        <h1 className="text-2xl font-bold text-[#0a3d2a] dark:text-green-400 sm:text-3xl">
+          Player not found
+        </h1>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          We couldn&apos;t find that player. They may not be in the database yet,
+          or the link may be outdated.
+        </p>
+        <Link
+          href="/players"
+          className="mt-6 inline-block rounded-full bg-[#0a3d2a] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#1a5c3e] touch-target"
+        >
+          ← Back to Player Rankings
+        </Link>
+      </div>
+    );
+  }
 
   /* ── Group scores by tournament ── */
   const scoresByTournament: Record<
@@ -92,7 +108,7 @@ export default async function PlayerDetailPage({
   /* ── Get all scores for tournaments this player entered (to compute positions) ── */
   const tournamentIds = player.tournaments.map((tp) => tp.tournamentId);
 
-  const [allPeerScores, allPeerTPs, peerTeamGroups] = await Promise.all([
+  const [allPeerScores, allPeerTPs] = await Promise.all([
     prisma.score.findMany({
       where: { tournamentId: { in: tournamentIds }, strokes: { not: null } },
       select: { playerId: true, tournamentId: true, round: true, strokes: true },
@@ -100,10 +116,6 @@ export default async function PlayerDetailPage({
     prisma.tournamentPlayer.findMany({
       where: { tournamentId: { in: tournamentIds } },
       select: { playerId: true, tournamentId: true, tier: true, madeCut: true, withdrew: true },
-    }),
-    prisma.team.findMany({
-      where: { tournamentId: { in: tournamentIds }, position: { not: null } },
-      select: { id: true, tournamentId: true, position: true },
     }),
   ]);
 
@@ -756,9 +768,6 @@ export default async function PlayerDetailPage({
             <div className="space-y-2 p-2 sm:hidden">
               {recentFinishes.slice(0, 10).map((f) => {
                 const tp = tpDisplayMap.get(f.tournamentId);
-                const status = STATUS_CONFIG[
-                  scoresByTournament[f.tournamentId]?.tournament.status ?? "upcoming"
-                ];
                 return (
                   <div
                     key={f.tournamentId}

@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchCbsLeaderboard, updateScoresFromScrape } from "@/lib/scoreScraper";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    if (!user || !user.isAdmin) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const tournamentId = searchParams.get("tournamentId");
 

@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { TIER_CONFIG } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +54,6 @@ export async function calculateProjectedStandings(
   ]);
 
   if (teams.length === 0) return null;
-
-  const par = tournament.par;
 
   // Build score lookup: { [playerId]: { 1: strokes, 2: strokes, ... } }
   const scoreMap: Record<string, Record<number, number | null>> = {};

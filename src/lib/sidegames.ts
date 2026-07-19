@@ -183,27 +183,8 @@ export async function getBestRoundStandings(
   const results: BestRoundResult[] = [];
 
   for (const team of teams) {
-    let roundTotal = 0;
-    let countedRounds = 0;
-
-    for (const selection of team.selections) {
-      const scores = await prisma.score.findMany({
-        where: {
-          tournamentId,
-          playerId: selection.tournamentPlayer.playerId,
-        },
-      });
-      for (const score of scores) {
-        if (score.strokes != null) {
-          roundTotal += score.strokes;
-          countedRounds++;
-        }
-      }
-    }
-
-    // We want the full tournament total to derive per-round averages
-    // But "best round" is about the lowest single-round team total
-    // We need to calculate each round individually
+    // "Best round" = lowest single-round team total
+    // Calculate each round individually
     const roundTotals: Record<number, number> = {};
 
     for (const selection of team.selections) {

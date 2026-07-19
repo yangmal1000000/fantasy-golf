@@ -4,7 +4,6 @@ import { calculateLeaderboard, calculateTeamScore } from "@/lib/scoring";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatDateRange } from "@/lib/ui";
-import { ensureSchema, genId } from "@/lib/db-ensure";
 import ShareRoundButton from "./ShareRoundButton";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +42,7 @@ export default async function RoundReportPage({
   if (!tournament) notFound();
 
   // Find the user's team (first paid team if multiple)
-  let myTeam: any = null;
+  let myTeam: { id: string } | null = null;
   let myScore: Awaited<ReturnType<typeof calculateTeamScore>> | null = null;
   if (userId) {
     myTeam = await prisma.team.findFirst({
