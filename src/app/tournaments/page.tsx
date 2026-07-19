@@ -19,13 +19,15 @@ type TournamentRow = {
   _count: { teams: number; players: number };
 };
 
-export default async function TournamentsPage({ searchParams }: { searchParams: Promise<{ tour?: string; cat?: string; year?: string; past?: string }> }) {
+export default async function TournamentsPage({ searchParams }: { searchParams: Promise<{ tour?: string; cat?: string; year?: string; past?: string; status?: string }> }) {
   const params = await searchParams;
   const tour = params.tour ?? "men";
   const showWomen = tour === "women";
   const activeCategory = params.cat ?? "all";
   const activeYear = params.year ?? "all";
-  const showPast = params.past === "1";
+  // Status filter: "upcoming" (default), "live", "all"
+  // Backward compat: ?past=1 maps to status=all
+  const statusFilter = params.status ?? (params.past === "1" ? "all" : "upcoming");
 
   let tournaments: TournamentRow[] = [];
   let completedCount = 0;
@@ -41,10 +43,13 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     }
     // Count completed BEFORE filtering them out (for toggle label)
     completedCount = filtered.filter((t) => t.status === "completed").length;
-    // Hide completed tournaments by default; show when ?past=1
-    if (!showPast) {
+    // Apply status filter
+    if (statusFilter === "live") {
+      filtered = filtered.filter((t) => t.status === "in_progress");
+    } else if (statusFilter === "upcoming") {
       filtered = filtered.filter((t) => t.status !== "completed");
     }
+    // statusFilter === "all" → no filtering
     // Strict chronological order (earliest first)
     tournaments = [...filtered].sort((a, b) => a.startDate.getTime() - b.startDate.getTime()) as TournamentRow[];
   } catch {}
@@ -72,15 +77,22 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     else grouped.push({ label, items: [t] });
   }
 
-  function buildHref(t: string, c: string, y: string, p?: string) {
-    const params = new URLSearchParams();
-    if (t !== "men") params.set("tour", t);
-    if (c !== "all") params.set("cat", c);
-    if (y !== "all") params.set("year", y);
-    if (p === "1") params.set("past", "1");
-    const qs = params.toString();
+  function buildHref(t: string, c: string, y: string, s: string = statusFilter) {
+    const p = new URLSearchParams();
+    if (t !== "men") p.set("tour", t);
+    if (c !== "all") p.set("cat", c);
+    if (y !== "all") p.set("year", y);
+    if (s !== "upcoming") p.set("status", s);
+    const qs = p.toString();
     return `/tournaments${qs ? `?${qs}` : ""}`;
   }
+
+  // Status filter config
+  const statusOptions = [
+    { key: "upcoming", label: "Upcoming" },
+    { key: "live", label: "Live" },
+    { key: "all", label: "All" },
+  ] as const;
 
   return (
     <Suspense fallback={<TournamentListSkeleton />}>
@@ -93,10 +105,10 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
 
         {/* Tour toggle */}
         <div className="mt-2 flex gap-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-0.5">
-          <Link href={buildHref("men", activeCategory, activeYear, showPast ? "1" : undefined)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${!showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+          <Link href={buildHref("men", activeCategory, activeYear)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${!showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
             <GolfFlagIcon className="h-4 w-4" /> Men&apos;s
           </Link>
-          <Link href={buildHref("women", activeCategory, activeYear, showPast ? "1" : undefined)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+          <Link href={buildHref("women", activeCategory, activeYear)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
             <StarIcon className="h-4 w-4" /> Women&apos;s
           </Link>
         </div>
@@ -111,7 +123,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
               if (count === 0 && catKey !== "all") return null;
               const isActive = activeCategory === catKey;
               return (
-                <Link key={catKey} href={buildHref(tour, catKey, activeYear, showPast ? "1" : undefined)}>
+                <Link key={catKey} href={buildHref(tour, catKey, activeYear)}>
                   <span className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition ${isActive ? "bg-[#0a3d2a] text-white" : "bg-white text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"}`}>
                     {label}{count > 0 && <span className={`ml-1.5 ${isActive ? "text-white/60" : "text-zinc-400"}`}>{count}</span>}
                   </span>
@@ -121,11 +133,11 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
           </div>
           {years.length > 1 && (
             <div className="ml-auto flex shrink-0 gap-1">
-              <Link href={buildHref(tour, activeCategory, "all", showPast ? "1" : undefined)}>
+              <Link href={buildHref(tour, activeCategory, "all")}>
                 <span className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${activeYear === "all" ? "bg-[#c8a951] text-[#1a1a1a]" : "text-zinc-500 hover:text-zinc-800 border border-zinc-200 dark:border-zinc-800"}`}>All Years</span>
               </Link>
               {years.map((y) => (
-                <Link key={y} href={buildHref(tour, activeCategory, y.toString(), showPast ? "1" : undefined)}>
+                <Link key={y} href={buildHref(tour, activeCategory, y.toString())}>
                   <span className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${activeYear === y.toString() ? "bg-[#c8a951] text-[#1a1a1a]" : "text-zinc-500 hover:text-zinc-800 border border-zinc-200 dark:border-zinc-800"}`}>{y}</span>
                 </Link>
               ))}
@@ -133,33 +145,31 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
           )}
         </div>
 
-        {/* Show/Hide Past Events toggle */}
-        {completedCount > 0 && (
-          <div className="mb-3 flex justify-end">
-            <Link href={buildHref(tour, activeCategory, activeYear, showPast ? undefined : "1")}>
-              <span className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 transition hover:border-zinc-400 dark:hover:border-zinc-600">
-                {showPast ? (
-                  <>
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                    Hide Past Events
-                  </>
-                ) : (
-                  <>
-                    Show Past Events ({completedCount})
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                  </>
-                )}
-              </span>
-            </Link>
-          </div>
-        )}
+        {/* Status filter chips: Upcoming / Live / All */}
+        <div className="mt-3 flex items-center gap-1.5">
+          {statusOptions.map((opt) => {
+            const isActive = statusFilter === opt.key;
+            return (
+              <Link key={opt.key} href={buildHref(tour, activeCategory, activeYear, opt.key)}>
+                <span className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${isActive ? "bg-[#0a3d2a] text-white" : "bg-white text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"}`}>
+                  {opt.label}
+                </span>
+              </Link>
+            );
+          })}
+          {statusFilter === "all" && completedCount > 0 && (
+            <span className="ml-auto text-xs text-zinc-400">{completedCount} completed</span>
+          )}
+        </div>
 
         {/* Tournament list — grouped by month */}
         {visibleTournaments.length === 0 ? (
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-8 text-center">
             <ChartBarIcon className="mx-auto h-8 w-8 text-zinc-300" />
-            <p className="mt-3 text-sm font-semibold text-zinc-600">No tournaments found</p>
-            <p className="mt-1 text-xs text-zinc-400">Try a different category or year.</p>
+            <p className="mt-3 text-sm font-semibold text-zinc-600">
+              {statusFilter === "live" ? "No live tournaments right now" : statusFilter === "all" ? "No tournaments found" : "No upcoming tournaments"}
+            </p>
+            <p className="mt-1 text-xs text-zinc-400">Try a different filter, category, or year.</p>
           </div>
         ) : (
           <div className="space-y-4">
