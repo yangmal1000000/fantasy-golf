@@ -849,7 +849,10 @@ export async function cleanupYearBranding(): Promise<SyncResult> {
         // Clean tournament already exists (from sync). Just delete the old one.
         // Scores and TPs on the clean tournament are already correct from sync.
         try {
-          // First delete related records from the old tournament
+          // First delete related records from the old tournament (order matters for FK constraints)
+          await prisma.teamSelection.deleteMany({
+            where: { team: { tournamentId: t.id } },
+          });
           await prisma.score.deleteMany({ where: { tournamentId: t.id } });
           await prisma.tournamentPlayer.deleteMany({ where: { tournamentId: t.id } });
           await prisma.team.deleteMany({ where: { tournamentId: t.id } });
