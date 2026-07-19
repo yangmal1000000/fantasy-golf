@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import PlayersTable, { type PlayerRowData, type FormResult } from "./PlayersTable";
+import { GolfFlagIcon, StarIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -256,23 +257,23 @@ export default async function PlayersPage({
       <div className="mb-5 inline-flex rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-1 shadow-sm">
         <Link
           href="/players?tour=men"
-          className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
+          className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
             !isWomen
               ? "bg-[#1a6b3c] text-white shadow-sm"
               : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
           }`}
         >
-          ⛳ Men&apos;s
+          <GolfFlagIcon className="h-4 w-4" /> Men&apos;s
         </Link>
         <Link
           href="/players?tour=women"
-          className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
+          className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
             isWomen
               ? "bg-pink-600 text-white shadow-sm"
               : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
           }`}
         >
-          🎀 Women&apos;s
+          <StarIcon className="h-4 w-4" /> Women&apos;s
         </Link>
       </div>
 

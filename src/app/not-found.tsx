@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { GolfFlagIcon } from "@/components/icons";
 
 export default function NotFound() {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-      <div className="text-7xl">⛳</div>
+      <GolfFlagIcon className="h-20 w-20 text-[#0a3d2a] dark:text-green-400" />
       <h1 className="mt-4 text-3xl font-bold text-[#0a3d2a] dark:text-green-400">
         Lost in the rough
       </h1>

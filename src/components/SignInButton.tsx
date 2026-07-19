@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
+import { GolferIcon, TrophyIcon } from "@/components/icons";
 
 export default function SignInButton() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -91,15 +92,15 @@ export default function SignInButton() {
           </div>
           <Link
             href="/my-teams"
-            className="block px-4 py-2.5 text-sm text-zinc-700 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
-            🏌️ My Teams
+            <GolferIcon className="h-4 w-4" /> My Teams
           </Link>
           <Link
             href="/leagues"
-            className="block px-4 py-2.5 text-sm text-zinc-700 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
-            🏆 Leagues
+            <TrophyIcon className="h-4 w-4" /> Leagues
           </Link>
           <button
             onClick={() => {

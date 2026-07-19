@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ChartBarIcon, GolfFlagIcon, FinishFlagIcon, ClockIcon, ChatIcon, TrophyIcon, InfoIcon, BellIcon } from "@/components/icons";
 
 interface Notification {
   id: string;
@@ -11,15 +12,15 @@ interface Notification {
   createdAt: string;
 }
 
-const TYPE_ICONS: Record<string, string> = {
-  position_change: "📊",
-  score_update: "⛳",
-  round_complete: "🏁",
-  entries_closing: "⏰",
-  league_message: "💬",
-  achievement: "🏆",
-  deadline: "⏰",
-  info: "ℹ️",
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  position_change: <ChartBarIcon className="h-4 w-4" />,
+  score_update: <GolfFlagIcon className="h-4 w-4" />,
+  round_complete: <FinishFlagIcon className="h-4 w-4" />,
+  entries_closing: <ClockIcon className="h-4 w-4" />,
+  league_message: <ChatIcon className="h-4 w-4" />,
+  achievement: <TrophyIcon className="h-4 w-4" />,
+  deadline: <ClockIcon className="h-4 w-4" />,
+  info: <InfoIcon className="h-4 w-4" />,
 };
 
 function timeAgo(iso: string): string {
@@ -107,7 +108,7 @@ export default function NotificationBell() {
       const permission = await window.Notification.requestPermission();
       setPushEnabled(permission === "granted");
       if (permission === "granted") {
-        new window.Notification("Fantasy Golf notifications enabled ⛳", {
+        new window.Notification("Fantasy Golf notifications enabled", {
           body: "You'll now get push notifications for position changes, deadlines, and more.",
         });
 
@@ -188,7 +189,7 @@ export default function NotificationBell() {
               onClick={requestPushPermission}
               className="flex w-full items-center gap-2 border-b border-zinc-100 bg-amber-50 px-4 py-2.5 text-left transition hover:bg-amber-100"
             >
-              <span className="text-base">🔔</span>
+              <span className="text-base"><BellIcon className="h-4 w-4" /></span>
               <div>
                 <p className="text-xs font-semibold text-amber-800">Enable push notifications</p>
                 <p className="text-xs text-amber-600">Get alerts for deadlines & score changes</p>
@@ -200,7 +201,7 @@ export default function NotificationBell() {
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <p className="text-3xl">🔔</p>
+                <BellIcon className="mx-auto h-8 w-8 text-zinc-400" />
                 <p className="mt-2 text-sm text-zinc-500">No notifications yet</p>
               </div>
             ) : (
@@ -212,8 +213,8 @@ export default function NotificationBell() {
                   }`}
                 >
                   <div className="flex items-start gap-2">
-                    <span className="text-lg">
-                      {TYPE_ICONS[n.type] ?? "ℹ️"}
+                    <span className="text-lg shrink-0">
+                      {TYPE_ICONS[n.type] ?? <InfoIcon className="h-4 w-4" />}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-zinc-800">

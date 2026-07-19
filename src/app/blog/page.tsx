@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { NewspaperIcon, NoteIcon, GolfFlagIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,9 @@ export default async function BlogPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#0f3d20] dark:text-green-400">📰 The Clubhouse Blog</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#0f3d20] dark:text-green-400">
+          <NewspaperIcon className="h-6 w-6" /> The Clubhouse Blog
+        </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           Pre-tournament previews, strategy guides, and golf insights.
         </p>
@@ -46,7 +49,7 @@ export default async function BlogPage() {
 
       {posts.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-4xl">📝</p>
+          <NoteIcon className="mx-auto h-10 w-10 text-zinc-400" />
           <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">No articles yet. Check back soon!</p>
         </div>
       ) : (
@@ -70,7 +73,7 @@ export default async function BlogPage() {
                       </span>
                     ))}
                   </div>
-                  <span className="text-2xl">⛳</span>
+                  <span className="text-2xl"><GolfFlagIcon className="h-6 w-6 text-white/60" /></span>
                 </div>
               </div>
 
