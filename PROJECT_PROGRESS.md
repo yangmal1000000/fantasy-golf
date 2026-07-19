@@ -56,7 +56,14 @@ Fix tournaments page filtering and homepage credibility issues.
 - Update this file: move task to Completed, update Next Action
 
 ## Completed
-(empty)
+
+### T1: Tournaments page — default to upcoming/live, hide completed ✅
+- Added `past` search param to page's searchParams type
+- Completed tournaments filtered out by default (when `past` not `1`)
+- "Show Past Events (N)" / "Hide Past Events" toggle button added above list
+- Past state preserved across tour/category/year filter navigation via `buildHref` param
+- Commit: `27e3b7f`
+- Note: Build has pre-existing prerender failure on `/contact` (missing Supabase env vars) — unrelated, TypeScript compiles clean
 
 ## Next Action
-T1: Tournaments page — default to upcoming/live, hide completed
+T2: Fix price inconsistency (£15 vs £10) on homepage
