@@ -37,7 +37,7 @@ export default async function BlogPage() {
   const posts = await getPosts();
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-[#0f3d20] dark:text-green-400">
           <NewspaperIcon className="h-6 w-6" /> The Clubhouse Blog
@@ -81,7 +81,7 @@ export default async function BlogPage() {
                 <h2 className="text-base font-bold text-[#0f3d20] group-hover:underline dark:text-green-400">
                   {post.title}
                 </h2>
-                <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                   by {post.author} ·{" "}
                   {post.publishedAt
                     ? new Date(post.publishedAt).toLocaleDateString("en-GB", {

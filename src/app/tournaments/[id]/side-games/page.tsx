@@ -74,7 +74,7 @@ export default async function SideGamesHubPage({
   const totalSidePot = gameData.reduce((sum, g) => sum + g.prizePool, 0);
 
   return (
-    <div className="mx-auto max-w-3xl px-3 py-6 sm:px-4 sm:py-8">
+    <div className="mx-auto max-w-5xl px-3 py-6 sm:px-4 sm:py-8">
       {/* Breadcrumb */}
       <div className="mb-3 text-sm text-zinc-500 dark:text-zinc-400 sm:mb-4">
         <Link href={`/tournaments/${id}`} className="hover:text-purple-600">

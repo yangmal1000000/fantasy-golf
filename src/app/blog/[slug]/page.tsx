@@ -159,7 +159,7 @@ export default async function BlogPostPage({
   if (!post) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
       <div className="mb-4 text-xs">
         <Link href="/blog" className="text-zinc-500 hover:text-[#1a6b3c]">
           ← Blog

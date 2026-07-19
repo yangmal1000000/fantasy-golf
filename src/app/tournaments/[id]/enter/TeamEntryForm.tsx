@@ -284,7 +284,7 @@ export default function TeamEntryForm({
             <p className="text-xs text-zinc-600 dark:text-zinc-400">
               Entry: <span className="font-bold text-[#0a3d2a] dark:text-green-400">{formatGBP(entryFee)}</span>
             </p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               {selectedCount}/5 selected
             </p>
           </div>
@@ -305,7 +305,7 @@ export default function TeamEntryForm({
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
               Entry fee: <span className="font-bold text-[#0a3d2a] dark:text-green-400">{formatGBP(entryFee)}</span>
             </p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               {selectedCount}/5 players selected
             </p>
           </div>

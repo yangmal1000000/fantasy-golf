@@ -110,10 +110,10 @@ export default function ReferralsPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="animate-pulse space-y-3">
-          <div className="h-32 rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-48 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50" />
+          <div className="h-20 rounded-lg bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-40 rounded-lg bg-zinc-100 dark:bg-zinc-800/50" />
         </div>
       </div>
     );
@@ -121,11 +121,13 @@ export default function ReferralsPage() {
 
   if (!data) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
-        <h1 className="text-2xl font-bold text-[#0f3d20] dark:text-green-400">Refer a Friend</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Invite friends to Fantasy Golf and you&apos;ll both get a <strong>50% off voucher</strong> when they enter their first paid team.
-        </p>
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+        <div className="mb-6">
+          <h1 className="text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-green-400 sm:text-2xl">Refer a Friend</h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            Invite friends — you&apos;ll both get a <strong>50% off voucher</strong> when they enter their first paid team.
+          </p>
+        </div>
         <SignInPrompt
           title="Sign in to get your invite link"
           message="Earn 50% off vouchers for every friend who enters a paid team. Share your link via WhatsApp, email, or Twitter."
@@ -135,7 +137,7 @@ export default function ReferralsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
       <h1 className="text-2xl font-bold text-[#0f3d20] dark:text-green-400">Refer a Friend</h1>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         Invite friends — you&apos;ll both get a <strong>50% off voucher</strong> when they enter their first paid team.
@@ -219,7 +221,7 @@ export default function ReferralsPage() {
           <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">Your Vouchers</h2>
         </div>
         {data.vouchers.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-400 dark:text-zinc-500">No vouchers yet — invite a friend to earn one!</p>
+          <p className="p-4 text-sm text-zinc-500 dark:text-zinc-400">No vouchers yet — invite a friend to earn one!</p>
         ) : (
           <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {data.vouchers.map((v) => (
@@ -249,14 +251,14 @@ export default function ReferralsPage() {
           <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">Referral History</h2>
         </div>
         {data.referrals.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-400 dark:text-zinc-500">No invitations sent yet.</p>
+          <p className="p-4 text-sm text-zinc-500 dark:text-zinc-400">No invitations sent yet.</p>
         ) : (
           <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {data.referrals.map((r) => (
               <div key={r.id} className="flex items-center justify-between p-3">
                 <div>
                   <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{r.email}</p>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     {new Date(r.createdAt).toLocaleDateString("en-GB")}
                   </p>
                 </div>

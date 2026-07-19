@@ -211,7 +211,7 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
         <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">
           No players in the database yet.
         </p>
-        <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
           Players appear here once they&apos;re added to tournaments.
         </p>
       </div>
@@ -293,7 +293,7 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
         </div>
 
         {/* Result count */}
-        <p className="text-xs text-zinc-400 dark:text-zinc-500">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
           {sorted.length} {sorted.length === 1 ? "player" : "players"}
           {!hasAnyAvgScore && !hasAnyBestFinish && !hasAnyForm && (
             <span className="ml-2 text-zinc-300 dark:text-zinc-600">· No scoring data yet — columns will appear once tournaments begin</span>

@@ -43,7 +43,7 @@ export default async function LeaguesPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0a3d2a]">Leagues</h1>

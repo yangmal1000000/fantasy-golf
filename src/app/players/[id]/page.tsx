@@ -312,7 +312,7 @@ export default async function PlayerDetailPage({
   const tierCfg = TIER_CONFIG[playerTier];
 
   return (
-    <div className="mx-auto max-w-4xl px-3 py-6 sm:px-4 sm:py-8">
+    <div className="mx-auto max-w-5xl px-3 py-6 sm:px-4 sm:py-8">
       {/* Back link */}
       <div className="mb-3 sm:mb-4">
         <Link
@@ -924,7 +924,7 @@ function StatBox({
 function EmptyState({ text }: { text: string }) {
   return (
     <div className="rounded-lg bg-zinc-50 dark:bg-zinc-800/30 py-6 text-center">
-      <p className="text-sm text-zinc-400 dark:text-zinc-500">{text}</p>
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">{text}</p>
     </div>
   );
 }

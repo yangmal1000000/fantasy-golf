@@ -95,7 +95,7 @@ function Navbar() {
   );
 }
 
-/** Desktop nav link with gold accent on active state */
+/** Desktop nav link with gold accent on hover */
 function NavLink({
   href,
   label,
@@ -108,7 +108,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-white/85 transition hover:bg-white/10 hover:text-white relative group ${hideOnMd ? "hidden md:block" : ""}`}
+      className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-white/65 transition hover:bg-white/10 hover:text-white relative group ${hideOnMd ? "hidden md:block" : ""}`}
     >
       {label}
       <span className="pointer-events-none absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[#c8a951] scale-x-0 group-hover:scale-x-100 transition-transform duration-200" />
@@ -134,8 +134,8 @@ function Footer() {
           <Link href="/contact" className="transition hover:text-[#c8a951]">Contact</Link>
         </div>
         <p className="mt-3 text-xs">Fantasy Golf &middot; The Open Championship 2026 &middot; Royal Birkdale</p>
-        <p className="mt-1 text-xs text-white/50">For entertainment purposes only. Not affiliated with the R&amp;A, PGA Tour, or DP World Tour.</p>
-        <p className="mt-1 text-xs text-white/45">Course images are artistic impressions, not actual photographs.</p>
+        <p className="mt-1 text-xs text-white/65">For entertainment purposes only. Not affiliated with the R&amp;A, PGA Tour, or DP World Tour.</p>
+        <p className="mt-1 text-xs text-white/60">Course images are artistic impressions, not actual photographs.</p>
       </div>
     </footer>
   );

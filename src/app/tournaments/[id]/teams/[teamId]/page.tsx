@@ -58,7 +58,7 @@ export default async function TeamDetailPage({
   }));
 
   return (
-    <div className="mx-auto max-w-3xl px-3 py-6 sm:px-4 sm:py-8">
+    <div className="mx-auto max-w-5xl px-3 py-6 sm:px-4 sm:py-8">
       {/* Back link */}
       <div className="mb-3 sm:mb-4">
         <Link
@@ -212,7 +212,7 @@ export default async function TeamDetailPage({
                               ? "text-red-500"
                               : diff === 0
                                 ? "text-zinc-500 dark:text-zinc-400"
-                                : "text-zinc-400 dark:text-zinc-500"
+                                : "text-zinc-500 dark:text-zinc-400"
                           }`}
                         >
                           {diff > 0 ? "+" : ""}

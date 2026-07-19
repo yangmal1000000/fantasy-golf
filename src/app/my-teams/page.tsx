@@ -60,7 +60,7 @@ export default async function MyTeamsPage() {
 
   return (
     <Suspense fallback={<TournamentListSkeleton />}>
-    <div className="mx-auto max-w-3xl px-3 py-4 sm:px-4 sm:py-6">
+    <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
       {/* Header */}
       <h1 className="text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-green-400 sm:text-2xl">My Teams</h1>
       <p className="mt-0.5 text-xs text-zinc-500">All your fantasy golf entries</p>

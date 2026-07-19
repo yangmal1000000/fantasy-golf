@@ -61,7 +61,7 @@ export default function AdminSidebar() {
         </span>
         <div>
           <p className="font-bold text-sm leading-tight">Fantasy Golf</p>
-          <p className="text-xs text-white/50 leading-tight">Admin Panel</p>
+          <p className="text-xs text-white/65 leading-tight">Admin Panel</p>
         </div>
       </div>
 
@@ -88,7 +88,7 @@ export default function AdminSidebar() {
         {/* Tournament sub-navigation */}
         {isTournamentContext && (
           <div className="pt-4 mt-4 border-t border-white/10">
-            <p className="px-3 mb-1 text-xs font-bold uppercase tracking-wider text-white/40">
+            <p className="px-3 mb-1 text-xs font-bold uppercase tracking-wider text-white/55">
               This Tournament
             </p>
             {TOURNAMENT_SUBNAV.map((sub) => {
@@ -117,7 +117,7 @@ export default function AdminSidebar() {
       <div className="px-3 py-3 border-t border-white/10">
         <Link
           href="/"
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/50 transition hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/65 transition hover:bg-white/10 hover:text-white"
         >
           <span>←</span> Back to Site
         </Link>
