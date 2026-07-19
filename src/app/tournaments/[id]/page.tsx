@@ -66,6 +66,18 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   }
   const isCompleted = tournament.status === "completed";
 
+  // Cut line info: count players who made the cut (played R3) vs total
+  const totalScorers = sortedScorers.length;
+  const madeCutCount = sortedScorers.filter(([, s]) => s.madeCut).length;
+  const missedCutCount = totalScorers - madeCutCount;
+  const showCutInfo = hasScores && (tournament.status === "completed" || tournament.status === "in_progress") && totalScorers > 0;
+  // R2 leader score (top score after 2 rounds) for cut context
+  const r2Scores = sortedScorers
+    .map(([pid, s]) => ({ pid, r2Total: (s.rounds[0] ?? Infinity) + (s.rounds[1] ?? Infinity) }))
+    .filter((x) => x.r2Total < Infinity)
+    .sort((a, b) => a.r2Total - b.r2Total);
+  const cutScore = r2Scores.length > 0 ? r2Scores[Math.min(64, r2Scores.length - 1)]?.r2Total : null;
+
   const status = STATUS_CONFIG[tournament.status] ?? STATUS_CONFIG.upcoming;
   const cat = CATEGORY_CONFIG[tournament.category];
   const canEnter = tournament.status === "entries_open" || tournament.status === "upcoming";
@@ -142,6 +154,26 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           <p className="text-[10px] text-zinc-500">Par</p>
         </div>
       </div>
+
+      {/* Cut line info for in-progress / completed */}
+      {hasScores && (isCompleted || isLive) && (() => {
+        const madeCutCount = [...scoreMap.values()].filter(s => s.madeCut).length;
+        const missedCutCount = [...scoreMap.values()].filter(s => s.roundsPlayed > 0 && !s.madeCut).length;
+        if (madeCutCount === 0 && missedCutCount === 0) return null;
+        return (
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2">
+            <BoltIcon className="h-4 w-4 text-[#0a3d2a] dark:text-green-400" />
+            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              Made the Cut: <span className="text-[#0a3d2a] dark:text-green-400">{madeCutCount}</span> {madeCutCount === 1 ? "player" : "players"}
+            </span>
+            {missedCutCount > 0 && (
+              <span className="text-xs text-zinc-400">
+                · Missed: {missedCutCount}
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Prize pool + countdown */}
       {potValue > 0 && (
@@ -283,6 +315,36 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                 </div>
               </div>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Cut line info */}
+      {showCutInfo && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 text-sm shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-base">✂️</span>
+            <span className="font-bold uppercase text-xs tracking-wide text-zinc-500">Cut Line</span>
+          </div>
+          {tournament.cutLine != null ? (
+            <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
+              {tournament.cutLine > tournament.par * 2 ? "+" : ""}{tournament.cutLine - tournament.par * 2 === 0 ? "E" : tournament.cutLine - tournament.par * 2}
+            </span>
+          ) : cutScore != null ? (
+            <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
+              {cutScore - tournament.par * 2 === 0 ? "E" : `${cutScore - tournament.par * 2 > 0 ? "+" : ""}${cutScore - tournament.par * 2}`}
+              <span className="ml-1 text-xs font-normal text-zinc-400">(est. top 65)</span>
+            </span>
+          ) : (
+            <span className="text-zinc-400">Not yet determined</span>
+          )}
+          <span className="text-zinc-500 dark:text-zinc-400">
+            Made the cut: <strong className="text-[#0a3d2a] dark:text-green-400">{madeCutCount}</strong> players
+          </span>
+          {missedCutCount > 0 && (
+            <span className="text-zinc-500 dark:text-zinc-400">
+              Missed: <strong className="text-red-500">{missedCutCount}</strong>
+            </span>
           )}
         </div>
       )}
