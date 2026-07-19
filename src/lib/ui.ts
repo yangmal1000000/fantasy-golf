@@ -121,6 +121,7 @@ export const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string
   playoff: { label: "Playoff", badgeClass: "bg-blue-100 text-blue-800 border-blue-300", icon: "target" },
   dpwt: { label: "DP World Tour", badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-300", icon: "globe" },
   lpga_major: { label: "LPGA Major", badgeClass: "bg-pink-100 text-pink-800 border-pink-300", icon: "star" },
+  regular: { label: "Regular", badgeClass: "bg-zinc-100 text-zinc-600 border-zinc-300", icon: "flag" },
 };
 
 export function courseImage(tournamentId: string): string {
