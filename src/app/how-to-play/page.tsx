@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function HowToPlayPage() {
   return (
-    <div className="mx-auto max-w-3xl px-3 py-6 sm:px-4 sm:py-8">
+    <div className="mx-auto max-w-5xl px-3 py-6 sm:px-4 sm:py-8">
       <h1 className="text-2xl font-bold text-[#0a3d2a] dark:text-green-400 sm:text-3xl">How to Play</h1>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400 sm:text-base">
         Everything you need to know about Fantasy Golf.

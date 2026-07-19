@@ -91,7 +91,7 @@ export default function LiveTrackerClient(props: Props) {
       <div className={`rounded-2xl bg-gradient-to-br from-[#0f3d20] to-[#1a6b3c] p-5 text-white shadow-lg transition ${pulse ? "ring-2 ring-[#d4a843]" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-white/50">Your Team</p>
+            <p className="text-xs uppercase tracking-wide text-white/65">Your Team</p>
             <h2 className="text-xl font-bold">{data.teamName}</h2>
           </div>
           <div className="text-right">
@@ -122,7 +122,7 @@ export default function LiveTrackerClient(props: Props) {
                 <span className="text-2xl">{roundEmoji(today, data.par)}</span>
                 <div className="flex-1 min-w-0">
                   <p className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-200">{p.playerName}</p>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     {config?.short ?? ""} · Total {p.totalStrokes}
                   </p>
                 </div>
@@ -139,7 +139,7 @@ export default function LiveTrackerClient(props: Props) {
                     <p className={`text-xs ${
                       todayDiff < 0 ? "text-red-500" :
                       todayDiff === 0 ? "text-zinc-500" :
-                      "text-zinc-400 dark:text-zinc-500"
+                      "text-zinc-500 dark:text-zinc-400"
                     }`}>
                       {todayDiff === 0 ? "E" : todayDiff > 0 ? `+${todayDiff}` : todayDiff}
                     </p>
@@ -204,7 +204,7 @@ export default function LiveTrackerClient(props: Props) {
         </div>
       )}
 
-      <p className="text-center text-xs text-zinc-400 dark:text-zinc-500">
+      <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">
         Auto-refreshing every 60 seconds · Round {data.currentRound || "—"}
       </p>
     </div>

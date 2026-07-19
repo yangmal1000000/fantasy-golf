@@ -40,7 +40,7 @@ export default function AchievementsPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="animate-pulse space-y-3">
           <div className="h-24 rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
           <div className="h-48 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50" />
@@ -51,7 +51,7 @@ export default function AchievementsPage() {
 
   if (!data) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
         {/* Header */}
         <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6 text-white shadow-lg">
           <p className="text-xs uppercase tracking-wide text-white/60">Your Trophy Room</p>
@@ -73,7 +73,7 @@ export default function AchievementsPage() {
   const overallPct = Math.round((earnedCount / totalCount) * 100);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
       {/* Header */}
       <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6 text-white shadow-lg">
         <div className="flex items-center justify-between">
@@ -84,9 +84,9 @@ export default function AchievementsPage() {
           <div className="text-right">
             <p className="text-3xl font-extrabold text-yellow-300">
               {earnedCount}
-              <span className="text-base text-white/40">/{totalCount}</span>
+              <span className="text-base text-white/55">/{totalCount}</span>
             </p>
-            <p className="text-xs text-white/50">Earned</p>
+            <p className="text-xs text-white/65">Earned</p>
           </div>
         </div>
         {/* Overall progress bar */}
@@ -96,7 +96,7 @@ export default function AchievementsPage() {
             style={{ width: `${overallPct}%` }}
           />
         </div>
-        <p className="mt-1 text-xs text-white/50">{overallPct}% complete</p>
+        <p className="mt-1 text-xs text-white/65">{overallPct}% complete</p>
       </div>
 
       {/* Badge grid */}
@@ -143,7 +143,7 @@ export default function AchievementsPage() {
 
               {/* Description */}
               <p className={`mt-1 text-xs ${
-                a.earned ? "text-white/80" : "text-zinc-400 dark:text-zinc-500"
+                a.earned ? "text-white/80" : "text-zinc-500 dark:text-zinc-400"
               }`}>
                 {a.description}
               </p>
@@ -157,7 +157,7 @@ export default function AchievementsPage() {
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                     {a.progress.current}/{a.progress.target}
                   </p>
                 </div>

@@ -47,7 +47,7 @@ export default async function EnterTeamPage({
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-[#0a3d2a]">{tournament.name}</h1>
           <p className="text-sm text-zinc-600">
@@ -63,7 +63,7 @@ export default async function EnterTeamPage({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Tournament header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#0a3d2a]">{tournament.name}</h1>

@@ -112,7 +112,7 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="animate-pulse space-y-3">
           <div className="h-24 rounded-2xl bg-zinc-200" />
           <div className="h-48 rounded-2xl bg-zinc-100" />
@@ -123,7 +123,7 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
 
   if (!data) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
         <div className="mb-4 text-xs">
           <Link
             href={`/tournaments/${tournamentId}/leaderboard`}
@@ -167,7 +167,7 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
   const isComplete = tournament.status === "completed";
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
       <div className="mb-4 text-xs">
         <Link
           href={`/tournaments/${tournamentId}/leaderboard`}
@@ -187,7 +187,7 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
           </div>
           {streak > 0 && (
             <div className="text-right">
-              <p className="text-xs text-white/50">Streak</p>
+              <p className="text-xs text-white/65">Streak</p>
               <p className="text-3xl font-extrabold text-orange-300">🔥 {streak}</p>
             </div>
           )}
@@ -242,12 +242,12 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
                         {myPlayer.country ?? ""} {TIER_CONFIG[myPlayer.tier]?.short ?? ""}
                       </p>
                     </div>
-                    <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
                       {new Date(myPick!.createdAt).toLocaleDateString("en-GB")}
                     </span>
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-400 dark:text-zinc-500">
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
                     {isLocked ? "No pick made for this round." : "No pick yet — choose a golfer!"}
                   </p>
                 )}
@@ -296,7 +296,7 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
           <p className="text-xs text-zinc-500 dark:text-zinc-400">Lowest total strokes across picked rounds</p>
         </div>
         {leaderboard.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-400 dark:text-zinc-500">No picks yet. Be the first!</p>
+          <p className="p-4 text-sm text-zinc-500 dark:text-zinc-400">No picks yet. Be the first!</p>
         ) : (
           <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {leaderboard.slice(0, 20).map((row) => (
@@ -320,7 +320,7 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
                       <span className="ml-1 text-xs text-[#1a6b3c]">(you)</span>
                     )}
                   </p>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500">{row.picks} picks</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">{row.picks} picks</p>
                 </div>
                 <span className="text-sm font-bold text-[#0f3d20] dark:text-green-400">
                   {row.total > 0 ? row.total : "—"}

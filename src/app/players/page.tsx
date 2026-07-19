@@ -247,7 +247,7 @@ export default async function PlayersPage({
           {totalWithScores > 0 && ` · ${totalWithScores} with scoring data`}
         </p>
         {totalWithScores === 0 && (
-          <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
             Rankings shown by Data Golf world rank. Scoring columns appear once tournaments begin.
           </p>
         )}

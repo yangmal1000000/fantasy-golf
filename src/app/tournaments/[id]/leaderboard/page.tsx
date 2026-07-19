@@ -134,7 +134,7 @@ export default async function LeaderboardPage({
   const sideGamesActive = sideGameCards.some((g) => g.entries > 0);
 
   return (
-    <div className="mx-auto max-w-3xl px-3 py-4 sm:px-4 sm:py-6">
+    <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
       {/* Header */}
       <div className="mb-3">
         <Link href="/tournaments" className="text-xs text-zinc-500 hover:text-[#0a3d2a] dark:hover:text-green-400">← Tournaments</Link>
@@ -204,7 +204,7 @@ export default async function LeaderboardPage({
                       : (projected.projectedCutLine - (tournament.par * 2) > 0 ? "+" : "") +
                         (projected.projectedCutLine - (tournament.par * 2))}
                   </span>
-                  <span className="hidden text-xs text-zinc-400 dark:text-zinc-500 sm:inline">
+                  <span className="hidden text-xs text-zinc-500 dark:text-zinc-400 sm:inline">
                     ({projected.projectedCutLine} strokes)
                   </span>
                 </div>
@@ -448,7 +448,7 @@ export default async function LeaderboardPage({
                         <p className={`text-xs font-semibold ${
                           vsPar < 0 ? "text-red-500" :
                           vsPar === 0 ? "text-zinc-500 dark:text-zinc-400" :
-                          "text-zinc-400 dark:text-zinc-500"
+                          "text-zinc-500 dark:text-zinc-400"
                         }`}>
                           {vsPar > 0 ? "+" : ""}
                           {vsPar === 0 ? "E" : vsPar}

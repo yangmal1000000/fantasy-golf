@@ -33,7 +33,7 @@ export default async function LeagueDetailPage({
   const isMember = user ? league.members.some((m) => m.userId === user.id) : false;
   if (!isMember) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="rounded-xl border-2 border-red-300 bg-red-50 p-6 text-center">
           <p className="text-lg font-semibold text-red-700">Not a member</p>
           <p className="mt-1 text-sm text-red-600">You are not in this league.</p>
@@ -110,7 +110,7 @@ export default async function LeagueDetailPage({
     .map(([id]) => id);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Back link */}
       <div className="mb-4">
         <Link href="/leagues" className="text-sm text-zinc-500 hover:text-[#0a3d2a]">
@@ -126,12 +126,12 @@ export default async function LeagueDetailPage({
             {league.description && (
               <p className="mt-1 text-sm text-white/70">{league.description}</p>
             )}
-            <p className="mt-2 text-xs text-white/50">
+            <p className="mt-2 text-xs text-white/65">
               Created {new Date(league.createdAt).toLocaleDateString("en-GB")}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-white/50">Members</p>
+            <p className="text-xs text-white/65">Members</p>
             <p className="text-3xl font-extrabold text-[#c8a951]">
               {league.members.length}
             </p>
@@ -139,11 +139,11 @@ export default async function LeagueDetailPage({
         </div>
         {/* Invite code */}
         <div className="mt-4 flex items-center gap-2 border-t border-white/20 pt-3">
-          <span className="text-xs text-white/50">Invite Code:</span>
+          <span className="text-xs text-white/65">Invite Code:</span>
           <code className="rounded-lg bg-white/10 px-3 py-1 font-mono text-sm font-bold text-[#c8a951]">
             {league.inviteCode}
           </code>
-          <span className="text-xs text-white/40">Share to invite friends</span>
+          <span className="text-xs text-white/55">Share to invite friends</span>
         </div>
       </div>
 

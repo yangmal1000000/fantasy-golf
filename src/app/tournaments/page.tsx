@@ -47,7 +47,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
 
   return (
     <Suspense fallback={<TournamentListSkeleton />}>
-      <div className="mx-auto max-w-3xl px-3 py-4 sm:px-4 sm:py-6">
+      <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
         {/* Header */}
         <h1 className="text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-green-400 sm:text-2xl">Tournaments</h1>
         <p className="mt-0.5 text-xs text-zinc-500">{tournaments.length} {showWomen ? "women's" : "men's"} events</p>
@@ -73,7 +73,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
             return (
               <Link key={catKey} href={`/tournaments?tour=${tour}${catParam}`}>
                 <span className={`whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ${isActive ? "bg-[#0a3d2a] text-white" : "bg-white text-zinc-500 border border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800"}`}>
-                  {label} {count > 0 && <span className={isActive ? "text-white/50" : "text-zinc-400"}>{count}</span>}
+                  {label} {count > 0 && <span className={isActive ? "text-white/65" : "text-zinc-400"}>{count}</span>}
                 </span>
               </Link>
             );

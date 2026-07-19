@@ -50,7 +50,7 @@ export default async function TopGolferPage({
   const prizePool = allSideBets.length * entryFee;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Breadcrumb */}
       <div className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
         <Link href={`/tournaments/${id}/side-games`} className="hover:text-purple-600">

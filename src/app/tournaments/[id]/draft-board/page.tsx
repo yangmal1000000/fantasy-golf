@@ -66,7 +66,7 @@ export default async function DraftBoardPage({
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
@@ -110,7 +110,7 @@ export default async function DraftBoardPage({
           🔥 Most Picked Players
         </h2>
         {totalTeams === 0 ? (
-          <p className="py-8 text-center text-sm text-zinc-400 dark:text-zinc-500">
+          <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
             No teams entered yet. Draft data will appear here.
           </p>
         ) : (
@@ -124,7 +124,7 @@ export default async function DraftBoardPage({
                   className="block"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-6 shrink-0 text-right text-sm font-bold text-zinc-400 dark:text-zinc-500">
+                    <span className="w-6 shrink-0 text-right text-sm font-bold text-zinc-500 dark:text-zinc-400">
                       {idx + 1}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -179,7 +179,7 @@ export default async function DraftBoardPage({
                   <div>
                     <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{p.name}</p>
                     {p.dataGolfRank && (
-                      <p className="text-xs text-zinc-400 dark:text-zinc-500">World #{p.dataGolfRank}</p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">World #{p.dataGolfRank}</p>
                     )}
                   </div>
                 </div>
@@ -187,7 +187,7 @@ export default async function DraftBoardPage({
                   <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
                     {p.pickPercentage}%
                   </p>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     {p.selectionCount} {p.selectionCount === 1 ? "pick" : "picks"}
                   </p>
                 </div>

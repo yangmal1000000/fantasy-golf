@@ -101,7 +101,7 @@ export default async function Home() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/hero-main.jpg" alt="" className="h-full w-full object-cover" />
         </div>
-        <div className="relative mx-auto max-w-3xl px-4">
+        <div className="relative mx-auto max-w-5xl px-4">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c8a951]">The 2026 Major Sweepstake</p>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Fantasy Golf</h1>
           <p className="mt-1 text-sm text-white/80">Pick 5 pros. Pay £15. Beat your mates.</p>
@@ -116,7 +116,7 @@ export default async function Home() {
 
       {/* ===== Trust Bar — Inline ===== */}
       <section className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1d1c] py-2">
-        <div className="mx-auto flex max-w-3xl items-center justify-center gap-4 px-4 text-xs font-medium text-zinc-500">
+        <div className="mx-auto flex max-w-5xl items-center justify-center gap-4 px-4 text-xs font-medium text-zinc-500">
           <span className="inline-flex items-center gap-1"><TrophyIcon className="h-3 w-3 text-[#c8a951]" />1,000+ Players</span>
           <span className="text-zinc-300">·</span>
           <span className="inline-flex items-center gap-1"><PoundIcon className="h-3 w-3 text-[#c8a951]" />£25k+ Pots</span>
@@ -127,7 +127,7 @@ export default async function Home() {
 
       {/* ===== Live Tournament Widget ===== */}
       {liveTournament && (
-        <section className="mx-auto mt-6 w-full max-w-3xl px-4 sm:mt-8">
+        <section className="mx-auto mt-6 w-full max-w-5xl px-4 sm:mt-8">
           <Link
             href={`/tournaments/${liveTournament.id}/leaderboard`}
             className="flex items-center justify-between rounded-2xl border border-[#c44545]/30 bg-gradient-to-r from-[#c44545]/10 to-transparent p-4 shadow-sm transition card-hover dark:border-[#c44545]/20"
@@ -156,7 +156,7 @@ export default async function Home() {
 
       {/* ===== Recent Winner Spotlight ===== */}
       {lastCompleted && (
-        <section className="mx-auto mt-4 w-full max-w-3xl px-4 sm:mt-6">
+        <section className="mx-auto mt-4 w-full max-w-5xl px-4 sm:mt-6">
           <div className="flex items-center gap-3 rounded-2xl border border-[#c8a951]/20 bg-gradient-to-r from-[#c8a951]/10 to-transparent p-4 shadow-sm dark:border-[#c8a951]/15">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#c8a951]">
               <TrophyIcon className="h-5 w-5 text-[#1a1a1a]" />
@@ -178,7 +178,7 @@ export default async function Home() {
       )}
 
       {/* ===== How It Works — Compact inline ===== */}
-      <section className="mx-auto w-full max-w-3xl px-4 py-6 sm:py-8">
+      <section className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 text-center">
             <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-[#0a3d2a]">
@@ -206,7 +206,7 @@ export default async function Home() {
 
       {/* ===== Featured Tournament — Compact ===== */}
       {tournament && (
-        <section className="mx-auto w-full max-w-3xl px-4 pb-6 sm:pb-8">
+        <section className="mx-auto w-full max-w-5xl px-4 pb-6 sm:pb-8">
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
             <div className="relative h-28 overflow-hidden sm:h-36">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -238,7 +238,7 @@ export default async function Home() {
 
       {/* ===== Upcoming Tournaments — Compact list ===== */}
       {upcomingTournaments.length > 0 && (
-        <section className="mx-auto w-full max-w-3xl px-4 pb-6 sm:pb-8">
+        <section className="mx-auto w-full max-w-5xl px-4 pb-6 sm:pb-8">
           <h2 className="mb-2 text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Coming Up</h2>
           <div className="space-y-1">
             {upcomingTournaments.map((t) => (
@@ -267,7 +267,7 @@ export default async function Home() {
 
       {/* ===== Social Proof — Compact testimonials ===== */}
       <section className="bg-[#f3f1ee] py-6 dark:bg-[#252827] sm:py-8">
-        <div className="mx-auto max-w-3xl px-4">
+        <div className="mx-auto max-w-5xl px-4">
           <h2 className="mb-3 text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">What Players Say</h2>
           <div className="grid gap-2 sm:gap-3 sm:grid-cols-3">
             <Testimonial

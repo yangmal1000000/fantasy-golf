@@ -151,7 +151,7 @@ export default async function PowerRankingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
       {/* Header */}
       <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6 text-white shadow-lg">
         <p className="text-xs uppercase tracking-wide text-white/60">Weekly AI Rankings</p>
@@ -243,18 +243,18 @@ export default async function PowerRankingsPage() {
                   <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                     {t.ownerName} · {t.tournamentName}
                   </p>
-                  <p className="mt-0.5 text-xs italic text-zinc-400 dark:text-zinc-500">{t.commentary}</p>
+                  <p className="mt-0.5 text-xs italic text-zinc-500 dark:text-zinc-400">{t.commentary}</p>
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-sm font-bold text-[#0f3d20] dark:text-green-400">{t.totalStrokes}</p>
                   <p className={`text-xs ${
                     t.vsPar < 0 ? "text-red-500" :
                     t.vsPar === 0 ? "text-zinc-500" :
-                    "text-zinc-400 dark:text-zinc-500"
+                    "text-zinc-500 dark:text-zinc-400"
                   }`}>
                     {t.vsPar === 0 ? "E" : `${t.vsPar > 0 ? "+" : ""}${t.vsPar}`}
                   </p>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500">#{t.position}</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">#{t.position}</p>
                 </div>
               </Link>
             ))}
@@ -262,7 +262,7 @@ export default async function PowerRankingsPage() {
         )}
       </div>
 
-      <p className="mt-4 text-center text-xs text-zinc-400 dark:text-zinc-500">
+      <p className="mt-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
         Rankings auto-update every 5 minutes during live tournaments.
       </p>
     </div>

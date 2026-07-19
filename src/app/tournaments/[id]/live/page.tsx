@@ -84,7 +84,7 @@ export default async function LiveMatchTrackerPage({
   thrillingMoments.sort((a, b) => a.diff - b.diff);
 
   return (
-    <div className="mx-auto max-w-4xl px-3 py-6 sm:px-4 sm:py-8">
+    <div className="mx-auto max-w-5xl px-3 py-6 sm:px-4 sm:py-8">
       <div className="mb-4 text-xs">
         <Link
           href={`/tournaments/${id}/leaderboard`}
@@ -104,7 +104,7 @@ export default async function LiveMatchTrackerPage({
           <h1 className="text-xl font-bold">Live Match Tracker</h1>
         </div>
         <p className="mt-1 text-sm text-white/70">{tournament.name}</p>
-        <p className="text-xs text-white/50">
+        <p className="text-xs text-white/65">
           Round {tournament.currentRound || "—"} · Par {tournament.par}
         </p>
       </div>

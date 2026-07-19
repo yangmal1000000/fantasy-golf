@@ -12,7 +12,7 @@ export default function LiveTrackerError({
   reset: () => void;
 }) {
   return (
-    <div className="mx-auto max-w-4xl px-3 py-6 sm:px-4 sm:py-8">
+    <div className="mx-auto max-w-5xl px-3 py-6 sm:px-4 sm:py-8">
       <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-6 text-center">
         <p className="text-3xl">⚠️</p>
         <h2 className="mt-2 text-lg font-bold text-red-700">Live tracker unavailable</h2>

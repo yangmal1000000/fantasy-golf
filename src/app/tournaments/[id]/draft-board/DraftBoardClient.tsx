@@ -107,7 +107,7 @@ export default function DraftBoardClient({
               className="block rounded-lg p-2 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
             >
               <div className="flex items-center gap-2 sm:gap-3">
-                <span className="w-5 shrink-0 text-right text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                <span className="w-5 shrink-0 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400">
                   {idx + 1}
                 </span>
                 <div className="hidden sm:block">
@@ -120,7 +120,7 @@ export default function DraftBoardClient({
                         {p.name}
                       </span>
                       {p.dataGolfRank && (
-                        <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500">
+                        <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
                           #{p.dataGolfRank}
                         </span>
                       )}

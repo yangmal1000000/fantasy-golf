@@ -99,7 +99,7 @@ export default async function RoundReportPage({
 
   if (!myTeam || !myScore) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-8 text-center">
           <p className="text-3xl">📋</p>
           <p className="mt-2 text-sm text-zinc-600">
@@ -130,7 +130,7 @@ export default async function RoundReportPage({
   const shareText = `Round ${round} report at ${tournament.name}: ${myScore.teamName} is ${myPosition ? `#${myPosition}` : "unranked"}${posChange ? ` (${posChange > 0 ? "▲" : "▼"}${Math.abs(posChange)})` : ""}. ${best ? `Top scorer: ${best.playerName} (${best.roundScores[round - 1]}).` : ""}`;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
       <div className="mb-4 text-xs">
         <Link href={`/tournaments/${tournamentId}/leaderboard`} className="text-zinc-500 hover:text-[#1a6b3c]">
           ← Leaderboard

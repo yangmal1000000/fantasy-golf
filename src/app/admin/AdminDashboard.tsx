@@ -81,7 +81,7 @@ export default function AdminDashboard({
 
   if (!tournamentData) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <h1 className="text-2xl font-bold text-[#0f3d20]">Admin Dashboard</h1>
         <p className="mt-4 text-zinc-600">No tournament selected.</p>
       </div>
