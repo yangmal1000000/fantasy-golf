@@ -118,20 +118,20 @@ export default function LeaguesClient({
           onClick={() => { setShowCreate(!showCreate); setShowJoin(false); setError(null); }}
           className="rounded-xl bg-[#0a3d2a] py-3 text-sm font-bold text-white shadow transition hover:bg-[#0a3d2a] touch-target"
         >
-          ➕ Create League
+          Create League
         </button>
         <button
           onClick={() => { setShowJoin(!showJoin); setShowCreate(false); setError(null); }}
           className="rounded-xl border-2 border-[#0a3d2a] py-3 text-sm font-bold text-[#0a3d2a] transition hover:bg-[#0a3d2a]/5 touch-target dark:text-green-400 dark:border-green-600"
         >
-          🔑 Join with Code
+          Join with Code
         </button>
       </div>
 
       {/* Error */}
       {error && (
         <div className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-700">
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
