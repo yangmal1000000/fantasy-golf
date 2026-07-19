@@ -126,7 +126,7 @@ export default async function Home() {
       </section>
 
       {/* ===== Live Tournament Widget ===== */}
-      {liveTournament && (
+      {liveTournament && liveTournament._count.teams > 0 && (
         <section className="mx-auto mt-6 w-full max-w-5xl px-4 sm:mt-8">
           <Link
             href={`/tournaments/${liveTournament.id}/leaderboard`}
@@ -143,7 +143,7 @@ export default async function Home() {
                   {liveTournament.name}
                 </p>
                 <p className="text-xs text-[#6b6b6b] dark:text-[#999999]">
-                  Round {liveTournament.currentRound} · {liveTournament._count.teams} teams competing
+                  Round {liveTournament.currentRound} · {liveTournament._count.teams} team{liveTournament._count.teams === 1 ? "" : "s"} competing
                 </p>
               </div>
             </div>
@@ -155,7 +155,7 @@ export default async function Home() {
       )}
 
       {/* ===== Recent Winner Spotlight ===== */}
-      {lastCompleted && (
+      {lastCompleted && lastCompleted._count.teams > 0 && (
         <section className="mx-auto mt-4 w-full max-w-5xl px-4 sm:mt-6">
           <div className="flex items-center gap-3 rounded-2xl border border-[#c8a951]/20 bg-gradient-to-r from-[#c8a951]/10 to-transparent p-4 shadow-sm dark:border-[#c8a951]/15">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#c8a951]">
