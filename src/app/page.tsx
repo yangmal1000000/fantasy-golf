@@ -204,7 +204,7 @@ export default async function Home() {
             <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-[#c8a951]">
               <PoundIcon className="h-4 w-4 text-[#1a1a1a]" />
             </div>
-            <h3 className="mt-2 text-xs font-bold text-[#0a3d2a] dark:text-green-400 sm:text-sm">Pay £15</h3>
+            <h3 className="mt-2 text-xs font-bold text-[#0a3d2a] dark:text-green-400 sm:text-sm">Entry £10</h3>
             <p className="mt-1 text-[11px] text-zinc-500">Winner takes all</p>
           </div>
           <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 text-center">
@@ -323,7 +323,7 @@ export default async function Home() {
             sport: "Golf",
             offers: {
               "@type": "Offer",
-              price: "15",
+              price: "10",
               priceCurrency: "GBP",
               availability: "https://schema.org/InStock",
             },

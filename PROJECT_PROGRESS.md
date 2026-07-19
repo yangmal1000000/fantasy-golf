@@ -24,7 +24,8 @@ Fix tournaments page filtering and homepage credibility issues.
 - Since the page is a server component, easiest approach: read `?past` from searchParams. Default = no past events. When user clicks "Show Past Events", link to `?past=1`
 - Build must pass
 
-### T2: Fix price inconsistency (£15 vs £10)
+### T2: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
+### T2-ORIGINAL: Fix price inconsistency
 - In `src/app/page.tsx` homepage:
   - Hero says "Pay £15" in the "How It Works" section (the 3-column strip with Pick 5 / Pay £15 / Win)
   - But tournament entry fees are £10 (1000 pence)
@@ -33,7 +34,8 @@ Fix tournaments page filtering and homepage credibility issues.
   - Also fix any remaining "£15" references in page.tsx
 - Build must pass
 
-### T3: Homepage — hide £0 prize pot when empty
+### T3: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
+### T3-ORIGINAL: Homepage hide empty pot
 - In `src/app/page.tsx`, the trust bar shows "£0.00 Prize Pot" when totalPot === 0
 - When totalPot is 0, hide the prize pot span entirely or replace with something like "Free to preview"
 - Better: if pot is 0, show number of tournaments with entries open instead
