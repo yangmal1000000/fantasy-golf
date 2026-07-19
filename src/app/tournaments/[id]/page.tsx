@@ -29,6 +29,28 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
   if (!tournament) notFound();
 
+  // Fetch scores for this tournament
+  const scores = await prisma.score.findMany({
+    where: { tournamentId: id, strokes: { not: null } },
+    select: { playerId: true, round: true, strokes: true },
+  });
+
+  // Build score lookup: playerId -> { round -> strokes, total, toPar, madeCut }
+  const par = tournament.par;
+  const scoreMap = new Map<string, { rounds: (number|null)[]; total: number; toPar: number; madeCut: boolean; roundsPlayed: number }>();
+  for (const s of scores) {
+    if (!scoreMap.has(s.playerId)) scoreMap.set(s.playerId, { rounds: [null,null,null,null], total: 0, toPar: 0, madeCut: true, roundsPlayed: 0 });
+    const entry = scoreMap.get(s.playerId)!;
+    entry.rounds[s.round - 1] = s.strokes;
+  }
+  for (const [pid, entry] of scoreMap) {
+    entry.roundsPlayed = entry.rounds.filter(r => r !== null).length;
+    entry.total = entry.rounds.filter((r): r is number => r !== null).reduce((a,b) => a+b, 0);
+    entry.toPar = entry.total - par * entry.roundsPlayed;
+    entry.madeCut = entry.roundsPlayed >= 3; // Made cut if they played R3
+  }
+  const hasScores = scores.length > 0;
+
   const status = STATUS_CONFIG[tournament.status] ?? STATUS_CONFIG.upcoming;
   const cat = CATEGORY_CONFIG[tournament.category];
   const canEnter = tournament.status === "entries_open" || tournament.status === "upcoming";
@@ -175,17 +197,38 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                   <p className="text-[10px] text-zinc-400">{players.length} players</p>
                 </div>
                 <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                  {players.map((tp) => (
-                    <Link
-                      key={tp.id}
-                      href={`/players/${tp.playerId}`}
-                      className="flex items-center gap-2 px-3 py-1.5 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
-                    >
-                      <span className="w-6 shrink-0 text-right text-xs font-bold tabular text-zinc-400">{tp.player.dataGolfRank ?? "—"}</span>
-                      <span className="flex-1 truncate text-xs font-medium text-zinc-800 dark:text-zinc-200">{tp.player.name}</span>
-                      {tp.player.country && <span className="text-[10px] text-zinc-400">{tp.player.country}</span>}
-                    </Link>
-                  ))}
+                  {players.map((tp) => {
+                    const sc = scoreMap.get(tp.playerId);
+                    const total = sc ? (sc.roundsPlayed < 4 && sc.madeCut ? sc.total : sc.total) : null;
+                    const toPar = sc ? sc.toPar : null;
+                    const missedCut = sc && !sc.madeCut;
+                    return (
+                      <Link
+                        key={tp.id}
+                        href={`/players/${tp.playerId}`}
+                        className="flex items-center gap-2 px-3 py-1.5 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
+                      >
+                        <span className="w-6 shrink-0 text-right text-xs font-bold tabular text-zinc-400">{tp.player.dataGolfRank ?? "—"}</span>
+                        <span className="flex-1 truncate text-xs font-medium text-zinc-800 dark:text-zinc-200">{tp.player.name}</span>
+                        {hasScores && sc && (
+                          <span className="flex items-center gap-1.5 tabular text-[11px]">
+                            {sc.rounds.map((r, i) => (
+                              <span key={i} className={`w-6 text-center rounded ${r === null ? "text-zinc-300" : r < par ? "text-green-600 font-semibold" : r > par ? "text-red-500" : "text-zinc-600 dark:text-zinc-400"}`}>{r ?? "—"}</span>
+                            ))}
+                            <span className="w-10 text-right font-bold border-l border-zinc-100 dark:border-zinc-800 pl-1.5">
+                              {missedCut ? <span className="text-red-500">CUT</span> : total}
+                            </span>
+                            {!missedCut && toPar !== null && (
+                              <span className={`w-8 text-right font-bold ${toPar < 0 ? "text-green-600" : toPar > 0 ? "text-red-500" : "text-zinc-500"}`}>
+                                {toPar === 0 ? "E" : `${toPar > 0 ? "+" : ""}${toPar}`}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {tp.player.country && !hasScores && <span className="text-[10px] text-zinc-400">{tp.player.country}</span>}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             );
