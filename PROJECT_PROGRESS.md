@@ -61,7 +61,7 @@ Fix the tournament detail page and restore the leaderboard/scoreboard for comple
 - Update this file: move task to Completed, update Next Action
 
 ## Completed
-(empty)
+- **T1**: Fix empty leaderboard for completed tournaments — Created `TournamentLeaderboard.tsx` client component that shows real PGA Tour player scores sorted by total strokes. Shows top 20 with "Show Full Field" toggle, winner highlighted with gold + trophy. Responsive desktop table + mobile cards. Integrated into leaderboard page when no fantasy teams exist.
 
 ## Next Action
-T1: Fix empty leaderboard for completed tournaments — show real PGA Tour scores when no fantasy teams exist
+T2: Tournament detail — add course profile section
