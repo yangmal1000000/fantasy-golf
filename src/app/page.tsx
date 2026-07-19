@@ -52,6 +52,7 @@ export default async function Home() {
   let tournamentCount = 0;
   let playerCount = 0;
   let totalPot = 0;
+  let entriesOpenCount = 0;
 
   try {
     tournament = await prisma.tournament.findFirst({
@@ -98,6 +99,7 @@ export default async function Home() {
       select: { tournament: { select: { entryFee: true } } },
     });
     totalPot = teams.reduce((sum, t) => sum + (t.tournament?.entryFee ?? 0), 0);
+    entriesOpenCount = await prisma.tournament.count({ where: { status: "entries_open" } });
   } catch {
     // DB might not be seeded yet — render with null
   }
@@ -132,7 +134,11 @@ export default async function Home() {
         <div className="mx-auto flex max-w-5xl items-center justify-center gap-4 px-4 text-xs font-medium text-zinc-500">
           <span className="inline-flex items-center gap-1"><TrophyIcon className="h-3 w-3 text-[#c8a951]" />{tournamentCount} Events</span>
           <span className="text-zinc-300">{"\u00b7"}</span>
-          <span className="inline-flex items-center gap-1"><PoundIcon className="h-3 w-3 text-[#c8a951]" />{formatGBP(totalPot)} Prize Pot</span>
+          {totalPot > 0 ? (
+            <span className="inline-flex items-center gap-1"><PoundIcon className="h-3 w-3 text-[#c8a951]" />{formatGBP(totalPot)} Prize Pot</span>
+          ) : (
+            <span className="inline-flex items-center gap-1"><PoundIcon className="h-3 w-3 text-[#c8a951]" />{entriesOpenCount > 0 ? `${entriesOpenCount} Open to Enter` : "Free to Preview"}</span>
+          )}
           <span className="text-zinc-300">{"\u00b7"}</span>
           <span className="inline-flex items-center gap-1"><FlagIcon className="h-3 w-3 text-[#c8a951]" />{playerCount} Pros</span>
         </div>
