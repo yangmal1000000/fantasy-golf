@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/sync/live",
-      "schedule": "*/5 * * * *"
+      "path": "/api/sync/results",
+      "schedule": "0 22 * * *"
     },
     {
       "path": "/api/sync/rankings",
@@ -11,10 +11,6 @@
     {
       "path": "/api/sync/schedule",
       "schedule": "0 6 1 * *"
-    },
-    {
-      "path": "/api/sync/results",
-      "schedule": "0 22 * * *"
     }
   ]
 }

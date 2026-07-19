@@ -4,14 +4,14 @@ After deploying the app, set up these cron jobs to keep data in sync automatical
 
 ## Option 1: Vercel Cron (Recommended)
 
-Add to `vercel.json` in the project root:
+Add to `vercel.json` in the project root (Hobby plan — daily/weekly/monthly only):
 
 ```json
 {
   "crons": [
     {
-      "path": "/api/sync/live",
-      "schedule": "*/5 * * * *"
+      "path": "/api/sync/results",
+      "schedule": "0 22 * * *"
     },
     {
       "path": "/api/sync/rankings",
@@ -20,14 +20,14 @@ Add to `vercel.json` in the project root:
     {
       "path": "/api/sync/schedule",
       "schedule": "0 6 1 * *"
-    },
-    {
-      "path": "/api/sync/results",
-      "schedule": "0 22 * * *"
     }
   ]
 }
 ```
+
+**Note:** Vercel Hobby plan only allows daily/weekly cron. For live scoring (every 5 min),
+use an external service like [cron-job.org](https://cron-job.org), [EasyCron](https://www.easycron.com),
+or a GitHub Action.
 
 ### What each job does
 
