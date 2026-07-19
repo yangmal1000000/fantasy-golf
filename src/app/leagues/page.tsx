@@ -43,13 +43,11 @@ export default async function LeaguesPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#0a3d2a]">Leagues</h1>
-        <p className="mt-1 text-zinc-600">
-          Create private leagues and compete with your friends.
-        </p>
+      <div className="mb-6">
+        <h1 className="text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-green-400 sm:text-2xl">Leagues</h1>
+        <p className="mt-0.5 text-sm text-zinc-500">Create private leagues and compete with friends</p>
       </div>
 
       {!user ? (
