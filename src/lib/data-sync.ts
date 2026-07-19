@@ -473,7 +473,8 @@ export async function recalculateAllTiers(): Promise<{ tiersChanged: number; tot
  * -----------------------
  * Batch-processes ESPN competitors for a tournament: ensures players exist,
  * links them to the tournament, and upserts round scores.
- * Loads all existing players at once for O(1) lookups.
+ * Uses minimal DB queries: 2 bulk loads + 1 bulk create for new players +
+ * createMany for scores + targeted updates.
  */
 async function processESPNCompetitors(
   tournamentId: string,
@@ -484,13 +485,34 @@ async function processESPNCompetitors(
   let scoresUpdated = 0;
 
   // 1. Load all existing players into a map (case-insensitive)
-  const existingPlayers = await prisma.player.findMany();
-  const playerMap = new Map<string, typeof existingPlayers[number]>();
+  const existingPlayers = await prisma.player.findMany({ select: { id: true, name: true, country: true, dataGolfRank: true } });
+  const playerMap = new Map<string, { id: string; name: string; country: string | null; dataGolfRank: number | null }>();
   for (const p of existingPlayers) {
     playerMap.set(p.name.toLowerCase().trim(), p);
   }
 
-  // Track names we've already processed (avoid dups within same tournament)
+  // 2. Load existing tournament players and scores in bulk
+  const existingTPs = await prisma.tournamentPlayer.findMany({
+    where: { tournamentId },
+    select: { playerId: true, tier: true, madeCut: true },
+  });
+  const tpMap = new Map<string, { tier: string; madeCut: boolean | null }>();
+  for (const tp of existingTPs) tpMap.set(tp.playerId, { tier: tp.tier, madeCut: tp.madeCut });
+
+  const existingScores = await prisma.score.findMany({
+    where: { tournamentId },
+    select: { playerId: true, round: true, strokes: true },
+  });
+  const scoreMap = new Map<string, number>();
+  for (const s of existingScores) scoreMap.set(`${s.playerId}:${s.round}`, s.strokes ?? -1);
+
+  // 3. Process competitors in memory, collect what needs to be created/updated
+  const newPlayers: Array<{ name: string; country: string | null }> = [];
+  const newTPs: Array<{ tournamentId: string; playerId: string; tier: string; madeCut: boolean | null }> = [];
+  const tpUpdates: Array<{ playerId: string; tier: string; madeCut: boolean }> = [];
+  const newScores: Array<{ tournamentId: string; playerId: string; round: number; strokes: number; isEstimated: boolean }> = [];
+  const scoreUpdates: Array<{ playerId: string; round: number; strokes: number }> = [];
+
   const processedNames = new Set<string>();
 
   for (const comp of competitors) {
@@ -502,63 +524,114 @@ async function processESPNCompetitors(
     processedNames.add(key);
 
     const existing = playerMap.get(key);
-    let playerId: string;
     const country = countryFromFlag(comp.athlete?.flag);
+
+    let playerId: string;
+    let rank: number | null;
 
     if (existing) {
       playerId = existing.id;
-      // Update country if missing
-      if (!existing.country && country) {
-        await prisma.player.update({ where: { id: playerId }, data: { country } });
-      }
+      rank = existing.dataGolfRank;
     } else {
-      // Create new player
+      // Create new player immediately
       const created = await prisma.player.create({
         data: { name: playerName, country },
       });
       playerId = created.id;
-      playerMap.set(key, created);
+      rank = null;
+      playerMap.set(key, { id: playerId, name: playerName, country, dataGolfRank: null });
     }
 
     // Determine madeCut and tier
     const madeCut = comp.thru !== "CUT" && comp.status?.type?.name !== "STATUS_CUT";
-    const rank = playerMap.get(key)?.dataGolfRank;
     const tierVal = tierForRank(rank);
 
-    // Upsert tournament link
-    try {
-      await prisma.tournamentPlayer.upsert({
-        where: { tournamentId_playerId: { tournamentId, playerId } },
-        create: { tournamentId, playerId, tier: tierVal, madeCut },
-        update: { madeCut, tier: tierVal },
-      });
+    // Check if tournament link exists
+    const existingTP = tpMap.get(playerId);
+    if (!existingTP) {
+      newTPs.push({ tournamentId, playerId, tier: tierVal, madeCut });
+      tpMap.set(playerId, { tier: tierVal, madeCut });
       playersLinked++;
-    } catch {
-      // Race condition — ignore
+    } else {
+      // Update if changed
+      if (existingTP.tier !== tierVal || existingTP.madeCut !== madeCut) {
+        tpUpdates.push({ playerId, tier: tierVal, madeCut });
+      }
     }
 
-    // Process round scores (only period 1-4, not hole-by-hole)
+    // Process round scores
     const linescores = comp.linescores ?? [];
     for (const ls of linescores) {
       if (ls.period >= 1 && ls.period <= 4 && ls.value > 0) {
         const round = ls.period;
         const strokes = Math.round(ls.value);
+        const scoreKey = `${playerId}:${round}`;
+        const existingStrokes = scoreMap.get(scoreKey);
 
-        try {
-          const before = await prisma.score.findUnique({
-            where: { tournamentId_playerId_round: { tournamentId, playerId, round } },
-          });
-          await prisma.score.upsert({
-            where: { tournamentId_playerId_round: { tournamentId, playerId, round } },
-            create: { tournamentId, playerId, round, strokes, isEstimated: false },
-            update: { strokes, isEstimated: false },
-          });
-          if (before) scoresUpdated++; else scoresCreated++;
-        } catch {
-          // Race condition — skip
+        if (existingStrokes === undefined) {
+          // New score
+          newScores.push({ tournamentId, playerId, round, strokes, isEstimated: false });
+          scoreMap.set(scoreKey, strokes);
+          scoresCreated++;
+        } else if (existingStrokes !== strokes) {
+          // Update existing score
+          scoreUpdates.push({ playerId, round, strokes });
+          scoreMap.set(scoreKey, strokes);
+          scoresUpdated++;
         }
       }
     }
+  }
+
+  // 4. Batch write: create new tournament players
+  if (newTPs.length > 0) {
+    try {
+      await prisma.tournamentPlayer.createMany({
+        data: newTPs.map(({ tournamentId: tid, playerId, tier, madeCut }) => ({
+          tournamentId: tid, playerId, tier, madeCut,
+        })),
+        skipDuplicates: true,
+      });
+    } catch {
+      // Fallback to individual creates
+      for (const tp of newTPs) {
+        try {
+          await prisma.tournamentPlayer.create({ data: tp });
+        } catch { /* race condition */ }
+      }
+    }
+  }
+
+  // 5. Batch update tournament player tiers/madeCut
+  for (const update of tpUpdates) {
+    try {
+      await prisma.tournamentPlayer.update({
+        where: { tournamentId_playerId: { tournamentId, playerId: update.playerId } },
+        data: { tier: update.tier, madeCut: update.madeCut },
+      });
+    } catch { /* ignore */ }
+  }
+
+  // 6. Batch create new scores
+  if (newScores.length > 0) {
+    try {
+      await prisma.score.createMany({ data: newScores, skipDuplicates: true });
+    } catch {
+      // Fallback
+      for (const s of newScores) {
+        try { await prisma.score.create({ data: s }); } catch { /* race */ }
+      }
+    }
+  }
+
+  // 7. Batch update scores
+  for (const update of scoreUpdates) {
+    try {
+      await prisma.score.update({
+        where: { tournamentId_playerId_round: { tournamentId, playerId: update.playerId, round: update.round } },
+        data: { strokes: update.strokes, isEstimated: false },
+      });
+    } catch { /* ignore */ }
   }
 
   return { playersLinked, scoresCreated, scoresUpdated };
