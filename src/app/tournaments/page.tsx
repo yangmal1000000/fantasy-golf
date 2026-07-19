@@ -149,9 +149,9 @@ export default async function TournamentsPage({
                   href={canEnter ? `/tournaments/${t.id}/enter` : `/tournaments/${t.id}/leaderboard`}
                   className="group block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 transition hover:border-zinc-300 dark:hover:border-zinc-700"
                 >
-                  <div className="flex items-stretch">
+                  <div className="flex items-stretch" style={{ minHeight: 88 }}>
                     {/* Course thumbnail — compact, left */}
-                    <div className="relative w-24 shrink-0 overflow-hidden rounded-l-xl sm:w-32">
+                    <div className="relative h-[88px] w-24 shrink-0 overflow-hidden rounded-l-xl sm:h-[96px] sm:w-32">
                       <Image
                         src={courseImage(t.id)}
                         alt={t.course || t.name}
