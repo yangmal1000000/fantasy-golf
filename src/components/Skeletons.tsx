@@ -105,3 +105,98 @@ export function TournamentListSkeleton() {
     </div>
   );
 }
+
+export function BlogListSkeleton() {
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
+      <div className="mb-6">
+        <div className="skeleton-shimmer h-8 w-64 rounded mb-2" />
+        <div className="skeleton-shimmer h-4 w-48 rounded" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
+            <div className="skeleton-shimmer h-32 w-full" />
+            <div className="space-y-2 p-4">
+              <div className="skeleton-shimmer h-5 w-3/4 rounded" />
+              <div className="skeleton-shimmer h-3 w-1/2 rounded" />
+              <div className="skeleton-shimmer h-3 w-full rounded mt-3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function PowerRankingsSkeleton() {
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
+      {/* Header skeleton */}
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6">
+        <div className="skeleton-shimmer h-3 w-32 rounded mb-2" style={{ background: "rgba(255,255,255,0.15)" }} />
+        <div className="skeleton-shimmer h-7 w-48 rounded mb-1" style={{ background: "rgba(255,255,255,0.2)" }} />
+        <div className="skeleton-shimmer h-4 w-72 rounded" style={{ background: "rgba(255,255,255,0.1)" }} />
+      </div>
+      {/* Highlights skeleton */}
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 p-4">
+            <div className="skeleton-shimmer h-3 w-28 rounded mb-2" />
+            <div className="skeleton-shimmer h-5 w-40 rounded mb-1" />
+            <div className="skeleton-shimmer h-3 w-32 rounded" />
+          </div>
+        ))}
+      </div>
+      {/* Rankings skeleton */}
+      <div className="mt-6 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
+        <div className="border-b border-zinc-100 dark:border-zinc-800 p-4">
+          <div className="skeleton-shimmer h-5 w-32 rounded" />
+        </div>
+        <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3 p-4">
+              <div className="skeleton-shimmer h-8 w-8 shrink-0 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <div className="skeleton-shimmer h-4 w-40 rounded" />
+                <div className="skeleton-shimmer h-3 w-28 rounded" />
+              </div>
+              <div className="skeleton-shimmer h-6 w-12 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function LiveTrackerSkeleton() {
+  return (
+    <div className="mx-auto max-w-4xl px-3 py-6 sm:px-4 sm:py-8">
+      {/* Header skeleton */}
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#0f3d20] to-[#1a6b3c] p-5">
+        <div className="skeleton-shimmer h-6 w-48 rounded mb-2" style={{ background: "rgba(255,255,255,0.2)" }} />
+        <div className="skeleton-shimmer h-4 w-32 rounded" style={{ background: "rgba(255,255,255,0.15)" }} />
+      </div>
+      {/* Card skeleton */}
+      <div className="mt-6 space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-2xl bg-white dark:bg-zinc-900 shadow-sm p-4">
+            <div className="flex items-center gap-3">
+              <div className="skeleton-shimmer h-10 w-10 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <div className="skeleton-shimmer h-4 w-32 rounded" />
+                <div className="skeleton-shimmer h-3 w-20 rounded" />
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {Array.from({ length: 4 }).map((_, j) => (
+                <div key={j} className="skeleton-shimmer h-10 rounded-lg" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

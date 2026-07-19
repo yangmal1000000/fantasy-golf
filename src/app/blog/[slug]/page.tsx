@@ -142,12 +142,12 @@ export default async function BlogPostPage({
 
       <article>
         {/* Title */}
-        <h1 className="text-3xl font-extrabold tracking-tight text-[#0f3d20]">
+        <h1 className="text-3xl font-extrabold tracking-tight text-[#0f3d20] dark:text-green-400">
           {post.title}
         </h1>
 
         {/* Meta */}
-        <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
+        <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
           <span>by {post.author}</span>
           <span>·</span>
           <span>
@@ -179,7 +179,7 @@ export default async function BlogPostPage({
         </div>
       </article>
 
-      <div className="mt-8 border-t border-zinc-100 pt-4 text-center">
+      <div className="mt-8 border-t border-zinc-100 pt-4 text-center dark:border-zinc-800">
         <Link href="/blog" className="text-sm font-semibold text-[#1a6b3c] hover:underline">
           ← More articles
         </Link>

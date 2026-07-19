@@ -184,49 +184,51 @@ export default async function PowerRankingsPage() {
       </div>
 
       {/* Rankings */}
-      <div className="mt-6 rounded-2xl bg-white shadow-sm">
-        <div className="border-b border-zinc-100 p-4">
-          <h2 className="text-base font-bold text-[#0f3d20]">Top 20 Teams</h2>
+      <div className="mt-6 rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
+        <div className="border-b border-zinc-100 p-4 dark:border-zinc-800">
+          <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">Top 20 Teams</h2>
         </div>
 
         {rankedWithMeta.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-400">
+          <div className="rounded-2xl border-2 border-zinc-200 bg-zinc-50 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="p-4 text-sm text-zinc-400 dark:text-zinc-500">
             No active tournament data yet. Check back once rounds begin.
           </p>
+          </div>
         ) : (
-          <div className="divide-y divide-zinc-50">
+          <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {rankedWithMeta.map((t) => (
               <Link
                 key={t.teamId}
                 href={`/tournaments/${t.tournamentId}/teams/${t.teamId}`}
-                className="flex items-start gap-3 p-4 transition hover:bg-zinc-50"
+                className="flex items-start gap-3 p-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-800"
               >
                 <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
                   t.rank === 1
                     ? "bg-[#d4a843] text-[#1a3a20]"
                     : t.rank <= 3
                       ? "bg-[#1a6b3c] text-white"
-                      : "bg-zinc-100 text-zinc-600"
+                      : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
                 }`}>
                   {t.rank}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-zinc-800">{t.teamName}</p>
-                  <p className="truncate text-xs text-zinc-500">
+                  <p className="truncate text-sm font-bold text-zinc-800 dark:text-zinc-200">{t.teamName}</p>
+                  <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                     {t.ownerName} · {t.tournamentName}
                   </p>
-                  <p className="mt-0.5 text-xs italic text-zinc-400">{t.commentary}</p>
+                  <p className="mt-0.5 text-xs italic text-zinc-400 dark:text-zinc-500">{t.commentary}</p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-sm font-bold text-[#0f3d20]">{t.totalStrokes}</p>
+                  <p className="text-sm font-bold text-[#0f3d20] dark:text-green-400">{t.totalStrokes}</p>
                   <p className={`text-xs ${
                     t.vsPar < 0 ? "text-red-500" :
                     t.vsPar === 0 ? "text-zinc-500" :
-                    "text-zinc-400"
+                    "text-zinc-400 dark:text-zinc-500"
                   }`}>
                     {t.vsPar === 0 ? "E" : `${t.vsPar > 0 ? "+" : ""}${t.vsPar}`}
                   </p>
-                  <p className="text-xs text-zinc-400">#{t.position}</p>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500">#{t.position}</p>
                 </div>
               </Link>
             ))}
@@ -234,7 +236,7 @@ export default async function PowerRankingsPage() {
         )}
       </div>
 
-      <p className="mt-4 text-center text-xs text-zinc-400">
+      <p className="mt-4 text-center text-xs text-zinc-400 dark:text-zinc-500">
         Rankings auto-update every 5 minutes during live tournaments.
       </p>
     </div>

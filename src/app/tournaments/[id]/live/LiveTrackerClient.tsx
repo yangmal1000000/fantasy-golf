@@ -107,11 +107,11 @@ export default function LiveTrackerClient(props: Props) {
       </div>
 
       {/* Players with live scores */}
-      <div className="rounded-2xl bg-white shadow-sm">
-        <div className="border-b border-zinc-100 p-4">
-          <h3 className="text-base font-bold text-[#0f3d20]">👥 Your Players — Round {data.currentRound || 1}</h3>
+      <div className="rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
+        <div className="border-b border-zinc-100 p-4 dark:border-zinc-800">
+          <h3 className="text-base font-bold text-[#0f3d20] dark:text-green-400">👥 Your Players — Round {data.currentRound || 1}</h3>
         </div>
-        <div className="divide-y divide-zinc-50">
+        <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
           {data.players.map((p) => {
             const activeRound = Math.max(1, data.currentRound);
             const today = p.roundScores[activeRound - 1];
@@ -121,17 +121,17 @@ export default function LiveTrackerClient(props: Props) {
               <div key={p.playerId} className="flex items-center gap-3 p-3">
                 <span className="text-2xl">{roundEmoji(today, data.par)}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm font-semibold text-zinc-800">{p.playerName}</p>
-                  <p className="text-xs text-zinc-400">
+                  <p className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-200">{p.playerName}</p>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500">
                     {config?.short ?? ""} · Total {p.totalStrokes}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className={`text-sm font-bold ${
-                    todayDiff == null ? "text-zinc-300" :
+                    todayDiff == null ? "text-zinc-300 dark:text-zinc-600" :
                     todayDiff < 0 ? "text-red-500" :
-                    todayDiff === 0 ? "text-zinc-600" :
-                    "text-zinc-500"
+                    todayDiff === 0 ? "text-zinc-600 dark:text-zinc-400" :
+                    "text-zinc-500 dark:text-zinc-500"
                   }`}>
                     {today != null ? `R${activeRound}: ${today}` : "—"}
                   </p>
@@ -139,7 +139,7 @@ export default function LiveTrackerClient(props: Props) {
                     <p className={`text-xs ${
                       todayDiff < 0 ? "text-red-500" :
                       todayDiff === 0 ? "text-zinc-500" :
-                      "text-zinc-400"
+                      "text-zinc-400 dark:text-zinc-500"
                     }`}>
                       {todayDiff === 0 ? "E" : todayDiff > 0 ? `+${todayDiff}` : todayDiff}
                     </p>
@@ -152,24 +152,24 @@ export default function LiveTrackerClient(props: Props) {
       </div>
 
       {/* Mini leaderboard */}
-      <div className="rounded-2xl bg-white shadow-sm">
-        <div className="border-b border-zinc-100 p-4">
-          <h3 className="text-base font-bold text-[#0f3d20]">🏆 Top 5</h3>
+      <div className="rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
+        <div className="border-b border-zinc-100 p-4 dark:border-zinc-800">
+          <h3 className="text-base font-bold text-[#0f3d20] dark:text-green-400">🏆 Top 5</h3>
         </div>
-        <div className="divide-y divide-zinc-50">
+        <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
           {data.miniLeaderboard.map((e, i) => (
             <Link
               key={e.teamId}
               href={`/tournaments/${data.tournamentId}/teams/${e.teamId}`}
-              className="flex items-center gap-3 p-3 transition hover:bg-zinc-50"
+              className="flex items-center gap-3 p-3 transition hover:bg-zinc-50 dark:hover:bg-zinc-800"
             >
               <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                 i === 0 ? "bg-[#d4a843] text-[#1a3a20]" : "bg-zinc-100 text-zinc-600"
               }`}>
                 {e.position}
               </span>
-              <p className="flex-1 truncate text-sm font-semibold text-zinc-800">{e.teamName}</p>
-              <span className="text-sm font-bold text-[#0f3d20]">{e.totalStrokes}</span>
+              <p className="flex-1 truncate text-sm font-semibold text-zinc-800 dark:text-zinc-200">{e.teamName}</p>
+              <span className="text-sm font-bold text-[#0f3d20] dark:text-green-400">{e.totalStrokes}</span>
             </Link>
           ))}
         </div>
@@ -204,7 +204,7 @@ export default function LiveTrackerClient(props: Props) {
         </div>
       )}
 
-      <p className="text-center text-xs text-zinc-400">
+      <p className="text-center text-xs text-zinc-400 dark:text-zinc-500">
         Auto-refreshing every 60 seconds · Round {data.currentRound || "—"}
       </p>
     </div>

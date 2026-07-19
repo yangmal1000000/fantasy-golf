@@ -113,7 +113,7 @@ function Footer() {
           <span className="text-white/20">·</span>
           <Link href="/leagues" className="transition hover:text-[#c8a951]">Leagues</Link>
           <span className="text-white/20">·</span>
-          <a href="mailto:support@fantasygolf.app" className="transition hover:text-[#c8a951]">Contact</a>
+          <Link href="/contact" className="transition hover:text-[#c8a951]">Contact</Link>
         </div>
         <p className="mt-3 text-xs">Fantasy Golf &middot; The Open Championship 2026 &middot; Royal Birkdale</p>
         <p className="mt-1 text-xs text-white/30">For entertainment purposes only. Not affiliated with the R&amp;A, PGA Tour, or DP World Tour.</p>
