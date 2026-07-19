@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  title: "Tournaments — Fantasy Golf",
+  description: "Browse and enter upcoming fantasy golf tournaments. The Open Championship 2026 at Royal Birkdale.",
+};
 import { formatDateRange, STATUS_CONFIG, courseImage, CATEGORY_CONFIG } from "@/lib/ui";
-import StatusRibbon from "@/components/StatusRibbon";
 import CountdownTimer from "@/components/CountdownTimer";
 import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
@@ -69,20 +74,18 @@ export default async function TournamentsPage({
     });
 
     // Filter by tab
-    const filtered = (all as any[]).filter((t) =>
+    const filtered = all.filter((t) =>
       showWomen ? t.tour === "lpga" : t.tour !== "lpga"
     );
 
     // Sort: in_progress first, then nearest to today, then past
+    // eslint-disable-next-line react-hooks/purity -- server component, Date.now() is request-scoped
     const now = Date.now();
-    tournaments = filtered
-      .map((t) => ({ ...t, _dist: Math.abs(t.startDate.getTime() - now) }))
-      .sort((a, b) => {
-        if (a.status === "in_progress" && b.status !== "in_progress") return -1;
-        if (b.status === "in_progress" && a.status !== "in_progress") return 1;
-        return a._dist - b._dist;
-      })
-      .map(({ _dist, ...t }) => t) as TournamentRow[];
+    tournaments = [...filtered].sort((a, b) => {
+      if (a.status === "in_progress" && b.status !== "in_progress") return -1;
+      if (b.status === "in_progress" && a.status !== "in_progress") return 1;
+      return Math.abs(a.startDate.getTime() - now) - Math.abs(b.startDate.getTime() - now);
+    }) as TournamentRow[];
   } catch {
     // DB not available
   }
@@ -121,7 +124,7 @@ export default async function TournamentsPage({
             <p className="mt-2 text-sm text-zinc-500">
               {showWomen ? (
                 <>
-                  Run the women's seed endpoint to add LPGA tournaments.
+                  Run the women&apos;s seed endpoint to add LPGA tournaments.
                 </>
               ) : (
                 <>
@@ -141,7 +144,7 @@ export default async function TournamentsPage({
                   className="overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 shadow-md transition hover:shadow-lg"
                 >
                   {/* Course thumbnail */}
-                  <div className="relative h-24 overflow-hidden sm:h-32">
+                  <div className="relative h-14 overflow-hidden sm:h-16">
                     <Image
                       src={courseImage(t.id)}
                       alt={t.course || t.name}
@@ -151,36 +154,35 @@ export default async function TournamentsPage({
                       sizes="(max-width: 640px) 100vw, 768px"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0a3d2a]/80 to-transparent" />
-                    <StatusRibbon status={t.status} />
-                    <div className="absolute bottom-2 left-4 right-4 flex items-center justify-between text-white">
+                    <div className="absolute bottom-1.5 left-3 right-3 flex items-center justify-between text-white">
                       <span
-                        className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${status.badgeClass}`}
+                        className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ${status.badgeClass}`}
                       >
                         {status.label}
                       </span>
                       {(() => {
                         const cat = CATEGORY_CONFIG[t.category] || CATEGORY_CONFIG.major;
                         return (
-                          <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-medium ${cat.badgeClass}`}>
+                          <span className={`inline-block rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${cat.badgeClass}`}>
                             {cat.icon} {cat.label}
                           </span>
                         );
                       })()}
                       {t.currentRound > 0 && t.status === "in_progress" && (
-                        <span className="text-xs font-medium text-orange-300">Round {t.currentRound}</span>
+                        <span className="text-[10px] font-medium text-orange-300">R{t.currentRound}</span>
                       )}
                     </div>
                   </div>
-                  <div className="p-4 sm:p-5">
+                  <div className="p-3 sm:p-3.5">
                     <div className="flex items-start justify-between gap-3 sm:gap-4">
                       <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-bold text-[#0a3d2a] dark:text-green-400 sm:text-xl">
+                        <h2 className="text-base font-bold text-[#0a3d2a] dark:text-green-400 sm:text-lg">
                           {t.name}
                         </h2>
-                        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                        <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
                           📍 {t.course ?? "TBD"} · {formatDateRange(t.startDate, t.endDate)}
                         </p>
-                        <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-500">
+                        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-500">
                           Par {t.par} · £{(t.entryFee / 100).toFixed(0)} entry
                         </p>
                         {canEnter && (
@@ -189,34 +191,34 @@ export default async function TournamentsPage({
                           </div>
                         )}
                       </div>
-                      <div className="text-center shrink-0">
-                        <p className="text-2xl font-bold text-[#0a3d2a] dark:text-green-400">
-                          {t._count.teams}
-                        </p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">teams</p>
-                      </div>
                     </div>
                   </div>
                   {/* Actions — full width on mobile */}
-                  <div className="flex gap-2 border-t border-zinc-100 dark:border-zinc-800 p-3 sm:p-4">
+                  <div className="flex items-center gap-2 border-t border-zinc-100 dark:border-zinc-800 px-3 py-2.5 sm:px-3.5 sm:py-3">
+                    {/* Teams stat chip */}
+                    <div className="flex items-center gap-1.5 rounded-lg bg-zinc-100 px-2.5 py-1 text-xs dark:bg-zinc-800">
+                      <span className="font-bold text-[#0a3d2a] dark:text-green-400">{t._count.teams}</span>
+                      <span className="text-zinc-500 dark:text-zinc-400">teams</span>
+                    </div>
+                    <div className="flex-1" />
                     {canEnter ? (
                       <Link
                         href={`/tournaments/${t.id}/enter`}
-                        className="flex-1 rounded-xl bg-[#0a3d2a] py-2.5 text-center font-semibold text-white transition hover:bg-[#0a3d2a] touch-target"
+                        className="flex-1 rounded-xl bg-[#0a3d2a] py-2 text-center text-sm font-semibold text-white transition hover:bg-[#0a3d2a] touch-target"
                       >
                         Enter Team →
                       </Link>
                     ) : (
                       <Link
                         href={`/tournaments/${t.id}/leaderboard`}
-                        className="flex-1 rounded-xl bg-[#0a3d2a] py-2.5 text-center font-semibold text-white transition hover:bg-[#0a3d2a] touch-target"
+                        className="flex-1 rounded-xl bg-[#0a3d2a] py-2 text-center text-sm font-semibold text-white transition hover:bg-[#0a3d2a] touch-target"
                       >
-                        View Leaderboard →
+                        Leaderboard →
                       </Link>
                     )}
                     <Link
                       href={`/tournaments/${t.id}/leaderboard`}
-                      className="flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-700 px-4 py-2.5 text-center font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 touch-target"
+                      className="flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-center font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 touch-target"
                       aria-label="View leaderboard"
                     >
                       📊

@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { ensureSchema, genId, genCode } from "@/lib/db-ensure";
+import { ensureSchema, genId } from "@/lib/db-ensure";
 
 export const dynamic = "force-dynamic";
+
+interface ReferralRow {
+  id: string;
+  referredEmail: string;
+  status: string;
+  createdAt: Date;
+}
+
+interface VoucherRow {
+  id: string;
+  code: string;
+  discountPercent: number;
+  used: boolean;
+  source: string;
+  createdAt: Date;
+}
+
+interface ExistingReferralRow {
+  id: string;
+}
 
 // GET — referral info for the signed-in user
 export async function GET() {
@@ -18,7 +38,7 @@ export async function GET() {
     // Referral code — derived stable from user id
     const referralCode = (user.id.replace(/[^a-z0-9]/gi, "").slice(0, 6).toUpperCase() || "GOLFER") + "-" + user.id.slice(-4).toUpperCase();
 
-    const referrals: any[] = await prisma.$queryRawUnsafe(
+    const referrals: ReferralRow[] = await prisma.$queryRawUnsafe(
       `SELECT id, "referredEmail", status, "createdAt"
          FROM "Referral"
         WHERE "referrerId" = $1
@@ -26,7 +46,7 @@ export async function GET() {
       user.id,
     );
 
-    const vouchers: any[] = await prisma.$queryRawUnsafe(
+    const vouchers: VoucherRow[] = await prisma.$queryRawUnsafe(
       `SELECT id, code, "discountPercent", used, source, "createdAt"
          FROM "Voucher"
         WHERE "userId" = $1
@@ -89,7 +109,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check for existing referral to the same email
-    const existing: any[] = await prisma.$queryRawUnsafe(
+    const existing: ExistingReferralRow[] = await prisma.$queryRawUnsafe(
       `SELECT id FROM "Referral"
         WHERE "referrerId" = $1 AND "referredEmail" = $2
         LIMIT 1`,

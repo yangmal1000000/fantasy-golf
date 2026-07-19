@@ -63,10 +63,10 @@ export async function syncRankingsFromOWGR(): Promise<RankingSyncResult | null> 
     });
 
     // Build a name → player lookup map (case-insensitive, trimmed)
-    const nameMap = new Map<string, { id: string; name: string }>();
+    const nameMap = new Map<string, { id: string; name: string; dataGolfRank: number | null }>();
     for (const p of dbPlayers) {
       const key = p.name.toLowerCase().trim();
-      nameMap.set(key, { id: p.id, name: p.name });
+      nameMap.set(key, { id: p.id, name: p.name, dataGolfRank: p.dataGolfRank });
     }
 
     let updated = 0;
@@ -82,7 +82,7 @@ export async function syncRankingsFromOWGR(): Promise<RankingSyncResult | null> 
       if (!dbPlayer) {
         // Try a fuzzy match — last name only
         const lastName = key.split(" ").pop() ?? key;
-        let fuzzyMatch: { id: string; name: string } | null = null;
+        let fuzzyMatch: { id: string; name: string; dataGolfRank: number | null } | null = null;
         for (const [mapKey, mapVal] of nameMap) {
           const mapLast = mapKey.split(" ").pop() ?? mapKey;
           if (mapLast === lastName) {
@@ -106,7 +106,7 @@ export async function syncRankingsFromOWGR(): Promise<RankingSyncResult | null> 
       }
 
       // Only update if rank has changed
-      if ((dbPlayer as any).dataGolfRank !== entry.rank) {
+      if (dbPlayer.dataGolfRank !== entry.rank) {
         await prisma.player.update({
           where: { id: dbPlayer.id },
           data: { dataGolfRank: entry.rank, country: entry.country || undefined },
@@ -384,7 +384,7 @@ export async function recalculateTiers(): Promise<{
 
   for (const tp of tournamentPlayers) {
     totalChecked++;
-    const correctTier = tierForRankLocal((tp.player as any).dataGolfRank);
+    const correctTier = tierForRankLocal(tp.player.dataGolfRank);
 
     if (tp.tier !== correctTier) {
       await prisma.tournamentPlayer.update({

@@ -95,7 +95,11 @@ export const STATUS_CONFIG: Record<string, { label: string; badgeClass: string }
   completed: { label: "Completed", badgeClass: "bg-blue-100 text-blue-800 border-blue-300" },
 };
 
-/** Course hero image mapping */
+/** Course hero image mapping
+ *  NOTE: only files that actually exist in /public/courses/ are mapped here.
+ *  Any unknown tournament id falls back to `default.jpg` (which must exist).
+ *  If you add new images to /public/courses/, add the mapping here too.
+ */
 export const COURSE_IMAGES: Record<string, string> = {
   // Men's
   "masters-2026": "/courses/augusta.jpg",
@@ -108,12 +112,7 @@ export const COURSE_IMAGES: Record<string, string> = {
   "memorial-2026": "/courses/muirfield-village.jpg",
   "tour-championship-2026": "/courses/east-lake.jpg",
   "bmw-pga-2026": "/courses/wentworth.jpg",
-  // Women's LPGA
-  "chevron-2026": "/courses/carleton-woods.jpg",
-  "us-womens-open-2026": "/courses/erin-hills.jpg",
-  "kpmg-womens-pga-2026": "/courses/baltusrol.jpg",
-  "amundi-evian-2026": "/courses/evian.jpg",
-  "aig-womens-open-2026": "/courses/st-andrews.jpg",
+  // Women's LPGA — specific course images not yet shipped; fall back to default.
 };
 
 export const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string; icon: string }> = {

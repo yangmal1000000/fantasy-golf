@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function GET() {
+  const user = await getCurrentUser();
+  if (!user || !user.isAdmin) {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
+
   const url = process.env.DATABASE_URL || "NOT SET";
   const masked = url.replace(/:[^:@]+@/, ":***@");
   

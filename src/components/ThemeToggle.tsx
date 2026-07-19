@@ -5,7 +5,7 @@
  * Stores preference in localStorage, defaults to system preference.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 type Theme = "light" | "dark";
 
@@ -19,17 +19,9 @@ function getInitialTheme(): Theme {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
 
   useEffect(() => {
-    const initial = getInitialTheme();
-    setTheme(initial);
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
     const root = document.documentElement;
     if (theme === "dark") {
       root.classList.add("dark");
@@ -37,23 +29,11 @@ export default function ThemeToggle() {
       root.classList.remove("dark");
     }
     localStorage.setItem("theme", theme);
-  }, [theme, mounted]);
+  }, [theme]);
 
-  function toggle() {
+  const toggle = useCallback(() => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  }
-
-  // Prevent flash — don't render button until mounted
-  if (!mounted) {
-    return (
-      <button
-        className="rounded-full p-2 text-white/90"
-        aria-label="Toggle theme"
-      >
-        <span className="block h-5 w-5" />
-      </button>
-    );
-  }
+  }, []);
 
   return (
     <button

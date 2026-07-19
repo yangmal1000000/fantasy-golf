@@ -1,10 +1,20 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { calculateLeaderboard } from "@/lib/scoring";
-import { formatGBP } from "@/lib/ui";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: "Power Rankings — Fantasy Golf",
+  description: "Weekly AI-powered rankings of the top 20 fantasy teams across all active tournaments.",
+};
+
+interface BustRow {
+  playerName: string;
+  avg_score: number;
+}
 
 interface RankedTeam {
   teamId: string;
@@ -109,7 +119,7 @@ export default async function PowerRankingsPage() {
   try {
     const recentTournamentId = liveTournaments[0]?.id;
     if (recentTournamentId) {
-      const bustRows: any[] = await prisma.$queryRawUnsafe(
+      const bustRows: BustRow[] = await prisma.$queryRawUnsafe(
         `WITH t1_scores AS (
            SELECT tp."playerId", p.name AS "playerName",
                   AVG(s.strokes) AS avg_score
@@ -190,10 +200,23 @@ export default async function PowerRankingsPage() {
         </div>
 
         {rankedWithMeta.length === 0 ? (
-          <div className="rounded-2xl border-2 border-zinc-200 bg-zinc-50 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="p-4 text-sm text-zinc-400 dark:text-zinc-500">
-            No active tournament data yet. Check back once rounds begin.
-          </p>
+          <div className="rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-purple-100 text-2xl dark:bg-purple-900/30">
+              📈
+            </div>
+            <p className="text-base font-bold text-zinc-700 dark:text-zinc-300">No rankings yet</p>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              Power Rankings appear here once tournaments are in progress or completed.
+              The list updates every 5 minutes during live events.
+            </p>
+            {liveTournaments.length === 0 && (
+              <Link
+                href="/tournaments"
+                className="mt-4 inline-block rounded-full bg-[#0a3d2a] px-5 py-2 text-sm font-bold text-white transition hover:bg-[#1a5c3e]"
+              >
+                Browse Tournaments →
+              </Link>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-zinc-50 dark:divide-zinc-800">

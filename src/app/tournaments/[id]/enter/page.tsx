@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { TIER_CONFIG, TIER_ORDER, formatGBP, formatDateRange } from "@/lib/ui";
+import { formatDateRange } from "@/lib/ui";
 import TeamEntryForm from "./TeamEntryForm";
+
+export const metadata: Metadata = {
+  title: "Enter Team — Fantasy Golf",
+  description: "Build your fantasy golf team: pick one player from each of the 5 ranking tiers.",
+};
 import SignInPrompt from "@/components/SignInPrompt";
 
 export default async function EnterTeamPage({
@@ -78,7 +84,6 @@ export default async function EnterTeamPage({
       ) : (
         <TeamEntryForm
           tournamentId={tournament.id}
-          tournamentName={tournament.name}
           entryFee={tournament.entryFee}
           userId={user.id}
           playersByTier={Object.fromEntries(

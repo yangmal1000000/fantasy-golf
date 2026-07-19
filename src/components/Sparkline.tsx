@@ -13,7 +13,6 @@ interface SparklineProps {
 
 export default function Sparkline({
   scores,
-  par = 72,
   width = 60,
   height = 20,
 }: SparklineProps) {

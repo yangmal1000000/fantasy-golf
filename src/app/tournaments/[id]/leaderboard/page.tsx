@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { calculateLeaderboard, type TeamScoreResult } from "@/lib/scoring";
 import { calculateProjectedStandings } from "@/lib/predictions";
 
 // Cache leaderboard for 30 seconds (ISR) — instant for most visitors
 export const revalidate = 30;
+export const metadata: Metadata = {
+  title: "Leaderboard — Fantasy Golf",
+  description: "Live tournament leaderboard with real-time scoring, projected cut line, and side game standings.",
+};
 import { formatGBP } from "@/lib/ui";
 import {
   ensureDefaultSidePots,
@@ -38,14 +43,17 @@ export default async function LeaderboardPage({
 
   if (!tournament) notFound();
 
-  let calcError: string | null = null;
-
   // Run scoring, predictions, and player data IN PARALLEL
-  const [resultsRaw, projected, tournamentPlayers] = await Promise.all([
-    calculateLeaderboard(id).catch((err): TeamScoreResult[] => {
-      calcError = err instanceof Error ? err.message : "Failed to calculate scores";
-      return [];
-    }),
+  const [resultsResult, projected, tournamentPlayers] = await Promise.all([
+    calculateLeaderboard(id)
+      .then((data): { data: TeamScoreResult[]; error: string | null } => ({
+        data,
+        error: null,
+      }))
+      .catch((err): { data: TeamScoreResult[]; error: string | null } => ({
+        data: [],
+        error: err instanceof Error ? err.message : "Failed to calculate scores",
+      })),
     calculateProjectedStandings(id).catch(() => null),
     prisma.tournamentPlayer.findMany({
       where: { tournamentId: id },
@@ -53,7 +61,8 @@ export default async function LeaderboardPage({
     }),
   ]);
 
-  const results = resultsRaw;
+  const results = resultsResult.data;
+  const calcError = resultsResult.error;
   const countryMap = new Map<string, string | null>();
   for (const tp of tournamentPlayers) {
     countryMap.set(tp.playerId, tp.player.country);
@@ -81,7 +90,7 @@ export default async function LeaderboardPage({
 
   // --- Side Games mini data ---
   await ensureDefaultSidePots(id);
-  const [sidePots, topGolferStandings, darkHorseStandings, bestPerRound] =
+  const [, topGolferStandings, darkHorseStandings, bestPerRound] =
     await Promise.all([
       prisma.tournamentSidePot.findMany({ where: { tournamentId: id } }),
       getTopGolferStandings(id),

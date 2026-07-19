@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { TIER_CONFIG, tierBadgeClass, TIER_ORDER } from "@/lib/ui";
 import TierBadge from "@/components/TierBadge";
 import DraftBoardClient from "./DraftBoardClient";
 

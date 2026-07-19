@@ -1,14 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { calculateTeamScore } from "@/lib/scoring";
-import { TIER_CONFIG, tierBadgeClass, formatDateRange, STATUS_CONFIG } from "@/lib/ui";
+import { formatDateRange, STATUS_CONFIG } from "@/lib/ui";
 import TierBadge from "@/components/TierBadge";
 import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
 import SignInPrompt from "@/components/SignInPrompt";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "My Teams — Fantasy Golf",
+  description: "View all your fantasy golf team entries, scores, and positions across every tournament.",
+};
 
 export default async function MyTeamsPage() {
   const user = await getCurrentUser();
@@ -87,7 +93,6 @@ export default async function MyTeamsPage() {
           {teamData.map(({ team, scoreResult }) => {
             const tournament = team.tournament;
             const status = STATUS_CONFIG[tournament.status] ?? STATUS_CONFIG.upcoming;
-            const config = TIER_CONFIG;
 
             // Sort selections by tier order
             const tierOrder: Record<string, number> = {
@@ -170,7 +175,6 @@ export default async function MyTeamsPage() {
                   <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap sm:overflow-visible">
                     {sortedSelections.map((sel) => {
                       const tier = sel.tournamentPlayer.tier;
-                      const tierCfg = config[tier] ?? config.T51_PLUS;
                       const playerScore = scoreResult?.players.find(
                         (p) => p.playerId === sel.tournamentPlayer.playerId
                       );

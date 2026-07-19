@@ -1,15 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { calculateTeamScore } from "@/lib/scoring";
-import { TIER_CONFIG, tierBadgeClass } from "@/lib/ui";
+import { TIER_CONFIG } from "@/lib/ui";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Suspense } from "react";
 import TierBadge from "@/components/TierBadge";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import Flag from "@/components/Flag";
 import Sparkline from "@/components/Sparkline";
 import ShareCard from "@/components/ShareCard";
-import { TeamDetailSkeleton } from "@/components/Skeletons";
 
 export default async function TeamDetailPage({
   params,
@@ -139,8 +137,6 @@ export default async function TeamDetailPage({
 
         {scoreResult?.players.map((p) => {
           const config = TIER_CONFIG[p.tier] ?? TIER_CONFIG.T51_PLUS;
-          const playerVsPar =
-            p.totalStrokes - tournament.par * p.roundsPlayed;
           // Get player country from team selections
           const sel = team.selections.find(
             (s) => s.tournamentPlayer.playerId === p.playerId

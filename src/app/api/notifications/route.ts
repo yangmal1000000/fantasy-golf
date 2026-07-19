@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { ensureSchema, genId } from "@/lib/db-ensure";
+import { genId } from "@/lib/db-ensure";
+import { sendPushToUser } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
 // GET — return notifications for the current user, plus auto-generated smart notifications
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -86,9 +87,22 @@ export async function POST(req: NextRequest) {
 // Smart notification generation
 // ---------------------------------------------------------------------
 
+/** Create an in-app notification and fire a push notification. */
+async function createNotification(
+  userId: string,
+  title: string,
+  body: string,
+  type: string,
+  url?: string,
+): Promise<void> {
+  await prisma.notification.create({
+    data: { id: genId(), userId, title, body, type },
+  });
+  await sendPushToUser(userId, { title, body, url }).catch(() => {});
+}
+
 async function generateSmartNotifications(userId: string): Promise<void> {
   const today = new Date();
-  const todayKey = today.toISOString().slice(0, 10);
 
   // 1. Entries closing within 24h
   const closingSoon = await prisma.tournament.findMany({
@@ -108,15 +122,13 @@ async function generateSmartNotifications(userId: string): Promise<void> {
       where: { userId, title },
     });
     if (!existing) {
-      await prisma.notification.create({
-        data: {
-          id: genId(),
-          userId,
-          title,
-          body: `Tournament starts ${t.startDate.toLocaleDateString("en-GB")}. Get your team in!`,
-          type: "entries_closing",
-        },
-      });
+      await createNotification(
+        userId,
+        title,
+        `Tournament starts ${t.startDate.toLocaleDateString("en-GB")}. Get your team in!`,
+        "entries_closing",
+        `/tournaments/${t.id}`,
+      );
     }
   }
 
@@ -148,15 +160,13 @@ async function generateSmartNotifications(userId: string): Promise<void> {
       // team is inside the top 10 movers (cheap heuristic).
       // Only notify if position is <= 20 (interesting).
       if (team.position <= 20) {
-        await prisma.notification.create({
-          data: {
-            id: genId(),
-            userId,
-            title: titleKey,
-            body: `Your team "${team.name}" is in position ${team.position} at ${team.tournament.name}.`,
-            type: "position_change",
-          },
-        });
+        await createNotification(
+          userId,
+          titleKey,
+          `Your team "${team.name}" is in position ${team.position} at ${team.tournament.name}.`,
+          "position_change",
+          `/tournaments/${team.tournamentId}/leaderboard`,
+        );
       }
     }
   }
@@ -176,15 +186,13 @@ async function generateSmartNotifications(userId: string): Promise<void> {
       },
     });
     if (!existing) {
-      await prisma.notification.create({
-        data: {
-          id: genId(),
-          userId,
-          title,
-          body: `Round ${r} is in the books. Check your team's performance!`,
-          type: "round_complete",
-        },
-      });
+      await createNotification(
+        userId,
+        title,
+        `Round ${r} is in the books. Check your team's performance!`,
+        "round_complete",
+        `/tournaments/${team.tournamentId}`,
+      );
     }
   }
 }

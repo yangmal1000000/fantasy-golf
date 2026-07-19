@@ -217,6 +217,12 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
     );
   }
 
+  // Determine which columns have any data across all filtered rows
+  const hasAnySelectionData = players.some((p) => p.selectionRate > 0);
+  const hasAnyAvgScore = players.some((p) => p.avgScore != null);
+  const hasAnyBestFinish = players.some((p) => p.bestFinish != null);
+  const hasAnyForm = players.some((p) => p.form.length > 0);
+
   return (
     <div>
       {/* ── Search & Filters ── */}
@@ -278,10 +284,14 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
         {/* Result count */}
         <p className="text-xs text-zinc-400 dark:text-zinc-500">
           {sorted.length} {sorted.length === 1 ? "player" : "players"}
+          {!hasAnyAvgScore && !hasAnyBestFinish && !hasAnyForm && (
+            <span className="ml-2 text-zinc-300 dark:text-zinc-600">· No scoring data yet — columns will appear once tournaments begin</span>
+          )}
         </p>
       </div>
 
       {/* ── Desktop Table (hidden on mobile) ── */}
+      {/* Hide Sel %, Avg, Best, Form columns entirely when none of the players have that data */}
       <div className="hidden md:block overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -292,10 +302,18 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
                 <th className="px-3 py-3 text-center font-semibold">Country</th>
                 <th className="px-3 py-3 text-center font-semibold">{sortableHeader("tier", "Tier")}</th>
                 <th className="px-3 py-3 text-center font-semibold">{sortableHeader("tournaments", "Events")}</th>
-                <th className="px-3 py-3 text-center font-semibold">{sortableHeader("selectionRate", "Sel %")}</th>
-                <th className="px-3 py-3 text-center font-semibold">{sortableHeader("avgScore", "Avg")}</th>
-                <th className="px-3 py-3 text-center font-semibold">{sortableHeader("bestFinish", "Best")}</th>
-                <th className="px-3 py-3 text-center font-semibold">Form</th>
+                {hasAnySelectionData && (
+                  <th className="px-3 py-3 text-center font-semibold">{sortableHeader("selectionRate", "Sel %")}</th>
+                )}
+                {hasAnyAvgScore && (
+                  <th className="px-3 py-3 text-center font-semibold">{sortableHeader("avgScore", "Avg")}</th>
+                )}
+                {hasAnyBestFinish && (
+                  <th className="px-3 py-3 text-center font-semibold">{sortableHeader("bestFinish", "Best")}</th>
+                )}
+                {hasAnyForm && (
+                  <th className="px-3 py-3 text-center font-semibold">Form</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -340,53 +358,61 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
                       {p.tournamentCount}
                     </td>
                     {/* Selection rate */}
-                    <td className="px-3 py-2.5 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <div className="h-1.5 w-12 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-[#1a6b3c] dark:bg-green-500"
-                            style={{ width: `${Math.min(100, p.selectionRate)}%` }}
-                          />
+                    {hasAnySelectionData && (
+                      <td className="px-3 py-2.5 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <div className="h-1.5 w-12 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-[#1a6b3c] dark:bg-green-500"
+                              style={{ width: `${Math.min(100, p.selectionRate)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                            {p.selectionRate > 0 ? `${p.selectionRate.toFixed(0)}%` : "—"}
+                          </span>
                         </div>
-                        <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                          {p.selectionRate > 0 ? `${p.selectionRate.toFixed(0)}%` : "—"}
-                        </span>
-                      </div>
-                    </td>
+                      </td>
+                    )}
                     {/* Avg score */}
-                    <td className="px-3 py-2.5 text-center">
-                      {p.avgScore != null ? (
-                        <span className={`font-bold ${p.avgScore < 72 ? "text-green-600 dark:text-green-400" : "text-zinc-700 dark:text-zinc-300"}`}>
-                          {p.avgScore.toFixed(1)}
-                        </span>
-                      ) : (
-                        <span className="text-zinc-300">—</span>
-                      )}
-                    </td>
+                    {hasAnyAvgScore && (
+                      <td className="px-3 py-2.5 text-center">
+                        {p.avgScore != null ? (
+                          <span className={`font-bold ${p.avgScore < 72 ? "text-green-600 dark:text-green-400" : "text-zinc-700 dark:text-zinc-300"}`}>
+                            {p.avgScore.toFixed(1)}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-300">—</span>
+                        )}
+                      </td>
+                    )}
                     {/* Best finish */}
-                    <td className="px-3 py-2.5 text-center">
-                      {p.bestFinish != null ? (
-                        <span
-                          className={`inline-flex h-6 min-w-[24px] items-center justify-center rounded-md px-1.5 text-xs font-bold ${
-                            p.bestFinish === 1
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-                              : p.bestFinish <= 5
-                                ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"
-                                : p.bestFinish <= 10
-                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
-                                  : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                    {hasAnyBestFinish && (
+                      <td className="px-3 py-2.5 text-center">
+                        {p.bestFinish != null ? (
+                          <span
+                            className={`inline-flex h-6 min-w-[24px] items-center justify-center rounded-md px-1.5 text-xs font-bold ${
+                              p.bestFinish === 1
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                                : p.bestFinish <= 5
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"
+                                  : p.bestFinish <= 10
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
+                                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
                           }`}
-                        >
-                          {p.bestFinish === 1 ? "🏆" : p.bestFinish}
-                        </span>
-                      ) : (
-                        <span className="text-zinc-300">—</span>
-                      )}
-                    </td>
+                          >
+                            {p.bestFinish === 1 ? "🏆" : p.bestFinish}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-300">—</span>
+                        )}
+                      </td>
+                    )}
                     {/* Form */}
-                    <td className="px-3 py-2.5">
-                      <FormDots form={p.form} />
-                    </td>
+                    {hasAnyForm && (
+                      <td className="px-3 py-2.5">
+                        <FormDots form={p.form} />
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -398,7 +424,6 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
       {/* ── Mobile Cards ── */}
       <div className="space-y-2 md:hidden">
         {sorted.map((p) => {
-          const tierCfg = p.tier ? TIER_CONFIG[p.tier] : null;
           return (
             <Link
               key={p.id}

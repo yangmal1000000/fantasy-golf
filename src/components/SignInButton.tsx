@@ -29,7 +29,7 @@ export default function SignInButton() {
     return (
       <button
         onClick={signInWithGoogle}
-        className="flex items-center gap-2 rounded-full bg-[#c8a951] px-4 py-2 text-sm font-semibold text-[#1a1a1a] shadow transition hover:bg-[#d4b76a] touch-target"
+        className="flex whitespace-nowrap items-center gap-2 rounded-full bg-[#c8a951] px-4 py-2 text-sm font-semibold text-[#1a1a1a] shadow transition hover:bg-[#d4b76a] touch-target"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
           <path

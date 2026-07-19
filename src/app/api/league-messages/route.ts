@@ -2,26 +2,46 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { ensureSchema, genId } from "@/lib/db-ensure";
-import { cleanProfanity, containsProfanity } from "@/lib/profanity";
+import { cleanProfanity } from "@/lib/profanity";
 
 export const dynamic = "force-dynamic";
 
-// GET — messages for a league
+interface LeagueMessageRow {
+  id: string;
+  body: string;
+  createdAt: Date;
+  userId: string;
+  userName: string | null;
+  userAvatar: string | null;
+}
+
+// GET — messages for a league (members only)
 export async function GET(req: NextRequest) {
   const leagueId = req.nextUrl.searchParams.get("leagueId");
   if (!leagueId) {
     return NextResponse.json({ error: "leagueId required" }, { status: 400 });
   }
 
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  }
+
   await ensureSchema();
 
-  // Verify the league exists
-  const league = await prisma.league.findUnique({ where: { id: leagueId } });
+  // Verify the league exists and user is a member
+  const league = await prisma.league.findUnique({
+    where: { id: leagueId },
+    include: { members: { select: { userId: true } } },
+  });
   if (!league) {
     return NextResponse.json({ error: "League not found" }, { status: 404 });
   }
+  if (!league.members.some((m) => m.userId === user.id)) {
+    return NextResponse.json({ error: "Not a league member" }, { status: 403 });
+  }
 
-  const rows: any[] = await prisma.$queryRawUnsafe(
+  const rows: LeagueMessageRow[] = await prisma.$queryRawUnsafe(
     `SELECT m.id, m.body, m."createdAt", m."userId", u.name AS "userName", u.avatar AS "userAvatar"
        FROM "Message" m
        JOIN "User" u ON u.id = m."userId"
@@ -75,7 +95,7 @@ export async function POST(req: NextRequest) {
     if (!league) {
       return NextResponse.json({ error: "League not found" }, { status: 404 });
     }
-    if (!league.members.some((m: any) => m.userId === user.id)) {
+    if (!league.members.some((m) => m.userId === user.id)) {
       return NextResponse.json({ error: "Not a league member" }, { status: 403 });
     }
 
@@ -93,9 +113,9 @@ export async function POST(req: NextRequest) {
     );
 
     // Notify all other league members
-    const otherMembers = league.members.filter((m: any) => m.userId !== user.id);
+    const otherMembers = league.members.filter((m) => m.userId !== user.id);
     if (otherMembers.length > 0) {
-      const notifs = otherMembers.map((m: any) => ({
+      const notifs = otherMembers.map((m) => ({
         id: genId(),
         userId: m.userId,
         title: `💬 New message in ${league.name}`,

@@ -5,7 +5,7 @@
  * Golf-themed: greens, golds, whites. 50 particles, 2 seconds.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const COLORS = [
   "#0a3d2a",
@@ -43,11 +43,10 @@ function generateParticles(): Particle[] {
 }
 
 export default function Confetti() {
-  const [particles, setParticles] = useState<Particle[]>([]);
+  const particles = useMemo(() => generateParticles(), []);
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    setParticles(generateParticles());
     const timer = setTimeout(() => setVisible(false), 2500);
     return () => clearTimeout(timer);
   }, []);

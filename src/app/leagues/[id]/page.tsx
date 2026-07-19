@@ -3,7 +3,7 @@ import { getCurrentUserId } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { calculateTeamScore } from "@/lib/scoring";
-import { tierBadgeClass, formatDateRange } from "@/lib/ui";
+import { formatDateRange } from "@/lib/ui";
 import LeagueChat from "@/components/LeagueChat";
 
 export const dynamic = "force-dynamic";
@@ -151,7 +151,7 @@ export default async function LeagueDetailPage({
       <div className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
         <h2 className="mb-3 text-lg font-bold text-[#0a3d2a]">Members</h2>
         <div className="grid gap-2 sm:grid-cols-2">
-          {league.members.map((m, idx) => (
+          {league.members.map((m) => (
             <div
               key={m.id}
               className="flex items-center gap-3 rounded-xl bg-zinc-50 p-3"

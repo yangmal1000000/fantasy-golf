@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth";
 import { calculateTeamScore, calculateLeaderboard } from "@/lib/scoring";
+import type { TeamScoreResult, PlayerScoreSummary } from "@/lib/scoring";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import LiveTrackerClient from "./LiveTrackerClient";
@@ -28,14 +29,6 @@ export default async function LiveMatchTrackerPage({
     myTeamId = team?.id ?? null;
   }
 
-  // Fetch all tournament players with scores
-  const tournamentPlayers = await prisma.tournamentPlayer.findMany({
-    where: { tournamentId: id, withdrew: false },
-    include: {
-      player: true,
-    },
-  });
-
   const allScores = await prisma.score.findMany({ where: { tournamentId: id } });
 
   // Build score lookup: playerId -> round -> strokes
@@ -50,8 +43,8 @@ export default async function LiveMatchTrackerPage({
 
   // Build player list for client (only user's team players for the detail view,
   // plus all players for the "thrilling moments" feed)
-  let teamPlayers: any[] = [];
-  let teamScore: any = null;
+  let teamPlayers: PlayerScoreSummary[] = [];
+  let teamScore: TeamScoreResult | null = null;
   let teamPosition: number | null = null;
   if (myTeamId) {
     try {
@@ -138,7 +131,7 @@ export default async function LiveMatchTrackerPage({
           teamName={teamScore.teamName}
           teamTotal={teamScore.totalStrokes}
           teamPosition={teamPosition ?? 0}
-          players={teamPlayers.map((p: any) => ({
+          players={teamPlayers.map((p) => ({
             playerId: p.playerId,
             playerName: p.playerName,
             tier: p.tier,

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const startOfYear = new Date(Date.UTC(year, 0, 1));
     const endOfYear = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
-    const tournaments = await (prisma as any).tournament.findMany({
+    const tournaments = await prisma.tournament.findMany({
       where: {
         startDate: {
           gte: startOfYear,
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       },
     });
 
-    const formatted = tournaments.map((t: any) => ({
+    const formatted = tournaments.map((t) => ({
       id: t.id,
       name: t.name,
       status: t.status,

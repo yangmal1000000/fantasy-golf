@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import LeaguesClient from "./LeaguesClient";
+import SignInPrompt from "@/components/SignInPrompt";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Leagues — Fantasy Golf",
+  description: "Create or join private fantasy golf leagues. Compete with friends and colleagues in your own mini-competitions.",
+};
 
 export default async function LeaguesPage() {
   const user = await getCurrentUser();
@@ -45,7 +52,14 @@ export default async function LeaguesPage() {
         </p>
       </div>
 
-      <LeaguesClient leagues={leagues} signedIn={!!user} />
+      {!user ? (
+        <SignInPrompt
+          title="Sign in to join or create a league"
+          message="Create private leagues with friends, share invite codes, and run your own mini-competitions throughout the season."
+        />
+      ) : (
+        <LeaguesClient leagues={leagues} signedIn={!!user} />
+      )}
     </div>
   );
 }

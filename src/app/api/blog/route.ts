@@ -5,6 +5,29 @@ import { ensureSchema, genId } from "@/lib/db-ensure";
 
 export const dynamic = "force-dynamic";
 
+interface BlogPostDetailRow {
+  id: string;
+  title: string;
+  slug: string;
+  body: string;
+  author: string;
+  excerpt: string | null;
+  publishedAt: Date | null;
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface BlogPostListRow {
+  id: string;
+  title: string;
+  slug: string;
+  author: string;
+  excerpt: string | null;
+  publishedAt: Date | null;
+  tags: string[];
+}
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -20,7 +43,7 @@ export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get("slug");
 
   if (slug) {
-    const rows: any[] = await prisma.$queryRawUnsafe(
+    const rows: BlogPostDetailRow[] = await prisma.$queryRawUnsafe(
       `SELECT id, title, slug, body, author, excerpt, "publishedAt", tags, "createdAt", "updatedAt"
          FROM "BlogPost"
         WHERE slug = $1
@@ -50,7 +73,7 @@ export async function GET(req: NextRequest) {
   const tag = req.nextUrl.searchParams.get("tag");
   const limit = Math.min(50, Number(req.nextUrl.searchParams.get("limit") ?? 20));
 
-  let rows: any[];
+  let rows: BlogPostListRow[];
   if (tag) {
     rows = await prisma.$queryRawUnsafe(
       `SELECT id, title, slug, author, excerpt, "publishedAt", tags

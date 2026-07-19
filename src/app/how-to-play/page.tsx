@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { TIER_CONFIG, TIER_ORDER } from "@/lib/ui";
 import TierBadge from "@/components/TierBadge";
+
+export const metadata: Metadata = {
+  title: "How to Play — Fantasy Golf",
+  description: "Learn how Fantasy Golf works: pick 5 players from 5 tiers, pay £15 entry, lowest combined strokes wins. Cut logic, scoring examples, and prize distribution explained.",
+};
 
 export default function HowToPlayPage() {
   return (

@@ -19,7 +19,6 @@ interface TierPlayer {
 
 interface TeamEntryFormProps {
   tournamentId: string;
-  tournamentName: string;
   entryFee: number;
   userId: string;
   playersByTier: Record<string, TierPlayer[]>;
@@ -27,7 +26,6 @@ interface TeamEntryFormProps {
 
 export default function TeamEntryForm({
   tournamentId,
-  tournamentName,
   entryFee,
   userId,
   playersByTier,

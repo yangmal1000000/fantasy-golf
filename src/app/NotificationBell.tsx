@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface Notification {
   id: string;
@@ -39,51 +39,56 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [pushSupported, setPushSupported] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushSupported] = useState(
+    () => typeof window !== "undefined" && "Notification" in window,
+  );
+  const [pushEnabled, setPushEnabled] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      window.Notification.permission === "granted",
+  );
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  async function fetchNotifications() {
+  const fetchNotificationsData = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications");
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data.notifications ?? []);
-        setUnreadCount(data.unreadCount ?? 0);
-
-        // Fire browser notification for the most recent unread notification
-        // if permission is granted and tab is hidden
-        if (
-          typeof window !== "undefined" &&
-          window.Notification?.permission === "granted" &&
-          document.hidden
-        ) {
-          const latest = (data.notifications ?? []).find((n: Notification) => !n.read);
-          if (latest) {
-            try {
-              new window.Notification(latest.title, { body: latest.body });
-            } catch {
-              /* ignore */
-            }
-          }
-        }
-      }
+      if (res.ok) return await res.json();
     } catch {
       // silently ignore
     }
-  }
+    return null;
+  }, []);
 
   useEffect(() => {
-    // Check push support
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setPushSupported(true);
-      setPushEnabled(window.Notification.permission === "granted");
-    }
+    let active = true;
+    const load = async () => {
+      const data = await fetchNotificationsData();
+      if (!active || !data) return;
+      setNotifications(data.notifications ?? []);
+      setUnreadCount(data.unreadCount ?? 0);
 
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60_000); // poll every minute
-    return () => clearInterval(interval);
-  }, []);
+      // Fire browser notification for the most recent unread notification
+      // if permission is granted and tab is hidden
+      if (
+        typeof window !== "undefined" &&
+        window.Notification?.permission === "granted" &&
+        document.hidden
+      ) {
+        const latest = (data.notifications ?? []).find((n: Notification) => !n.read);
+        if (latest) {
+          try {
+            new window.Notification(latest.title, { body: latest.body });
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    };
+    load();
+    const interval = setInterval(load, 60_000); // poll every minute
+    return () => { active = false; clearInterval(interval); };
+  }, [fetchNotificationsData]);
 
   // Close on outside click
   useEffect(() => {
@@ -105,6 +110,11 @@ export default function NotificationBell() {
         new window.Notification("Fantasy Golf notifications enabled ⛳", {
           body: "You'll now get push notifications for position changes, deadlines, and more.",
         });
+
+        // Trigger service worker registration + push subscription
+        // PushRegistration component will pick this up, but we also
+        // dispatch an event so it can re-attempt subscription immediately.
+        window.dispatchEvent(new Event("notification-permission-granted"));
       }
     } catch {
       /* ignore */
