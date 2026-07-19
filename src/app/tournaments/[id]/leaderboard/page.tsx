@@ -26,6 +26,7 @@ import TierBadge from "@/components/TierBadge";
 import MiniLeaderboard, { type MiniLeaderboardEntry } from "@/components/MiniLeaderboard";
 import { LeaderboardSkeleton } from "@/components/Skeletons";
 import LeaderboardRefresh from "./LeaderboardRefresh";
+import TournamentLeaderboard, { type TournamentPlayerScore } from "./TournamentLeaderboard";
 
 export default async function LeaderboardPage({
   params,
@@ -44,7 +45,7 @@ export default async function LeaderboardPage({
   if (!tournament) notFound();
 
   // Run scoring, predictions, and player data IN PARALLEL
-  const [resultsResult, projected, tournamentPlayers] = await Promise.all([
+  const [resultsResult, projected, tournamentPlayers, pgaScoresRaw] = await Promise.all([
     calculateLeaderboard(id)
       .then((data): { data: TeamScoreResult[]; error: string | null } => ({
         data,
@@ -59,7 +60,56 @@ export default async function LeaderboardPage({
       where: { tournamentId: id },
       include: { player: { select: { country: true } } },
     }),
+    prisma.score.findMany({
+      where: { tournamentId: id },
+      include: { player: { select: { name: true, country: true } } },
+    }),
   ]);
+
+  // Build PGA Tour leaderboard data (used when no fantasy teams exist)
+  const pgaLeaderboard: TournamentPlayerScore[] = [];
+  if (pgaScoresRaw.length > 0) {
+    const pgaMap = new Map<string, TournamentPlayerScore>();
+    for (const s of pgaScoresRaw) {
+      if (!pgaMap.has(s.playerId)) {
+        pgaMap.set(s.playerId, {
+          playerId: s.playerId,
+          playerName: s.player.name,
+          country: s.player.country,
+          rounds: [null, null, null, null],
+          total: 0,
+          toPar: 0,
+          roundsPlayed: 0,
+          madeCut: true,
+          position: 0,
+        });
+      }
+      const entry = pgaMap.get(s.playerId)!;
+      if (s.strokes !== null) {
+        entry.rounds[s.round - 1] = s.strokes;
+      }
+    }
+    const par = tournament.par;
+    for (const p of pgaMap.values()) {
+      p.roundsPlayed = p.rounds.filter((r): r is number => r !== null).length;
+      p.total = p.rounds.filter((r): r is number => r !== null).reduce((a, b) => a + b, 0);
+      p.toPar = p.total - par * p.roundsPlayed;
+      p.madeCut = p.roundsPlayed >= 3;
+      pgaLeaderboard.push(p);
+    }
+    pgaLeaderboard.sort((a, b) => {
+      if (a.roundsPlayed === 0) return 1;
+      if (b.roundsPlayed === 0) return -1;
+      return a.total - b.total;
+    });
+    let pos = 1;
+    for (let i = 0; i < pgaLeaderboard.length; i++) {
+      if (i > 0 && pgaLeaderboard[i].total !== pgaLeaderboard[i - 1].total) {
+        pos = i + 1;
+      }
+      pgaLeaderboard[i].position = pos;
+    }
+  }
 
   const results = resultsResult.data;
   const calcError = resultsResult.error;
@@ -69,6 +119,7 @@ export default async function LeaderboardPage({
   }
 
   const isLive = tournament.status === "in_progress";
+  const canEnter = tournament.status === "entries_open" || tournament.status === "upcoming";
   const potTotal = tournament._count.teams * tournament.entryFee;
 
   // Build projected position lookup: teamId -> projectedPosition
@@ -268,18 +319,48 @@ export default async function LeaderboardPage({
           {calcError}
         </div>
       ) : results.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-12 text-center">
-          <p className="text-lg font-semibold text-zinc-700 dark:text-zinc-300">No teams yet</p>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Be the first to enter!
-          </p>
-          <Link
-            href={`/tournaments/${id}/enter`}
-            className="mt-4 inline-block rounded-full bg-[#0a3d2a] px-6 py-2 text-sm font-bold text-white hover:bg-[#0a3d2a]"
-          >
-            Enter Team →
-          </Link>
-        </div>
+        /* No fantasy teams — show the real PGA Tour leaderboard instead */
+        pgaLeaderboard.length === 0 ? (
+          <div className="rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-12 text-center">
+            <p className="text-lg font-semibold text-zinc-700 dark:text-zinc-300">No teams yet</p>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              Scores will appear here once the tournament begins.
+            </p>
+            {canEnter && (
+              <Link
+                href={`/tournaments/${id}/enter`}
+                className="mt-4 inline-block rounded-full bg-[#0a3d2a] px-6 py-2 text-sm font-bold text-white hover:bg-[#1a5c3e]"
+              >
+                Enter Team →
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Info banner */}
+            {canEnter ? (
+              <div className="flex items-center justify-between rounded-xl border border-[#0a3d2a]/20 bg-[#0a3d2a]/5 dark:bg-green-950/20 px-4 py-2.5">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  No fantasy teams entered yet — showing live PGA Tour scores.
+                </p>
+                <Link
+                  href={`/tournaments/${id}/enter`}
+                  className="shrink-0 rounded-full bg-[#0a3d2a] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#1a5c3e]"
+                >
+                  Enter Team →
+                </Link>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-4 py-2.5">
+                <span className="text-sm">⛳</span>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  Final PGA Tour scores for this tournament.
+                </p>
+              </div>
+            )}
+            <TournamentLeaderboard players={pgaLeaderboard} par={tournament.par} />
+          </div>
+        )
       ) : (
         <Suspense fallback={<LeaderboardSkeleton />}>
           {/* Leaderboard table */}
