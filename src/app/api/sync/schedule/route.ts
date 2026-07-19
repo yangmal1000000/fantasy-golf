@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { syncTournamentSchedule } from "@/lib/data-sync";
 
+export const maxDuration = 60;
+
 /**
  * POST /api/sync/schedule
  * Pulls real PGA Tour schedule from ESPN and updates the database.

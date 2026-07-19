@@ -372,18 +372,20 @@ export async function syncOWGRRankings(): Promise<SyncResult> {
 async function fetchESPNRankings(): Promise<Array<{ rank: number; name: string; country: string | null }>> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+    const timeout = setTimeout(() => controller.abort(), 20000);
 
     const res = await fetch("https://www.espn.com/golf/rankings", {
       signal: controller.signal,
-      headers: { "User-Agent": USER_AGENT },
+      headers: { "User-Agent": USER_AGENT, "Accept-Encoding": "gzip" },
     });
     clearTimeout(timeout);
 
     if (!res.ok) return [];
 
     const html = await res.text();
-    return parseESPNRankings(html);
+    // Only process the first 500KB to find the rankings table
+    const chunk = html.slice(0, 500000);
+    return parseESPNRankings(chunk);
   } catch (e) {
     console.error("fetchESPNRankings error:", e);
     return [];
@@ -441,7 +443,7 @@ function parseESPNRankings(html: string): Array<{ rank: number; name: string; co
 /**
  * Recalculate tier assignments for all TournamentPlayer records.
  */
-async function recalculateAllTiers(): Promise<{ tiersChanged: number; totalChecked: number }> {
+export async function recalculateAllTiers(): Promise<{ tiersChanged: number; totalChecked: number }> {
   const tournamentPlayers = await prisma.tournamentPlayer.findMany({
     include: { player: { select: { dataGolfRank: true } } },
   });

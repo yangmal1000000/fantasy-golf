@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { syncTournamentResults } from "@/lib/data-sync";
 
+export const maxDuration = 60;
+
 /**
  * POST /api/sync/results
  * Pulls real scores from ESPN for all completed tournaments.
