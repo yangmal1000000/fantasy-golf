@@ -147,7 +147,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
                     return (
                       <Link
                         key={t.id}
-                        href={canEnter ? `/tournaments/${t.id}/enter` : `/tournaments/${t.id}/leaderboard`}
+                        href={`/tournaments/${t.id}`}
                         className="group flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2.5 transition hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-md sm:gap-4 sm:p-3"
                       >
                         {/* Thumbnail */}
