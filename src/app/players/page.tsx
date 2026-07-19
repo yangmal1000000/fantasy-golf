@@ -31,7 +31,7 @@ export default async function PlayersPage({
   const isWomen = tour === "women";
 
   /* ── Fetch all data in parallel ── */
-  const [players, tournaments, allScores, teamCountsRaw] = await Promise.all([
+  const [players, tournaments, allScores, allTPs, teamGroups] = await Promise.all([
     prisma.player.findMany({
       include: {
         tournaments: {
@@ -53,20 +53,18 @@ export default async function PlayersPage({
     prisma.tournamentPlayer.findMany({
       select: { playerId: true, tournamentId: true, tier: true, madeCut: true, withdrew: true },
     }),
+    prisma.team.groupBy({ by: ["tournamentId"], _count: { _all: true } }),
   ]);
 
   /* ── Build lookup maps ── */
   const tournamentMap = new Map(tournaments.map((t) => [t.id, t]));
   const teamCountMap = new Map<string, number>();
-  // Count teams per tournament
-  for (const tp of await prisma.team.groupBy({ by: ["tournamentId"], _count: { _all: true } })) {
-    teamCountMap.set(tp.tournamentId, tp._count._all);
-  }
+  for (const g of teamGroups) teamCountMap.set(g.tournamentId, g._count._all);
 
   /** All TournamentPlayer entries keyed by `tournamentId:playerId` */
   const tpKey = (tid: string, pid: string) => `${tid}:${pid}`;
   const tpMap = new Map<string, { tier: string; madeCut: boolean | null; withdrew: boolean }>();
-  for (const tp of teamCountsRaw) {
+  for (const tp of allTPs) {
     tpMap.set(tpKey(tp.tournamentId, tp.playerId), {
       tier: tp.tier,
       madeCut: tp.madeCut,

@@ -63,6 +63,7 @@ function Navbar() {
         {/* Desktop Nav links */}
         <nav className="hidden items-center gap-0.5 sm:flex">
           <NavLink href="/tournaments" label="Tournaments" />
+          <NavLink href="/players" label="Players" />
           <NavLink href="/my-teams" label="My Teams" />
           <NavLink href="/leagues" label="Leagues" />
           <NavLink href="/tournaments/the-open-2026/leaderboard" label="Leaderboard" hideOnMd />
