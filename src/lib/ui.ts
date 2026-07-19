@@ -62,9 +62,19 @@ export const TIER_CONFIG: Record<
     gradTo: "#1f2937",
     short: "T5",
   },
+  UNRANKED: {
+    label: "Unranked",
+    badgeClass: "bg-zinc-50 text-zinc-400 border-zinc-200",
+    cardClass: "border-zinc-200 bg-zinc-50",
+    description: "Not in OWGR rankings",
+    icon: "question",
+    gradFrom: "#d4d4d8",
+    gradTo: "#a1a1aa",
+    short: "?",
+  },
 };
 
-export const TIER_ORDER = ["T1_10", "T11_20", "T21_30", "T31_50", "T51_PLUS"];
+export const TIER_ORDER = ["T1_10", "T11_20", "T21_30", "T31_50", "T51_PLUS", "UNRANKED"];
 
 export function tierLabel(tier: string): string {
   return TIER_CONFIG[tier]?.label ?? tier;

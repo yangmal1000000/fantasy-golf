@@ -65,6 +65,7 @@ const TIER_CHIPS = [
   { value: "T21_30", label: "T3" },
   { value: "T31_50", label: "T4" },
   { value: "T51_PLUS", label: "T5" },
+  { value: "UNRANKED", label: "Unranked" },
 ];
 
 /** COUNTRY_NAMES is a small lookup for nicer display */
@@ -99,7 +100,7 @@ const COUNTRY_NAMES: Record<string, string> = {
 
 export default function PlayersTable({ players, countries }: PlayersTableProps) {
   const [search, setSearch] = useState("");
-  const [tierFilter, setTierFilter] = useState<string>("all");
+  const [tierFilter, setTierFilter] = useState<string>("ranked");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [sortColumn, setSortColumn] = useState<SortColumn>("rank");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -227,7 +228,7 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
   // Build tier-specific rank map: when filtering by a specific tier,
   // show position within that tier (1, 2, 3...) instead of overall rank
   const tierRankMap = new Map<string, number>();
-  if (tierFilter !== "all") {
+  if (tierFilter !== "all" && tierFilter !== "ranked") {
     const tierPlayers = players
       .filter((p) => p.tier === tierFilter)
       .sort((a, b) => (a.dataGolfRank ?? 999) - (b.dataGolfRank ?? 999));
@@ -330,7 +331,7 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
               {sorted.map((p, i) => {
                 const tierCfg = p.tier ? TIER_CONFIG[p.tier] : null;
                 const rankColor = tierCfg?.gradFrom ?? "#6b7280";
-                const displayRank = tierFilter !== "all"
+                const displayRank = tierFilter !== "all" && tierFilter !== "ranked"
                   ? (tierRankMap.get(p.id) ?? p.dataGolfRank ?? "—")
                   : (p.dataGolfRank ?? "—");
                 return (
@@ -349,7 +350,7 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
                         >
                           {displayRank}
                         </span>
-                        {tierFilter !== "all" && p.dataGolfRank != null && (
+                        {tierFilter !== "all" && tierFilter !== "ranked" && p.dataGolfRank != null && (
                           <span className="text-[10px] text-zinc-400" title="Data Golf world rank">
                             #{p.dataGolfRank}
                           </span>
@@ -444,7 +445,7 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
       {/* ── Mobile Cards ── */}
       <div className="space-y-2 md:hidden">
         {sorted.map((p) => {
-          const displayRank = tierFilter !== "all"
+          const displayRank = tierFilter !== "all" && tierFilter !== "ranked"
             ? (tierRankMap.get(p.id) ?? p.dataGolfRank ?? "—")
             : (p.dataGolfRank ?? "—");
           return (
