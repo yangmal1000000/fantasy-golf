@@ -19,14 +19,18 @@ type TournamentRow = {
   _count: { teams: number; players: number };
 };
 
-export default async function TournamentsPage({ searchParams }: { searchParams: Promise<{ tour?: string; cat?: string; year?: string }> }) {
+export default async function TournamentsPage({ searchParams }: { searchParams: Promise<{ tour?: string; cat?: string; year?: string; past?: string; status?: string }> }) {
   const params = await searchParams;
   const tour = params.tour ?? "men";
   const showWomen = tour === "women";
   const activeCategory = params.cat ?? "all";
   const activeYear = params.year ?? "all";
+  // Status filter: "upcoming" (default), "live", "all"
+  // Backward compat: ?past=1 maps to status=all
+  const statusFilter = params.status ?? (params.past === "1" ? "all" : "upcoming");
 
   let tournaments: TournamentRow[] = [];
+  let completedCount = 0;
   try {
     const all = await prisma.tournament.findMany({
       orderBy: { startDate: "asc" },
@@ -37,6 +41,15 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     if (activeYear !== "all") {
       filtered = filtered.filter((t) => new Date(t.startDate).getFullYear().toString() === activeYear);
     }
+    // Count completed BEFORE filtering them out (for toggle label)
+    completedCount = filtered.filter((t) => t.status === "completed").length;
+    // Apply status filter
+    if (statusFilter === "live") {
+      filtered = filtered.filter((t) => t.status === "in_progress");
+    } else if (statusFilter === "upcoming") {
+      filtered = filtered.filter((t) => t.status !== "completed");
+    }
+    // statusFilter === "all" → no filtering
     // Strict chronological order (earliest first)
     tournaments = [...filtered].sort((a, b) => a.startDate.getTime() - b.startDate.getTime()) as TournamentRow[];
   } catch {}
@@ -50,6 +63,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
   for (const t of tournaments) yearSet.add(new Date(t.startDate).getFullYear());
   const years = Array.from(yearSet).sort((a, b) => a - b);
 
+  // Apply category filter (tournaments already has past-filter applied above)
   const visibleTournaments = activeCategory === "all" ? tournaments : tournaments.filter((t) => t.category === activeCategory);
 
   // Group by month for display
@@ -63,14 +77,22 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     else grouped.push({ label, items: [t] });
   }
 
-  function buildHref(t: string, c: string, y: string) {
-    const params = new URLSearchParams();
-    if (t !== "men") params.set("tour", t);
-    if (c !== "all") params.set("cat", c);
-    if (y !== "all") params.set("year", y);
-    const qs = params.toString();
+  function buildHref(t: string, c: string, y: string, s: string = statusFilter) {
+    const p = new URLSearchParams();
+    if (t !== "men") p.set("tour", t);
+    if (c !== "all") p.set("cat", c);
+    if (y !== "all") p.set("year", y);
+    if (s !== "upcoming") p.set("status", s);
+    const qs = p.toString();
     return `/tournaments${qs ? `?${qs}` : ""}`;
   }
+
+  // Status filter config
+  const statusOptions = [
+    { key: "upcoming", label: "Upcoming" },
+    { key: "live", label: "Live" },
+    { key: "all", label: "All" },
+  ] as const;
 
   return (
     <Suspense fallback={<TournamentListSkeleton />}>
@@ -123,12 +145,31 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
           )}
         </div>
 
+        {/* Status filter chips: Upcoming / Live / All */}
+        <div className="mt-3 flex items-center gap-1.5">
+          {statusOptions.map((opt) => {
+            const isActive = statusFilter === opt.key;
+            return (
+              <Link key={opt.key} href={buildHref(tour, activeCategory, activeYear, opt.key)}>
+                <span className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${isActive ? "bg-[#0a3d2a] text-white" : "bg-white text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"}`}>
+                  {opt.label}
+                </span>
+              </Link>
+            );
+          })}
+          {statusFilter === "all" && completedCount > 0 && (
+            <span className="ml-auto text-xs text-zinc-400">{completedCount} completed</span>
+          )}
+        </div>
+
         {/* Tournament list — grouped by month */}
         {visibleTournaments.length === 0 ? (
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-8 text-center">
             <ChartBarIcon className="mx-auto h-8 w-8 text-zinc-300" />
-            <p className="mt-3 text-sm font-semibold text-zinc-600">No tournaments found</p>
-            <p className="mt-1 text-xs text-zinc-400">Try a different category or year.</p>
+            <p className="mt-3 text-sm font-semibold text-zinc-600">
+              {statusFilter === "live" ? "No live tournaments right now" : statusFilter === "all" ? "No tournaments found" : "No upcoming tournaments"}
+            </p>
+            <p className="mt-1 text-xs text-zinc-400">Try a different filter, category, or year.</p>
           </div>
         ) : (
           <div className="space-y-4">

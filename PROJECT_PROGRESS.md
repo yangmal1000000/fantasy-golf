@@ -1,48 +1,56 @@
-# Stream 1: Data & Players — Progress Tracker
+# Stream 2: Tournaments List & Homepage — Progress Tracker
 
 ## Goal
-Fix data sync issues, player page defaults, and missing venue/tournament data.
+Fix tournaments page filtering and homepage credibility issues.
 
 ## Architecture
-- Project: /Users/harry/Projects/fantasy-golf-s1 (git worktree on branch `dev/data-players`)
+- Project: /Users/harry/Projects/fantasy-golf-s2 (git worktree on branch `dev/tournaments-home`)
 - Build: `npm install && npm run build`
 - Main repo: /Users/harry/Projects/fantasy-golf (DO NOT touch — other streams working there)
 
 ## File Ownership (ONLY touch these)
-- `src/app/players/PlayersTable.tsx`
-- `src/app/players/page.tsx`
-- `src/lib/data-sync.ts`
-- `src/app/api/sync/*/route.ts`
-- `prisma/schema.prisma`
+- `src/app/tournaments/page.tsx`
+- `src/app/page.tsx`
+- `src/lib/ui.ts` (STATUS_CONFIG only)
 
 ## Tasks (do in order)
 
-### T1: Players page default filter → "All"
-- In `src/app/players/PlayersTable.tsx`, change `useState<string>("ranked")` to `useState<string>("all")`
+### T1: Tournaments page — default to upcoming/live, hide completed
+- In `src/app/tournaments/page.tsx`, the page currently shows ALL tournaments chronologically
+- Change default view: filter OUT completed tournaments (status === "completed")
+- Show only: upcoming, entries_open, in_progress
+- Add a "Show Past Events" toggle button at the top of the list
+- This should be a client-side toggle — use a URL search param like `?past=1` or a simple client component
+- Since the page is a server component, easiest approach: read `?past` from searchParams. Default = no past events. When user clicks "Show Past Events", link to `?past=1`
 - Build must pass
 
-### T2: Fix 9 ESPN tournament name mismatches
-- In `src/lib/data-sync.ts`, find `syncTournamentResults` function
-- It tries to match tournament names to ESPN events — 9 fail (The Masters, Chevron Championship, Mexico Open, Wells Fargo, Byron Nelson, Rocket Mortgage, Charles Schwab, KPMG Women's PGA, U.S. Women's Open)
-- Add a name normalization map at the top of the ESPN matching logic: map our tournament names to ESPN's event names
-- Look at how the function searches ESPN — it likely does a substring or exact match. Add aliases.
+### T2: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
+### T2-ORIGINAL: Fix price inconsistency
+- In `src/app/page.tsx` homepage:
+  - Hero says "Pay £15" in the "How It Works" section (the 3-column strip with Pick 5 / Pay £15 / Win)
+  - But tournament entry fees are £10 (1000 pence)
+  - Fix: change the "Pay £15" to dynamically reflect the most common entry fee, OR just say "Entry from £10"
+  - Also fix JSON-LD structured data price from "15" to "10"
+  - Also fix any remaining "£15" references in page.tsx
 - Build must pass
 
-### T3: Fix missing venue data for TBD tournaments
-- Several completed tournaments show "TBD" as course (AT&T Pebble Beach, Puerto Rico Open, Texas Children's Houston Open)
-- Add a static course data map in data-sync.ts with known course names for common PGA Tour events
-- Add an endpoint `POST /api/sync/fix-venues` that fills in null/empty course fields from this map
+### T3: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
+### T3-ORIGINAL: Homepage hide empty pot
+- In `src/app/page.tsx`, the trust bar shows "£0.00 Prize Pot" when totalPot === 0
+- When totalPot is 0, hide the prize pot span entirely or replace with something like "Free to preview"
+- Better: if pot is 0, show number of tournaments with entries open instead
 - Build must pass
 
-### T4: Add course yardage and architect fields to schema + sync
-- Add `yardage Int?`, `architect String?`, `courseLocation String?` to Tournament model in prisma/schema.prisma
-- Run `npx prisma generate` (DO NOT run migrations — Supabase pooler won't connect locally)
-- Add yardage/architect data to the static course map from T3
-- Extend `fix-venues` endpoint to also fill these fields
+### T4: Tournaments page — add status filter chips
+- Add filter chips above the tournament list: "Upcoming" / "Live" / "All" (in addition to category filters already there)
+- Default should be "Upcoming" (shows upcoming + entries_open + in_progress, hides completed)
+- "Live" shows only in_progress
+- "All" shows everything including completed
+- These work alongside existing category and year filters
 - Build must pass
 
 ## Rules
-- ONLY work in /Users/harry/Projects/fantasy-golf-s1
+- ONLY work in /Users/harry/Projects/fantasy-golf-s2
 - NEVER touch /Users/harry/Projects/fantasy-golf or other worktrees
 - One task per run — implement, build, verify, update this file
 - If build fails, fix it before marking task done
@@ -51,31 +59,35 @@ Fix data sync issues, player page defaults, and missing venue/tournament data.
 
 ## Completed
 
-### T1: Players page default filter → "All" ✅
-- Changed `useState<string>("ranked")` → `useState<string>("all")` in PlayersTable.tsx
-- The old "ranked" value didn't match any TIER_CHIPS entry, so no chip was active on load
-- Committed: `576aaee`
-- Note: Build has pre-existing Supabase prerender error (no local .env) — TypeScript + compilation pass fine
+### T1: Tournaments page — default to upcoming/live, hide completed ✅
+- Added `past` search param to page's searchParams type
+- Completed tournaments filtered out by default (when `past` not `1`)
+- "Show Past Events (N)" / "Hide Past Events" toggle button added above list
+- Past state preserved across tour/category/year filter navigation via `buildHref` param
+- Commit: `27e3b7f`
+- Follow-up fix (`bbc9dee`): `completedCount` was computed after filtering out completed tournaments, so the toggle never appeared — moved count before the past-filter
+- Note: Build has pre-existing prerender failures on `/contact`, `/achievements`, `/_not-found` (missing Supabase env vars) — unrelated, TypeScript compiles clean
 
-### T2: Fix 9 ESPN tournament name mismatches ✅
-- Added `TOURNAMENT_ALIASES` map covering all 9 mismatched tournaments (Masters, Chevron, Mexico Open, Wells Fargo, Byron Nelson, Rocket Mortgage, Charles Schwab, KPMG Women's PGA, U.S. Women's Open)
-- Added `normalizeTournamentName()` for fuzzy matching (strips The/championship/classic/etc.)
-- Added `findMatchingESPNEvent()` helper: exact → alias → substring → normalized → slug
-- Replaced inline matching in both `syncTournamentResults` and `syncLiveScores`
-- TypeScript + compilation pass
+### T2: Fix price inconsistency (£15 vs £10) ✅
+- "Pay £15" → "Entry £10" in How It Works strip
+- JSON-LD structured data price "15" → "10"
+- No other £15 references found in page.tsx
+- Commit: `bbc9dee` (bundled with T1 completedCount fix)
 
-### T3: Fix missing venue data for TBD tournaments ✅
-- Added `STATIC_COURSE_DATA` map with known course names for ~30 PGA/DPWT events
-- Covers AT&T Pebble Beach, Puerto Rico Open, Texas Children's Houston Open + many more
-- Added `fixVenues()` export in data-sync.ts
-- Created `POST /api/sync/fix-venues` endpoint
+### T3: Homepage — hide £0 prize pot when empty ✅
+- When totalPot === 0, trust bar shows "{N} Open to Enter" (entries-open count) or "Free to Preview"
+- Added `entriesOpenCount` query (`prisma.tournament.count({ where: { status: "entries_open" } })`)
+- Commit: `17e64bb`
 
-### T4: Add course yardage and architect fields to schema + sync ✅
-- Added `yardage Int?`, `architect String?`, `courseLocation String?` to Tournament model in prisma/schema.prisma
-- Ran `npx prisma generate` successfully (no migration — Supabase pooler not available locally)
-- Extended `STATIC_COURSE_DATA` with yardage, architect, and location for all entries
-- Extended `fixVenues()` to populate yardage, architect, courseLocation fields
-- All committed together: `0cba227`
+### T4: Tournaments page — add status filter chips ✅
+- Added `?status=` searchParam: "upcoming" (default), "live", "all"
+- Backward compat: `?past=1` maps to `status=all`
+- Replaced "Show/Hide Past Events" toggle with 3 chips: Upcoming / Live / All
+- "Upcoming" = upcoming + entries_open + in_progress (hides completed)
+- "Live" = in_progress only
+- "All" = everything
+- Context-aware empty state messages per status
+- Commit: `1a2da04`
 
 ## Next Action
-All Stream 1 tasks complete. Ready for deployment + `prisma db push` or migration on Supabase.
+All tasks (T1–T4) complete. No further work needed.
