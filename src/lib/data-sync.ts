@@ -810,34 +810,39 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
 export async function linkPlayersToTournaments(): Promise<SyncResult> {
   let totalLinked = 0;
   let totalSkipped = 0;
+  let errors: string[] = [];
 
-  const tournaments = await prisma.tournament.findMany();
+  const tournaments = await prisma.tournament.findMany({
+    where: { status: { in: ["upcoming", "entries_open"] } },
+  });
   const players = await prisma.player.findMany({
     where: { dataGolfRank: { not: null } },
   });
 
   for (const tournament of tournaments) {
     for (const player of players) {
-      const existing = await prisma.tournamentPlayer.findUnique({
-        where: {
-          tournamentId_playerId: {
-            tournamentId: tournament.id,
-            playerId: player.id,
+      try {
+        // Use upsert to handle existing records gracefully
+        await prisma.tournamentPlayer.upsert({
+          where: {
+            tournamentId_playerId: {
+              tournamentId: tournament.id,
+              playerId: player.id,
+            },
           },
-        },
-      });
-
-      if (!existing) {
-        await prisma.tournamentPlayer.create({
-          data: {
+          create: {
             tournamentId: tournament.id,
             playerId: player.id,
             tier: tierForRank(player.dataGolfRank),
             madeCut: null,
           },
+          update: {
+            tier: tierForRank(player.dataGolfRank),
+          },
         });
         totalLinked++;
-      } else {
+      } catch (e) {
+        // Ignore unique constraint violations (race conditions)
         totalSkipped++;
       }
     }
@@ -848,5 +853,6 @@ export async function linkPlayersToTournaments(): Promise<SyncResult> {
     created: totalLinked,
     skipped: totalSkipped,
     details: { tournaments: tournaments.length, players: players.length },
+    errors,
   };
 }
