@@ -813,6 +813,70 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
   };
 }
 
+// ── Cleanup old year-suffixed tournaments ─────────────────────────────────
+
+/**
+ * cleanupYearBranding
+ * ---------------------
+ * Removes year suffixes from tournament names and IDs in the database.
+ * Merges data from old IDs (e.g. "the-open-2026") into clean IDs (e.g. "the-open").
+ */
+export async function cleanupYearBranding(): Promise<SyncResult> {
+  const errors: string[] = [];
+  let updated = 0;
+  let merged = 0;
+
+  const tournaments = await prisma.tournament.findMany();
+
+  for (const t of tournaments) {
+    const hasYearId = /-20\d{2}$/.test(t.id);
+    const hasYearName = /\s+20\d{2}$/.test(t.name);
+
+    if (!hasYearId && hasYearName) {
+      // Just update the name
+      const cleanName = t.name.replace(/\s+20\d{2}$/, "");
+      await prisma.tournament.update({ where: { id: t.id }, data: { name: cleanName } });
+      updated++;
+    } else if (hasYearId) {
+      // Need to merge into clean ID
+      const cleanId = t.id.replace(/-20\d{2}$/, "");
+      const cleanName = t.name.replace(/\s+20\d{2}$/, "");
+
+      // Check if clean tournament exists
+      const existing = await prisma.tournament.findUnique({ where: { id: cleanId } });
+
+      if (existing) {
+        // Merge: move scores, teams, TPs to the clean tournament
+        try {
+          await prisma.$transaction([
+            prisma.score.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
+            prisma.tournamentPlayer.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
+            prisma.team.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
+            prisma.broadcastMessage.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
+            prisma.sideBet.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
+            prisma.tournamentSidePot.updateMany({ where: { tournamentId: t.id }, data: { tournamentId: cleanId } }),
+          ]);
+          // Delete old tournament
+          await prisma.tournament.delete({ where: { id: t.id } });
+          merged++;
+        } catch (e) {
+          errors.push(`Failed to merge ${t.id}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      } else {
+        // Rename: update ID directly via raw SQL (Prisma can't update ID field directly)
+        try {
+          await prisma.$executeRaw`UPDATE "Tournament" SET id = ${cleanId}, name = ${cleanName} WHERE id = ${t.id}`;
+          updated++;
+        } catch (e) {
+          errors.push(`Failed to rename ${t.id}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+    }
+  }
+
+  return { ok: true, updated, details: { merged, total: tournaments.length }, errors };
+}
+
 // ── Link All Players to Tournaments ────────────────────────────────────────
 
 /**
