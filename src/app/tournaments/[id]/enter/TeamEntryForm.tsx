@@ -173,7 +173,7 @@ export default function TeamEntryForm({
       {/* Error */}
       {error && (
         <div className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4 text-sm font-medium text-red-700">
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
