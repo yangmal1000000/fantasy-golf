@@ -149,16 +149,14 @@ export default async function TournamentsPage({
                   href={canEnter ? `/tournaments/${t.id}/enter` : `/tournaments/${t.id}/leaderboard`}
                   className="group block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 transition hover:border-zinc-300 dark:hover:border-zinc-700"
                 >
-                  <div className="flex items-stretch" style={{ minHeight: 88 }}>
+                  <div className="flex">
                     {/* Course thumbnail — compact, left */}
-                    <div className="relative h-[88px] w-24 shrink-0 overflow-hidden rounded-l-xl sm:h-[96px] sm:w-32">
-                      <Image
+                    <div className="relative h-[100px] w-[100px] shrink-0 overflow-hidden rounded-l-xl sm:h-[110px] sm:w-[130px]">
+                      <img
                         src={courseImage(t.id)}
                         alt={t.course || t.name}
-                        fill
                         loading="lazy"
-                        className="object-cover"
-                        sizes="128px"
+                        className="h-full w-full object-cover"
                       />
                       {isLive && (
                         <div className="absolute left-1 top-1 flex items-center gap-0.5 rounded bg-[#c44545] px-1 py-0.5">
@@ -169,7 +167,7 @@ export default async function TournamentsPage({
                     </div>
 
                     {/* Data section — dense, right */}
-                    <div className="flex-1 min-w-0 p-3">
+                    <div className="flex flex-1 flex-col justify-between min-w-0 p-2.5 sm:p-3">
                       {/* Row 1: Name + status */}
                       <div className="flex items-start justify-between gap-2">
                         <h2 className="truncate text-sm font-bold text-zinc-900 dark:text-white group-hover:text-[#0a3d2a] dark:group-hover:text-green-400">
@@ -209,7 +207,7 @@ export default async function TournamentsPage({
 
                       {/* Countdown — inline, subtle */}
                       {canEnter && (
-                        <div className="mt-1.5">
+                        <div className="mt-1">
                           <CountdownTimer startDate={t.startDate} />
                         </div>
                       )}
