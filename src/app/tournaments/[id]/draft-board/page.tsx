@@ -160,7 +160,7 @@ export default async function DraftBoardPage({
       {/* Hidden Gems */}
       <div className="mb-8 rounded-2xl border-2 border-[#c8a951]/30 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-zinc-900 p-5 shadow-sm">
         <div className="mb-1 flex items-center gap-2">
-          <span className="text-xl">💎</span>
+          <span className="text-xl"></span>
           <h2 className="text-lg font-bold text-[#0a3d2a] dark:text-green-400">Hidden Gems</h2>
         </div>
         <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">

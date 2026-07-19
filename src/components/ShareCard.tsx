@@ -97,7 +97,7 @@ export default function ShareCard({
       ctx.fillStyle = "#d4a843";
       ctx.font = "bold 18px system-ui, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("🏆 CHAMPION 🏆", W / 2, 40);
+      ctx.fillText("CHAMPION ", W / 2, 40);
     } else {
       ctx.fillStyle = "#d4a843";
       ctx.font = "bold 14px system-ui, sans-serif";
@@ -217,11 +217,11 @@ export default function ShareCard({
         await navigator.share({
           title:
             variant === "victory"
-              ? `I won ${tournamentName}! 🏆`
+              ? `I won ${tournamentName}! `
               : `My Fantasy Golf Team: ${teamName}`,
           text:
             variant === "victory"
-              ? `I just won ${tournamentName} on Fantasy Golf! 🏆`
+              ? `I just won ${tournamentName} on Fantasy Golf! `
               : `Check out my team for ${tournamentName}!`,
           files: [file],
         });
@@ -251,7 +251,7 @@ export default function ShareCard({
         <div className="mb-3 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[#d4a843]">
-              {isVictory ? "🏆 CHAMPION" : "⛳ Fantasy Golf"}
+              {isVictory ? "CHAMPION" : "⛳ Fantasy Golf"}
             </p>
             <p className="text-xs text-white/60">
               {tournamentName}

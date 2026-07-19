@@ -7,7 +7,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { TrophyIcon } from "@/components/icons";
+import { TrophyIcon, GolfFlagIcon } from "@/components/icons";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import Flag from "@/components/Flag";
 import TierBadge from "@/components/TierBadge";
@@ -207,7 +207,7 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
   if (players.length === 0) {
     return (
       <div className="rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-8 sm:p-12 text-center">
-        <p className="text-4xl mb-3">🏌️</p>
+        <p className="mb-3"><GolfFlagIcon className="h-10 w-10 mx-auto text-zinc-300" /></p>
         <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">
           No players in the database yet.
         </p>

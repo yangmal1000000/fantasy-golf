@@ -144,7 +144,7 @@ export async function GET() {
           data: {
             id: genId(),
             userId: user.id,
-            title: `🏆 Achievement Unlocked!`,
+            title: `Achievement Unlocked!`,
             body: `You earned "${ACHIEVEMENT_DEFS.find((a) => a.type === type)?.label ?? type}"`,
             type: "achievement",
           },

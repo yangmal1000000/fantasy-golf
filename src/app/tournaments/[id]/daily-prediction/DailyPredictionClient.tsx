@@ -134,7 +134,7 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
         </div>
         <div className="rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-8 text-center sm:p-12">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100 text-3xl">
-            🎯
+            
           </div>
           {currentUserId ? (
             <>
@@ -182,7 +182,7 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-wide text-white/60">Free Mini-Game</p>
-            <h1 className="text-2xl font-bold">🎯 Daily Prediction</h1>
+            <h1 className="text-2xl font-bold">Daily Prediction</h1>
             <p className="text-sm text-white/70">{tournament.name}</p>
           </div>
           {streak > 0 && (
@@ -266,7 +266,7 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
                             : "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
                         }`}
                       >
-                        <span className="text-lg">{TIER_CONFIG[p.tier]?.icon ?? "🏌️"}</span>
+                        <span className="text-lg">{TIER_CONFIG[p.tier]?.icon ?? ""}</span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-200">{p.name}</p>
                           <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -292,7 +292,7 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
       {/* Leaderboard */}
       <div className="mt-8 rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
         <div className="border-b border-zinc-100 p-4 dark:border-zinc-800">
-          <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">📊 Prediction Leaderboard</h2>
+          <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">Prediction Leaderboard</h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">Lowest total strokes across picked rounds</p>
         </div>
         {leaderboard.length === 0 ? (

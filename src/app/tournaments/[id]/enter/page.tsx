@@ -51,7 +51,7 @@ export default async function EnterTeamPage({
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-[#0a3d2a]">{tournament.name}</h1>
           <p className="text-sm text-zinc-600">
-            📍 {tournament.course} · {formatDateRange(tournament.startDate, tournament.endDate)} · Par {tournament.par}
+            {tournament.course} · {formatDateRange(tournament.startDate, tournament.endDate)} · Par {tournament.par}
           </p>
         </div>
         <SignInPrompt
@@ -68,7 +68,7 @@ export default async function EnterTeamPage({
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#0a3d2a]">{tournament.name}</h1>
         <p className="text-sm text-zinc-600">
-          📍 {tournament.course} · {formatDateRange(tournament.startDate, tournament.endDate)} · Par {tournament.par}
+          {tournament.course} · {formatDateRange(tournament.startDate, tournament.endDate)} · Par {tournament.par}
         </p>
       </div>
 

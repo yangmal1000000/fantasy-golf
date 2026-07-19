@@ -110,7 +110,7 @@ export default async function TeamDetailPage({
             </div>
             <div>
               <p className="text-xl font-bold sm:text-2xl">
-                {team.paid ? "✅" : "⏳"}
+                {team.paid ? "" : "⏳"}
               </p>
               <p className="text-xs text-white/60">
                 {team.paid ? "Paid" : "Pending"}

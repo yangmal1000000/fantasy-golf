@@ -62,7 +62,7 @@ export default async function TopGolferPage({
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 text-xl shadow">
-            🏌️
+            
           </div>
           <div>
             <h1 className="text-2xl font-bold text-purple-700 dark:text-purple-400">
@@ -122,7 +122,7 @@ export default async function TopGolferPage({
             const pick = allPlayers.find((p) => p.playerId === userEntry.playerId);
             return pick ? (
               <div className="mt-1 flex items-center gap-3">
-                <span className="text-2xl">🏌️</span>
+                <span className="text-2xl"></span>
                 <div>
                   <p className="font-bold text-zinc-800 dark:text-zinc-200">
                     {pick.playerName}
@@ -146,7 +146,7 @@ export default async function TopGolferPage({
         <div className="overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 shadow-md">
           <div className="bg-purple-700 px-4 py-3">
             <h2 className="text-sm font-bold uppercase tracking-wide text-white">
-              🏆 Top Golfer Standings
+              Top Golfer Standings
             </h2>
           </div>
           <table className="w-full text-sm">

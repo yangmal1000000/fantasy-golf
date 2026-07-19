@@ -103,7 +103,7 @@ export default function DarkHorseEntry({
           <p className="text-sm">
             <span className="text-zinc-500">Your pick: </span>
             <span className="font-bold text-fuchsia-700 dark:text-fuchsia-400">
-              ⚡ {selectedPlayer.name}
+              {selectedPlayer.name}
             </span>
             <span className="ml-2 text-xs text-zinc-500">
               Rank {selectedPlayer.rank ?? "?"}

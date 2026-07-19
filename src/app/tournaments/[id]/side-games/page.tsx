@@ -12,7 +12,7 @@ const GAME_CONFIG = [
   {
     type: "top_golfer",
     title: "Top Golfer Challenge",
-    icon: "🏌️",
+    icon: "",
     description: "Pick ONE golfer to shoot the lowest 4-round total",
     accent: "from-purple-500 to-purple-700",
     badge: "bg-purple-100 text-purple-700 border-purple-300",
@@ -22,7 +22,7 @@ const GAME_CONFIG = [
   {
     type: "best_round",
     title: "Best Round Prize",
-    icon: "🎯",
+    icon: "",
     description: "Lowest team score in a single round wins",
     accent: "from-amber-500 to-amber-700",
     badge: "bg-amber-100 text-amber-700 border-amber-300",
@@ -32,7 +32,7 @@ const GAME_CONFIG = [
   {
     type: "dark_horse",
     title: "Dark Horse Challenge",
-    icon: "⚡",
+    icon: "",
     description: "Pick a Tier 5 golfer (rank 51+) to outperform",
     accent: "from-fuchsia-500 to-fuchsia-700",
     badge: "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-300",
