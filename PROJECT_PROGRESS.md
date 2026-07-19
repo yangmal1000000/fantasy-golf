@@ -65,7 +65,14 @@ Fix tournaments page filtering and homepage credibility issues.
 - "Show Past Events (N)" / "Hide Past Events" toggle button added above list
 - Past state preserved across tour/category/year filter navigation via `buildHref` param
 - Commit: `27e3b7f`
-- Note: Build has pre-existing prerender failure on `/contact` (missing Supabase env vars) — unrelated, TypeScript compiles clean
+- Follow-up fix (`bbc9dee`): `completedCount` was computed after filtering out completed tournaments, so the toggle never appeared — moved count before the past-filter
+- Note: Build has pre-existing prerender failures on `/contact`, `/achievements`, `/_not-found` (missing Supabase env vars) — unrelated, TypeScript compiles clean
+
+### T2: Fix price inconsistency (£15 vs £10) ✅
+- "Pay £15" → "Entry £10" in How It Works strip
+- JSON-LD structured data price "15" → "10"
+- No other £15 references found in page.tsx
+- Commit: `bbc9dee` (bundled with T1 completedCount fix)
 
 ## Next Action
-T2: Fix price inconsistency (£15 vs £10) on homepage
+T3: Homepage — hide £0 prize pot when empty
