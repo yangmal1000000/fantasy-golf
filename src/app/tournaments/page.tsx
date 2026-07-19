@@ -1,70 +1,37 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "Tournaments — Fantasy Golf",
-  description: "Browse and enter upcoming fantasy golf tournaments. The Open Championship 2026 at Royal Birkdale.",
+  description: "Browse and enter upcoming fantasy golf tournaments.",
 };
 import { formatDateRange, STATUS_CONFIG, courseImage, CATEGORY_CONFIG } from "@/lib/ui";
 import CountdownTimer from "@/components/CountdownTimer";
 import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
-import { GolfFlagIcon, MapPinIcon, ChartBarIcon, StarIcon, IconByName, UsersIcon, PoundIcon } from "@/components/icons";
+import { GolfFlagIcon, MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, StarIcon } from "@/components/icons";
 
 type TournamentRow = {
-  id: string;
-  name: string;
-  course: string | null;
-  startDate: Date;
-  endDate: Date;
-  status: string;
-  par: number;
-  entryFee: number;
-  currentRound: number;
-  category: string;
-  tour: string;
+  id: string; name: string; course: string | null;
+  startDate: Date; endDate: Date; status: string; par: number;
+  entryFee: number; currentRound: number; category: string; tour: string;
   _count: { teams: number; players: number };
 };
 
-/** Tour tab — compact, text-led */
-function TourTab({ label, icon, active, href }: { label: string; icon: React.ReactNode; active: boolean; href: string }) {
-  return (
-    <Link
-      href={href}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-        active
-          ? "bg-[#0a3d2a] text-white"
-          : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-      }`}
-    >
-      {icon}
-      {label}
-    </Link>
-  );
-}
-
-export default async function TournamentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tour?: string; cat?: string }>;
-}) {
+export default async function TournamentsPage({ searchParams }: { searchParams: Promise<{ tour?: string; cat?: string }> }) {
   const params = await searchParams;
   const tour = params.tour ?? "men";
   const showWomen = tour === "women";
   const activeCategory = params.cat ?? "all";
 
   let tournaments: TournamentRow[] = [];
-
   try {
     const all = await prisma.tournament.findMany({
       orderBy: { startDate: "asc" },
       include: { _count: { select: { teams: true, players: true } } },
     });
-
     const filtered = all.filter((t) => (showWomen ? t.tour === "lpga" : t.tour !== "lpga"));
-
     const now = Date.now();
     tournaments = [...filtered].sort((a, b) => {
       if (a.status === "in_progress" && b.status !== "in_progress") return -1;
@@ -73,145 +40,110 @@ export default async function TournamentsPage({
     }) as TournamentRow[];
   } catch {}
 
-  // Category chips
-  const categoryKeys = showWomen
-    ? ["all", "lpga_major", "major"]
-    : ["all", "major", "signature", "playoff", "dpwt"];
-
+  const categoryKeys = showWomen ? ["all", "lpga_major", "major"] : ["all", "major", "signature", "playoff", "dpwt"];
   const categoryCounts: Record<string, number> = {};
   for (const t of tournaments) categoryCounts[t.category] = (categoryCounts[t.category] ?? 0) + 1;
-
   const visibleTournaments = activeCategory === "all" ? tournaments : tournaments.filter((t) => t.category === activeCategory);
 
   return (
     <Suspense fallback={<TournamentListSkeleton />}>
       <div className="mx-auto max-w-3xl px-3 py-4 sm:px-4 sm:py-6">
-        {/* Compact header */}
-        <div className="mb-4">
-          <h1 className="text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-green-400 sm:text-2xl">Tournaments</h1>
-          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-            {tournaments.length} {showWomen ? "women's" : "men's"} events · Browse and enter
-          </p>
+        {/* Header */}
+        <h1 className="text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-green-400 sm:text-2xl">Tournaments</h1>
+        <p className="mt-0.5 text-xs text-zinc-500">{tournaments.length} {showWomen ? "women's" : "men's"} events</p>
+
+        {/* Tour toggle */}
+        <div className="mt-3 flex gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/60 p-0.5">
+          <Link href="/tournaments?tour=men" className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${!showWomen ? "bg-[#0a3d2a] text-white" : "text-zinc-500"}`}>
+            <GolfFlagIcon className="h-3.5 w-3.5" /> Men&apos;s
+          </Link>
+          <Link href="/tournaments?tour=women" className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${showWomen ? "bg-[#0a3d2a] text-white" : "text-zinc-500"}`}>
+            <StarIcon className="h-3.5 w-3.5" /> Women&apos;s
+          </Link>
         </div>
 
-        {/* Tour tabs — minimal */}
-        <div className="mb-3 flex gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/60 p-0.5">
-          <TourTab label="Men's" icon={<GolfFlagIcon className="h-3.5 w-3.5" />} active={!showWomen} href="/tournaments?tour=men" />
-          <TourTab label="Women's" icon={<StarIcon className="h-3.5 w-3.5" />} active={showWomen} href="/tournaments?tour=women" />
-        </div>
-
-        {/* Category chips — horizontal scroll, compact */}
-        <div className="mb-5 flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+        {/* Category chips */}
+        <div className="mt-2 mb-4 flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
           {categoryKeys.map((catKey) => {
             const catCfg = catKey === "all" ? null : CATEGORY_CONFIG[catKey];
             const label = catKey === "all" ? "All" : catCfg?.label ?? catKey;
             const count = catKey === "all" ? tournaments.length : categoryCounts[catKey] ?? 0;
             const catParam = catKey === "all" ? "" : `&cat=${catKey}`;
-            const href = `/tournaments?tour=${tour}${catParam}`;
             const isActive = activeCategory === catKey;
             return (
-              <Link key={catKey} href={href}>
-                <span className={`whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition ${
-                  isActive
-                    ? "bg-[#0a3d2a] text-white"
-                    : "bg-white text-zinc-500 hover:text-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800"
-                }`}>
-                  {label}
-                  {count > 0 && <span className={`ml-1 ${isActive ? "text-white/50" : "text-zinc-400"}`}>{count}</span>}
+              <Link key={catKey} href={`/tournaments?tour=${tour}${catParam}`}>
+                <span className={`whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ${isActive ? "bg-[#0a3d2a] text-white" : "bg-white text-zinc-500 border border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800"}`}>
+                  {label} {count > 0 && <span className={isActive ? "text-white/50" : "text-zinc-400"}>{count}</span>}
                 </span>
               </Link>
             );
           })}
         </div>
 
-        {/* Tournament list — Polymarket-style compact rows */}
+        {/* Tournament list — compact horizontal rows */}
         {visibleTournaments.length === 0 ? (
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-8 text-center">
             <ChartBarIcon className="mx-auto h-8 w-8 text-zinc-300" />
-            <p className="mt-3 text-sm font-semibold text-zinc-600 dark:text-zinc-400">
-              {tournaments.length === 0 ? `No ${showWomen ? "women's" : "men's"} tournaments` : "No tournaments in this category"}
-            </p>
-            <p className="mt-1 text-xs text-zinc-400">
-              {tournaments.length === 0 ? "Tournaments will appear here once seeded." : "Try a different category."}
-            </p>
+            <p className="mt-3 text-sm font-semibold text-zinc-600">No tournaments available</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {visibleTournaments.map((t) => {
               const status = STATUS_CONFIG[t.status] ?? STATUS_CONFIG.upcoming;
               const canEnter = t.status === "entries_open" || t.status === "upcoming";
-              const cat = CATEGORY_CONFIG[t.category] || CATEGORY_CONFIG.major;
               const isLive = t.status === "in_progress";
 
               return (
                 <Link
                   key={t.id}
                   href={canEnter ? `/tournaments/${t.id}/enter` : `/tournaments/${t.id}/leaderboard`}
-                  className="group block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 transition hover:border-zinc-300 dark:hover:border-zinc-700"
+                  className="group flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2 transition hover:border-zinc-300 dark:hover:border-zinc-700 sm:gap-4 sm:p-3"
                 >
-                  <div className="flex">
-                    {/* Course thumbnail — compact, left */}
-                    <div className="relative h-[100px] w-[100px] shrink-0 overflow-hidden rounded-l-xl sm:h-[110px] sm:w-[130px]">
-                      <img
-                        src={courseImage(t.id)}
-                        alt={t.course || t.name}
-                        loading="lazy"
-                        className="h-full w-full object-cover"
-                      />
+                  {/* Thumbnail */}
+                  <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-lg sm:h-[80px] sm:w-[100px]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={courseImage(t.id)}
+                      alt={t.course || t.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+
+                  {/* Data */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="truncate text-sm font-bold text-zinc-900 dark:text-white">{t.name}</h2>
                       {isLive && (
-                        <div className="absolute left-1 top-1 flex items-center gap-0.5 rounded bg-[#c44545] px-1 py-0.5">
-                          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                        <span className="flex shrink-0 items-center gap-0.5 rounded bg-[#c44545] px-1 py-0.5">
+                          <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
                           <span className="text-[9px] font-bold text-white">LIVE</span>
-                        </div>
+                        </span>
                       )}
                     </div>
-
-                    {/* Data section — dense, right */}
-                    <div className="flex flex-1 flex-col justify-between min-w-0 p-2.5 sm:p-3">
-                      {/* Row 1: Name + status */}
-                      <div className="flex items-start justify-between gap-2">
-                        <h2 className="truncate text-sm font-bold text-zinc-900 dark:text-white group-hover:text-[#0a3d2a] dark:group-hover:text-green-400">
-                          {t.name}
-                        </h2>
-                        <div className="flex shrink-0 items-center gap-1">
-                          <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${status.badgeClass}`}>
-                            {status.label}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Row 2: Course + date */}
-                      <div className="mt-0.5 flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-                        <MapPinIcon className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{t.course ?? "TBD"}</span>
-                        <span className="text-zinc-300 dark:text-zinc-600">·</span>
-                        <span className="whitespace-nowrap tabular">{formatDateRange(t.startDate, t.endDate)}</span>
-                      </div>
-
-                      {/* Row 3: Stats — compact data chips */}
-                      <div className="mt-2 flex items-center gap-3 text-xs">
-                        <span className="inline-flex items-center gap-1 text-zinc-500 dark:text-zinc-400">
-                          <UsersIcon className="h-3 w-3" />
-                          <span className="font-semibold text-zinc-700 dark:text-zinc-300 tabular">{t._count.teams}</span>
-                          <span className="text-zinc-400">teams</span>
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-zinc-500 dark:text-zinc-400">
-                          <PoundIcon className="h-3 w-3 text-[#c8a951]" />
-                          <span className="font-semibold text-[#c8a951] tabular">£{(t.entryFee / 100).toFixed(0)}</span>
-                        </span>
-                        <span className="text-zinc-400 dark:text-zinc-500 tabular">Par {t.par}</span>
-                        {isLive && t.currentRound > 0 && (
-                          <span className="font-semibold text-[#c44545]">R{t.currentRound}</span>
-                        )}
-                      </div>
-
-                      {/* Countdown — inline, subtle */}
-                      {canEnter && (
-                        <div className="mt-1">
-                          <CountdownTimer startDate={t.startDate} />
-                        </div>
-                      )}
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500">
+                      <MapPinIcon className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{t.course ?? "TBD"}</span>
+                      <span className="text-zinc-300">·</span>
+                      <span className="whitespace-nowrap tabular">{formatDateRange(t.startDate, t.endDate)}</span>
                     </div>
+                    <div className="mt-1.5 flex items-center gap-3 text-xs">
+                      <span className="inline-flex items-center gap-1">
+                        <UsersIcon className="h-3 w-3 text-zinc-400" />
+                        <span className="font-semibold tabular text-zinc-700 dark:text-zinc-300">{t._count.teams}</span>
+                        <span className="text-zinc-400">teams</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <PoundIcon className="h-3 w-3 text-[#c8a951]" />
+                        <span className="font-semibold tabular text-[#c8a951]">£{(t.entryFee / 100).toFixed(0)}</span>
+                      </span>
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${status.badgeClass}`}>{status.label}</span>
+                    </div>
+                  </div>
+
+                  {/* Arrow */}
+                  <div className="shrink-0 self-center text-zinc-300 transition group-hover:text-[#0a3d2a] dark:group-hover:text-green-400">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
                   </div>
                 </Link>
               );
