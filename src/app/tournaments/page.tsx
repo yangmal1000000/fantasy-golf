@@ -56,12 +56,12 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
           </div>
         </div>
 
-        {/* Tour toggle — stronger contrast */}
-        <div className="mt-2 flex gap-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-1">
-          <Link href="/tournaments?tour=men" className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${!showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+        {/* Tour toggle — compact */}
+        <div className="mt-2 flex gap-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-0.5">
+          <Link href="/tournaments?tour=men" className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${!showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
             <GolfFlagIcon className="h-4 w-4" /> Men&apos;s
           </Link>
-          <Link href="/tournaments?tour=women" className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+          <Link href="/tournaments?tour=women" className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
             <StarIcon className="h-4 w-4" /> Women&apos;s
           </Link>
         </div>
@@ -169,11 +169,15 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
                   </div>
 
                   {/* CTA — strong, right-aligned */}
-                  <div className="flex shrink-0 flex-col items-center gap-1 pl-1">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${canEnter ? "bg-[#0a3d2a] dark:bg-green-600 group-hover:bg-[#1a5c3e]" : "bg-zinc-100 dark:bg-zinc-800"}`}>
-                      <svg className={`h-4 w-4 ${canEnter ? "text-white" : "text-zinc-400"}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {canEnter ? (
+                      <span className="rounded-lg bg-[#0a3d2a] dark:bg-green-600 px-3 py-1.5 text-xs font-bold text-white transition group-hover:bg-[#1a5c3e]">Enter</span>
+                    ) : (
+                      <span className="rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-zinc-500">View</span>
+                    )}
+                    <div className={`flex h-7 w-7 items-center justify-center rounded-md transition ${canEnter ? "bg-[#0a3d2a]/10 dark:bg-green-600/20 group-hover:bg-[#0a3d2a]/20" : "bg-zinc-100 dark:bg-zinc-800"}`}>
+                      <svg className={`h-3.5 w-3.5 ${canEnter ? "text-[#0a3d2a] dark:text-green-400" : "text-zinc-400"}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
                     </div>
-                    <span className="text-[9px] font-semibold text-zinc-400 group-hover:text-[#0a3d2a] dark:group-hover:text-green-400">{canEnter ? "Enter" : "View"}</span>
                   </div>
                 </Link>
               );
