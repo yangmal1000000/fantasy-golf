@@ -194,7 +194,7 @@ async function fetchScoreboard(dateRange: string): Promise<ESPNScoreboardRespons
 // ── Tier helper ────────────────────────────────────────────────────────────
 
 export function tierForRank(rank: number | null | undefined): string {
-  if (rank == null) return "T51_PLUS";
+  if (rank == null) return "UNRANKED";
   if (rank <= 10) return "T1_10";
   if (rank <= 20) return "T11_20";
   if (rank <= 30) return "T21_30";
