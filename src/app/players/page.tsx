@@ -126,21 +126,15 @@ export default async function PlayersPage({
   for (const player of players) {
     if (player.country) allCountries.add(player.country);
 
-    // Determine tour from tournament history
+    // Determine tour from player ID prefix (reliable)
+    // Men: player-1, player-2...  Women: wplayer-1, wplayer-2...
+    const isPlayerWomen = player.id.startsWith("wplayer");
+    if (isWomen && !isPlayerWomen) continue;
+    if (!isWomen && isPlayerWomen) continue;
+
     const playerTournaments = player.tournaments.filter(
       (tp) => tournamentMap.has(tp.tournamentId),
     );
-    const hasWomenEntry = playerTournaments.some(
-      (tp) => tournamentMap.get(tp.tournamentId)?.category === "lpga_major",
-    );
-    const hasMenEntry =
-      playerTournaments.length === 0 ||
-      playerTournaments.some(
-        (tp) => tournamentMap.get(tp.tournamentId)?.category !== "lpga_major",
-      );
-
-    if (isWomen && !hasWomenEntry) continue;
-    if (!isWomen && !hasMenEntry) continue;
 
     // Tournament count
     const tournamentCount = player.tournaments.length;
