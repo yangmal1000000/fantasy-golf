@@ -1,84 +1,95 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export const maxDuration = 60;
+export const maxDuration = 55;
 
 /**
  * POST /api/sync/purge-fake
- * Force-deletes ALL tournaments with year-suffixed IDs (e.g. "the-open-2026")
- * and old fake seeded players (player-1 through player-60, wplayer-*)
- * Keeps only real ESPN-synced data (clean slug IDs, real OWGR players)
+ * Deletes old fake data in small batches to avoid timeouts.
+ * Call repeatedly until remaining.fakeTournaments === 0.
  */
 export async function POST() {
-  const results = { tournamentsDeleted: 0, scoresDeleted: 0, tpsDeleted: 0, playersDeleted: 0, errors: [] as string[] };
-
   try {
-    // 1. Find all year-suffixed tournaments
-    const allTournaments = await prisma.tournament.findMany({ select: { id: true, name: true } });
-    const fakeTournaments = allTournaments.filter((t: { id: string; name: string }) => /-20\d{2}$/.test(t.id));
-
-    for (const t of fakeTournaments) {
-      try {
-        // Delete all related records first (order matters for FK constraints)
-        await prisma.teamSelection.deleteMany({ where: { team: { tournamentId: t.id } } }).catch(() => {});
-        await prisma.score.deleteMany({ where: { tournamentId: t.id } }).catch(() => {});
-        await prisma.tournamentPlayer.deleteMany({ where: { tournamentId: t.id } }).catch(() => {});
-        await prisma.team.deleteMany({ where: { tournamentId: t.id } }).catch(() => {});
-        await prisma.broadcastMessage.deleteMany({ where: { tournamentId: t.id } }).catch(() => {});
-        await prisma.sideBet.deleteMany({ where: { tournamentId: t.id } }).catch(() => {});
-        await prisma.tournamentSidePot.deleteMany({ where: { tournamentId: t.id } }).catch(() => {});
-        await prisma.tournament.delete({ where: { id: t.id } }).catch((e: unknown) => {
-          results.errors.push(`Failed to delete ${t.id}: ${e instanceof Error ? e.message : String(e)}`);
-        });
-        results.tournamentsDeleted++;
-      } catch (e) {
-        results.errors.push(`${t.id}: ${e instanceof Error ? e.message : String(e)}`);
-      }
-    }
-
-    // 2. Delete fake seeded players (player-N and wplayer-N format)
-    const fakePlayers = await prisma.player.findMany({
-      where: {
-        OR: [
-          { id: { startsWith: "player-" } },
-          { id: { startsWith: "wplayer-" } },
-        ],
-      },
+    // 1. Delete a few year-suffixed tournaments (max 5 per request)
+    const fakeTournaments = await prisma.tournament.findMany({
+      where: { id: { contains: "-2026" } },
+      take: 5,
       select: { id: true },
     });
 
-    if (fakePlayers.length > 0) {
-      const fakeIds = fakePlayers.map((p: { id: string }) => p.id);
+    let deleted = 0;
+    for (const t of fakeTournaments) {
+      try {
+        await prisma.$transaction([
+          prisma.teamSelection.deleteMany({ where: { team: { tournamentId: t.id } } }),
+          prisma.score.deleteMany({ where: { tournamentId: t.id } }),
+          prisma.tournamentPlayer.deleteMany({ where: { tournamentId: t.id } }),
+          prisma.team.deleteMany({ where: { tournamentId: t.id } }),
+        ]).catch(() => {});
+        await prisma.broadcastMessage.deleteMany({ where: { tournamentId: t.id } }).catch(() => {});
+        await prisma.sideBet.deleteMany({ where: { tournamentId: t.id } }).catch(() => {});
+        await prisma.tournamentSidePot.deleteMany({ where: { tournamentId: t.id } }).catch(() => {});
+        await prisma.tournament.delete({ where: { id: t.id } }).catch(() => {});
+        deleted++;
+      } catch {}
+    }
 
-      // Delete related records first
-      for (const pid of fakeIds) {
+    // Also check 2027
+    const fake2027 = await prisma.tournament.findMany({
+      where: { id: { contains: "-2027" } },
+      take: 5,
+      select: { id: true },
+    });
+    for (const t of fake2027) {
+      try {
+        await prisma.$transaction([
+          prisma.teamSelection.deleteMany({ where: { team: { tournamentId: t.id } } }),
+          prisma.score.deleteMany({ where: { tournamentId: t.id } }),
+          prisma.tournamentPlayer.deleteMany({ where: { tournamentId: t.id } }),
+          prisma.team.deleteMany({ where: { tournamentId: t.id } }),
+        ]).catch(() => {});
+        await prisma.tournament.delete({ where: { id: t.id } }).catch(() => {});
+        deleted++;
+      } catch {}
+    }
+
+    // 2. Delete fake players (player-N format) in small batches
+    const fakePlayers = await prisma.player.findMany({
+      where: { OR: [{ id: { startsWith: "player-" } }, { id: { startsWith: "wplayer-" } }] },
+      take: 20,
+      select: { id: true },
+    });
+
+    let playersDeleted = 0;
+    if (fakePlayers.length > 0) {
+      const ids = fakePlayers.map((p: { id: string }) => p.id);
+      for (const pid of ids) {
         await prisma.score.deleteMany({ where: { playerId: pid } }).catch(() => {});
         await prisma.tournamentPlayer.deleteMany({ where: { playerId: pid } }).catch(() => {});
       }
-      // Delete the fake players
-      const deleted = await prisma.player.deleteMany({
-        where: { id: { in: fakeIds } },
-      }).catch(() => ({ count: 0 }));
-      results.playersDeleted = deleted.count;
+      const result = await prisma.player.deleteMany({ where: { id: { in: ids } } }).catch(() => ({ count: 0 }));
+      playersDeleted = result.count;
     }
 
-    // 3. Count remaining real data
-    const remainingTournaments = await prisma.tournament.count();
-    const remainingPlayers = await prisma.player.count();
-    const remainingScores = await prisma.score.count();
+    // 3. Count remaining
+    const remainingFake = await prisma.tournament.count({
+      where: { OR: [{ id: { contains: "-2026" } }, { id: { contains: "-2027" } }] },
+    });
+    const remainingFakePlayers = await prisma.player.count({
+      where: { OR: [{ id: { startsWith: "player-" } }, { id: { startsWith: "wplayer-" } }] },
+    });
+    const realTournaments = await prisma.tournament.count();
+    const realPlayers = await prisma.player.count();
 
     return NextResponse.json({
-      ...results,
-      remaining: {
-        tournaments: remainingTournaments,
-        players: remainingPlayers,
-        scores: remainingScores,
-      },
+      deletedTournaments: deleted,
+      deletedPlayers: playersDeleted,
+      remainingFakeTournaments: remainingFake,
+      remainingFakePlayers: remainingFakePlayers,
+      real: { tournaments: realTournaments, players: realPlayers },
+      done: remainingFake === 0 && remainingFakePlayers === 0,
     });
   } catch (e) {
-    return NextResponse.json(
-      { ...results, fatal: String(e).slice(0, 500) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: String(e).slice(0, 500) }, { status: 500 });
   }
 }
