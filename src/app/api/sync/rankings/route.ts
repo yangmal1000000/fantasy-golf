@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { syncOWGRRankings, linkPlayersToTournaments } from "@/lib/data-sync";
+import { syncOWGRRankings, recalculateAllTiers } from "@/lib/data-sync";
+
+// Maximum duration for Vercel serverless function
+export const maxDuration = 60;
 
 /**
  * POST /api/sync/rankings
@@ -11,15 +14,15 @@ export async function POST() {
   try {
     const rankResult = await syncOWGRRankings();
 
-    // After updating rankings, link players to tournaments
-    const linkResult = await linkPlayersToTournaments();
+    // After updating rankings, recalculate tiers (fast - no new records)
+    const tierResult = await recalculateAllTiers();
 
     return NextResponse.json({
       ...rankResult,
       details: {
         ...rankResult.details,
-        linksCreated: linkResult.created,
-        linksSkipped: linkResult.skipped,
+        tiersChanged: tierResult.tiersChanged,
+        totalChecked: tierResult.totalChecked,
       },
     });
   } catch (e) {

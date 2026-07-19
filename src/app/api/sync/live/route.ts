@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { syncLiveScores } from "@/lib/data-sync";
 
+export const maxDuration = 60;
+
 /**
  * POST /api/sync/live
  * Pulls current round scores from ESPN for any in-progress tournament.
