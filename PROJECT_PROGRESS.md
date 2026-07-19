@@ -26,30 +26,27 @@ Fix the tournament detail page and restore the leaderboard/scoreboard for comple
 - Top 20 shown by default, "Show Full Field" button to expand
 - Build must pass
 
-### T2: ✅ DONE — Course profile section
+### T2: Tournament detail — add course profile section
 - In `src/app/tournaments/[id]/page.tsx`, add a "Course Profile" section below the header
 - Show: course name, par, yardage (if available in schema — if field doesn't exist, skip gracefully), location
 - Display as an info card with a map pin icon
 - If data not available, show "Course details TBA"
 - Build must pass
 
-### T3: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
-### T3-ORIGINAL: Winner card
+### T3: Tournament detail — add winner card for completed events
 - In `src/app/tournaments/[id]/page.tsx`, for completed tournaments:
   - Query the Score table to find the player with the lowest total strokes
   - Display a "Winner" card with: trophy icon, player name, country flag, total score, to par
   - Show runner-up too (2nd place)
 - Build must pass
 
-### T4: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
-### T4-ORIGINAL: Cut line info
+### T4: Tournament detail — add cut line info
 - For completed/in-progress tournaments:
   - Calculate or display the cut line (typically top 65 + ties after R2)
   - Show "Cut Line: +X" or "Made the Cut: N players"
 - Build must pass
 
-### T5: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
-### T5-ORIGINAL: Empty state for field
+### T5: Tournament detail — improve field display for upcoming tournaments
 - When a tournament has no linked players (field is empty):
   - Show a proper empty state: "Field will be announced closer to the event"
   - Don't render empty tier sections
@@ -64,7 +61,11 @@ Fix the tournament detail page and restore the leaderboard/scoreboard for comple
 - Update this file: move task to Completed, update Next Action
 
 ## Completed
-- **T1**: Fix empty leaderboard for completed tournaments — Created `TournamentLeaderboard.tsx` client component that shows real PGA Tour player scores sorted by total strokes. Shows top 20 with "Show Full Field" toggle, winner highlighted with gold + trophy. Responsive desktop table + mobile cards. Integrated into leaderboard page when no fantasy teams exist.
+- T1: Fix empty leaderboard for completed tournaments — show real PGA Tour scores when no fantasy teams exist (TournamentLeaderboard.tsx client component + leaderboard page integration)
+- T2: Add Course Profile section to tournament detail page (course name, par, tour, dates with graceful empty state)
+- T3: Add winner & runner-up cards for completed tournaments on detail page (trophy + medal with scores)
+- T4: Add cut line info section with made/missed cut counts on tournament detail page
+- T5: Add proper empty state ("Field will be announced closer to the event") for tournaments with no players
 
 ## Next Action
-T3: Winner card — add winner/runner-up card for completed tournaments
+All tasks complete. Ready for review/merge.
