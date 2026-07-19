@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP } from "@/lib/ui";
-import { MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, GolfFlagIcon, TrophyIcon, TargetIcon, BoltIcon } from "@/components/icons";
+import { MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, GolfFlagIcon, TrophyIcon, TargetIcon, BoltIcon, FlagIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +50,21 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     entry.madeCut = entry.roundsPlayed >= 3; // Made cut if they played R3
   }
   const hasScores = scores.length > 0;
+
+  // Compute winner and runner-up for completed tournaments
+  const sortedScorers = [...scoreMap.entries()]
+    .filter(([, s]) => s.roundsPlayed > 0)
+    .sort((a, b) => a[1].total - b[1].total);
+  const winnerEntry = sortedScorers[0];
+  const runnerUpEntry = sortedScorers[1];
+  // Build playerId -> name map for winner display
+  const playerNameMap = new Map<string, string>();
+  const playerCountryMap = new Map<string, string | null>();
+  for (const tp of tournament.players) {
+    playerNameMap.set(tp.playerId, tp.player.name);
+    playerCountryMap.set(tp.playerId, tp.player.country);
+  }
+  const isCompleted = tournament.status === "completed";
 
   const status = STATUS_CONFIG[tournament.status] ?? STATUS_CONFIG.upcoming;
   const cat = CATEGORY_CONFIG[tournament.category];
@@ -147,6 +162,35 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </div>
       )}
 
+      {/* Course Profile */}
+      <div className="mt-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <FlagIcon className="h-4 w-4 text-[#0a3d2a] dark:text-green-400" />
+          <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500">Course Profile</h2>
+        </div>
+        {tournament.course ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Course</p>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                <MapPinIcon className="h-3.5 w-3.5 text-zinc-400" />
+                {tournament.course}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Par</p>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.par}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Tour</p>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 uppercase">{tournament.tour}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-400">Course details TBA</p>
+        )}
+      </div>
+
       {/* Action buttons */}
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {canEnter ? (
@@ -181,6 +225,66 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           </div>
           <span className="text-sm font-bold text-[#c44545]">Follow Live →</span>
         </Link>
+      )}
+
+      {/* Winner card for completed tournaments */}
+      {isCompleted && winnerEntry && (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {/* Winner */}
+          <div className="flex items-center gap-3 rounded-xl border-2 border-[#c8a951]/40 bg-gradient-to-br from-[#c8a951]/10 to-transparent p-4 shadow-sm">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#c8a951] text-2xl shadow-md">
+              🏆
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#c8a951]">Winner</p>
+              <p className="truncate text-base font-bold text-zinc-800 dark:text-zinc-100">
+                {playerNameMap.get(winnerEntry[0]) ?? "Unknown"}
+              </p>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
+                  {winnerEntry[1].total}
+                </span>
+                <span className={`font-semibold ${
+                  winnerEntry[1].toPar < 0 ? "text-green-600" :
+                  winnerEntry[1].toPar === 0 ? "text-zinc-500" : "text-red-500"
+                }`}>
+                  ({winnerEntry[1].toPar === 0 ? "E" : `${winnerEntry[1].toPar > 0 ? "+" : ""}${winnerEntry[1].toPar}`})
+                </span>
+                {playerCountryMap.get(winnerEntry[0]) && (
+                  <span className="text-xs text-zinc-400">{playerCountryMap.get(winnerEntry[0])}</span>
+                )}
+              </div>
+            </div>
+          </div>
+          {/* Runner-up */}
+          {runnerUpEntry && (
+            <div className="flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 text-xl">
+                🥈
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">Runner-up</p>
+                <p className="truncate text-base font-bold text-zinc-800 dark:text-zinc-100">
+                  {playerNameMap.get(runnerUpEntry[0]) ?? "Unknown"}
+                </p>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-bold tabular text-zinc-700 dark:text-zinc-300">
+                    {runnerUpEntry[1].total}
+                  </span>
+                  <span className={`font-semibold ${
+                    runnerUpEntry[1].toPar < 0 ? "text-green-600" :
+                    runnerUpEntry[1].toPar === 0 ? "text-zinc-500" : "text-red-500"
+                  }`}>
+                    ({runnerUpEntry[1].toPar === 0 ? "E" : `${runnerUpEntry[1].toPar > 0 ? "+" : ""}${runnerUpEntry[1].toPar}`})
+                  </span>
+                  {playerCountryMap.get(runnerUpEntry[0]) && (
+                    <span className="text-xs text-zinc-400">{playerCountryMap.get(runnerUpEntry[0])}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Course Profile */}
