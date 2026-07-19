@@ -46,41 +46,50 @@ export async function POST() {
   report.duplicatePlayersDeleted = playersDeleted;
   report.duplicatePlayersRemaining = remainingDupes;
   
-  // 2. Fix tournament statuses based on dates
+  // 2. Fix ALL tournament statuses based on dates (no batch limit)
   const tournaments = await prisma.tournament.findMany({ select: { id: true, name: true, startDate: true, endDate: true, status: true } });
   const now = new Date();
   let statusFixed = 0;
-  
-  for (const t of tournaments.slice(0, 30)) { // max 30 per request
-    let correctStatus = t.status;
-    const start = new Date(t.startDate);
-    const end = new Date(t.endDate);
+  let skippedInvalidDates = 0;
+
+  for (const t of tournaments) {
+    // Skip tournaments with invalid/null dates
+    const startMs = t.startDate ? new Date(t.startDate).getTime() : NaN;
+    const endMs = t.endDate ? new Date(t.endDate).getTime() : NaN;
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+      skippedInvalidDates++;
+      continue;
+    }
+
+    const start = new Date(startMs);
+    const end = new Date(endMs);
     end.setHours(23, 59, 59); // End of day
-    
+
+    let correctStatus: string;
     if (end < now) {
       correctStatus = "completed";
     } else if (start <= now && end >= now) {
       correctStatus = "in_progress";
-    } else if (start > now) {
+    } else {
       // Future tournament — entries open if within 60 days, otherwise upcoming
       const daysUntil = (start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
       correctStatus = daysUntil < 60 ? "entries_open" : "upcoming";
     }
-    
+
     if (correctStatus !== t.status) {
-      const updateData: Record<string, string> = { status: correctStatus };
+      const updateData: Record<string, string | number> = { status: correctStatus };
       if (correctStatus === "completed") {
-        // Set currentRound to 4 for completed tournaments
-        updateData.currentRound = "4";
+        updateData.currentRound = 4;
       } else if (correctStatus === "in_progress") {
-        updateData.currentRound = "1";
+        updateData.currentRound = 1;
       }
       await prisma.tournament.update({ where: { id: t.id }, data: updateData }).catch(() => {});
       statusFixed++;
     }
   }
-  
+
   report.tournamentStatusesFixed = statusFixed;
+  report.skippedInvalidDates = skippedInvalidDates;
   
   // 3. Check if all fixed
   const finalPlayerCount = await prisma.player.count();

@@ -48,6 +48,11 @@ export default async function Home() {
     entryFee: number;
   } | null = null;
 
+  // Real stats for trust bar
+  let tournamentCount = 0;
+  let playerCount = 0;
+  let totalPot = 0;
+
   try {
     tournament = await prisma.tournament.findFirst({
       where: {
@@ -85,6 +90,14 @@ export default async function Home() {
         _count: { select: { teams: true } },
       },
     });
+
+    // Real aggregate stats
+    tournamentCount = await prisma.tournament.count();
+    playerCount = await prisma.player.count();
+    const teams = await prisma.team.findMany({
+      select: { tournament: { select: { entryFee: true } } },
+    });
+    totalPot = teams.reduce((sum, t) => sum + (t.tournament?.entryFee ?? 0), 0);
   } catch {
     // DB might not be seeded yet — render with null
   }
@@ -293,7 +306,7 @@ export default async function Home() {
       <section className="bg-gradient-to-r from-[#0a3d2a] to-[#1a5c3e] py-8 text-center text-white sm:py-10">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Ready to play?</h2>
-          <p className="mt-1 text-sm text-white/80">Build your dream team and compete for the prize pot.</p>
+          <p className="mt-1 text-sm text-white/80">Build your dream team across PGA Tour events.</p>
           <Link href="/tournaments" className="mt-4 inline-block rounded-lg bg-[#c8a951] px-8 py-2.5 text-sm font-bold text-[#1a1a1a] transition hover:bg-[#d4b76a]">Get Started →</Link>
         </div>
       </section>
