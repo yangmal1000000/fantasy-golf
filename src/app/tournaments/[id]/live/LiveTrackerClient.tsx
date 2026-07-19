@@ -109,7 +109,7 @@ export default function LiveTrackerClient(props: Props) {
       {/* Players with live scores */}
       <div className="rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
         <div className="border-b border-zinc-100 p-4 dark:border-zinc-800">
-          <h3 className="text-base font-bold text-[#0f3d20] dark:text-green-400">👥 Your Players — Round {data.currentRound || 1}</h3>
+          <h3 className="text-base font-bold text-[#0f3d20] dark:text-green-400">Your Players — Round {data.currentRound || 1}</h3>
         </div>
         <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
           {data.players.map((p) => {
