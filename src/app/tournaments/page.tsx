@@ -19,12 +19,13 @@ type TournamentRow = {
   _count: { teams: number; players: number };
 };
 
-export default async function TournamentsPage({ searchParams }: { searchParams: Promise<{ tour?: string; cat?: string; year?: string }> }) {
+export default async function TournamentsPage({ searchParams }: { searchParams: Promise<{ tour?: string; cat?: string; year?: string; past?: string }> }) {
   const params = await searchParams;
   const tour = params.tour ?? "men";
   const showWomen = tour === "women";
   const activeCategory = params.cat ?? "all";
   const activeYear = params.year ?? "all";
+  const showPast = params.past === "1";
 
   let tournaments: TournamentRow[] = [];
   try {
@@ -36,6 +37,12 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     // Year filter
     if (activeYear !== "all") {
       filtered = filtered.filter((t) => new Date(t.startDate).getFullYear().toString() === activeYear);
+    }
+    // Count completed BEFORE filtering them out (for toggle label)
+    const completedCount = filtered.filter((t) => t.status === "completed").length;
+    // Hide completed tournaments by default; show when ?past=1
+    if (!showPast) {
+      filtered = filtered.filter((t) => t.status !== "completed");
     }
     // Strict chronological order (earliest first)
     tournaments = [...filtered].sort((a, b) => a.startDate.getTime() - b.startDate.getTime()) as TournamentRow[];
@@ -50,6 +57,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
   for (const t of tournaments) yearSet.add(new Date(t.startDate).getFullYear());
   const years = Array.from(yearSet).sort((a, b) => a - b);
 
+  // Apply category filter (tournaments already has past-filter applied above)
   const visibleTournaments = activeCategory === "all" ? tournaments : tournaments.filter((t) => t.category === activeCategory);
 
   // Group by month for display
@@ -63,11 +71,12 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     else grouped.push({ label, items: [t] });
   }
 
-  function buildHref(t: string, c: string, y: string) {
+  function buildHref(t: string, c: string, y: string, p?: string) {
     const params = new URLSearchParams();
     if (t !== "men") params.set("tour", t);
     if (c !== "all") params.set("cat", c);
     if (y !== "all") params.set("year", y);
+    if (p === "1") params.set("past", "1");
     const qs = params.toString();
     return `/tournaments${qs ? `?${qs}` : ""}`;
   }
@@ -83,10 +92,10 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
 
         {/* Tour toggle */}
         <div className="mt-2 flex gap-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-0.5">
-          <Link href={buildHref("men", activeCategory, activeYear)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${!showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+          <Link href={buildHref("men", activeCategory, activeYear, showPast ? "1" : undefined)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${!showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
             <GolfFlagIcon className="h-4 w-4" /> Men&apos;s
           </Link>
-          <Link href={buildHref("women", activeCategory, activeYear)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+          <Link href={buildHref("women", activeCategory, activeYear, showPast ? "1" : undefined)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
             <StarIcon className="h-4 w-4" /> Women&apos;s
           </Link>
         </div>
@@ -101,7 +110,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
               if (count === 0 && catKey !== "all") return null;
               const isActive = activeCategory === catKey;
               return (
-                <Link key={catKey} href={buildHref(tour, catKey, activeYear)}>
+                <Link key={catKey} href={buildHref(tour, catKey, activeYear, showPast ? "1" : undefined)}>
                   <span className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition ${isActive ? "bg-[#0a3d2a] text-white" : "bg-white text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"}`}>
                     {label}{count > 0 && <span className={`ml-1.5 ${isActive ? "text-white/60" : "text-zinc-400"}`}>{count}</span>}
                   </span>
@@ -111,17 +120,38 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
           </div>
           {years.length > 1 && (
             <div className="ml-auto flex shrink-0 gap-1">
-              <Link href={buildHref(tour, activeCategory, "all")}>
+              <Link href={buildHref(tour, activeCategory, "all", showPast ? "1" : undefined)}>
                 <span className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${activeYear === "all" ? "bg-[#c8a951] text-[#1a1a1a]" : "text-zinc-500 hover:text-zinc-800 border border-zinc-200 dark:border-zinc-800"}`}>All Years</span>
               </Link>
               {years.map((y) => (
-                <Link key={y} href={buildHref(tour, activeCategory, y.toString())}>
+                <Link key={y} href={buildHref(tour, activeCategory, y.toString(), showPast ? "1" : undefined)}>
                   <span className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${activeYear === y.toString() ? "bg-[#c8a951] text-[#1a1a1a]" : "text-zinc-500 hover:text-zinc-800 border border-zinc-200 dark:border-zinc-800"}`}>{y}</span>
                 </Link>
               ))}
             </div>
           )}
         </div>
+
+        {/* Show/Hide Past Events toggle */}
+        {completedCount > 0 && (
+          <div className="mb-3 flex justify-end">
+            <Link href={buildHref(tour, activeCategory, activeYear, showPast ? undefined : "1")}>
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 transition hover:border-zinc-400 dark:hover:border-zinc-600">
+                {showPast ? (
+                  <>
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                    Hide Past Events
+                  </>
+                ) : (
+                  <>
+                    Show Past Events ({completedCount})
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                  </>
+                )}
+              </span>
+            </Link>
+          </div>
+        )}
 
         {/* Tournament list — grouped by month */}
         {visibleTournaments.length === 0 ? (
