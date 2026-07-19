@@ -134,27 +134,19 @@ export default async function LeaderboardPage({
   const sideGamesActive = sideGameCards.some((g) => g.entries > 0);
 
   return (
-    <div className="mx-auto max-w-4xl px-3 py-6 sm:px-4 sm:py-8">
-      {/* Sticky tournament name header for mobile */}
-      <div className="sticky top-[52px] z-20 -mx-3 mb-4 border-b border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 px-3 py-2 backdrop-blur sm:static sm:top-auto sm:z-auto sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
-        <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 sm:text-sm">
-          <Link href="/tournaments" className="hover:text-[#0a3d2a] dark:hover:text-green-400">
-            ← Tournaments
-          </Link>
-        </div>
-        <h1 className="mt-1 text-lg font-bold text-[#0a3d2a] dark:text-green-400 sm:mt-2 sm:text-2xl">
-          Leaderboard
-        </h1>
-        <p className="text-xs text-zinc-600 dark:text-zinc-400 sm:text-sm">{tournament.name}</p>
+    <div className="mx-auto max-w-3xl px-3 py-4 sm:px-4 sm:py-6">
+      {/* Header */}
+      <div className="mb-3">
+        <Link href="/tournaments" className="text-xs text-zinc-500 hover:text-[#0a3d2a] dark:hover:text-green-400">← Tournaments</Link>
+        <h1 className="mt-1 text-lg font-bold text-[#0a3d2a] dark:text-green-400 sm:text-xl">Leaderboard</h1>
+        <p className="text-xs text-zinc-500">{tournament.name}</p>
       </div>
 
-      {/* Stats bar */}
-      <div className="mb-4 grid grid-cols-3 gap-2 sm:mb-6 sm:gap-3">
-        <div className="rounded-xl bg-white dark:bg-zinc-900 p-3 text-center shadow-sm sm:p-4">
-          <p className="text-lg font-bold tabular text-[#0a3d2a] dark:text-green-400 sm:text-xl">
-            {tournament._count.teams}
-          </p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">Teams</p>
+      {/* Stats bar — compact */}
+      <div className="mb-3 grid grid-cols-3 gap-1.5 sm:gap-2">
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2 text-center">
+          <p className="text-base font-bold tabular text-[#0a3d2a] dark:text-green-400 sm:text-lg">{tournament._count.teams}</p>
+          <p className="text-[10px] text-zinc-500">Teams</p>
         </div>
         <div className="rounded-xl bg-white dark:bg-zinc-900 p-3 text-center shadow-sm sm:p-4">
           <p className="text-lg font-bold tabular text-[#c8a951] sm:text-xl">
