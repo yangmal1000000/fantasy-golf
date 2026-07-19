@@ -201,7 +201,7 @@ export default function LeaguesClient({
 
       {/* Leagues list */}
       {leagues.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 p-8 text-center dark:border-zinc-700 dark:bg-zinc-900 sm:p-12">
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 text-center dark:border-zinc-800 dark:bg-zinc-900">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#0a3d2a]/10 text-3xl">
             
           </div>
@@ -215,7 +215,7 @@ export default function LeaguesClient({
           {leagues.map((league) => (
             <div
               key={league.id}
-              className="overflow-hidden rounded-2xl bg-white shadow-md transition hover:shadow-lg dark:bg-zinc-900"
+              className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 transition hover:border-zinc-300 dark:hover:border-zinc-700"
             >
               <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
                 <div className="flex-1 min-w-0">
