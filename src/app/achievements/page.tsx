@@ -55,7 +55,7 @@ export default function AchievementsPage() {
         {/* Header */}
         <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6 text-white shadow-lg">
           <p className="text-xs uppercase tracking-wide text-white/60">Your Trophy Room</p>
-          <h1 className="text-2xl font-bold">🏆 Achievements</h1>
+          <h1 className="text-2xl font-bold">Achievements</h1>
           <p className="mt-1 text-sm text-white/70">
             Unlock badges for wins, podiums, upsets, and milestones as you play.
           </p>
@@ -79,7 +79,7 @@ export default function AchievementsPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-wide text-white/60">Your Trophy Room</p>
-            <h1 className="text-2xl font-bold">🏆 Achievements</h1>
+            <h1 className="text-2xl font-bold">Achievements</h1>
           </div>
           <div className="text-right">
             <p className="text-3xl font-extrabold text-yellow-300">
@@ -103,7 +103,7 @@ export default function AchievementsPage() {
       {earnedCount === 0 && (
         <div className="mt-4 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 p-4 text-center dark:border-amber-900 dark:bg-amber-950">
           <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">
-            🏆 You haven&apos;t earned any achievements yet — enter a tournament to start collecting badges!
+            You haven&apos;t earned any achievements yet — enter a tournament to start collecting badges!
           </p>
           <Link
             href="/tournaments"
@@ -176,7 +176,7 @@ export default function AchievementsPage() {
 
               {/* Lock icon for unearned */}
               {!a.earned && (
-                <span className="absolute right-2 top-2 text-xs opacity-30">🔒</span>
+                <span className="absolute right-2 top-2 text-xs opacity-30"><svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></span>
               )}
             </div>
           );

@@ -63,7 +63,7 @@ export default function ContactPage() {
 
       {sent ? (
         <div className="rounded-2xl border-2 border-green-200 bg-green-50 p-6 text-center">
-          <p className="text-3xl">✅</p>
+          <p className="text-3xl"></p>
           <h2 className="mt-2 text-lg font-bold text-green-700">
             {FORMSPREE ? "Message sent!" : "Opening your email app…"}
           </h2>

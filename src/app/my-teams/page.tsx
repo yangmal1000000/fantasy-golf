@@ -127,7 +127,7 @@ export default async function MyTeamsPage() {
                     </div>
                     <h2 className="mt-1.5 text-lg font-bold sm:text-xl">{tournament.name}</h2>
                     <p className="mt-0.5 text-sm text-white/70">
-                      📍 {tournament.course ?? "TBD"}
+                      {tournament.course ?? "TBD"}
                     </p>
                   </div>
                   {scoreResult && (
@@ -211,7 +211,7 @@ export default async function MyTeamsPage() {
                       href={`/tournaments/${tournament.id}/leaderboard`}
                       className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-700 py-2.5 text-center text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 touch-target"
                     >
-                      📊 Leaderboard
+                      Leaderboard
                     </Link>
                   </div>
                 </div>

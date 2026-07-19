@@ -146,7 +146,7 @@ async function generateSmartNotifications(userId: string): Promise<void> {
 
     // Use the position field vs. a recent notification snapshot to detect big
     // swings. We store last-notified position in the title string.
-    const titleKey = `📊 Big mover: ${team.tournament.name}`;
+    const titleKey = `Big mover: ${team.tournament.name}`;
     const recent = await prisma.notification.findFirst({
       where: {
         userId,

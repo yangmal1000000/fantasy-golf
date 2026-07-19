@@ -293,7 +293,7 @@ export default function TeamEntryForm({
             disabled={!allTiersFilled || !teamName.trim() || submitting || showConfetti}
             className="shrink-0 rounded-full bg-[#0a3d2a] px-6 py-3 text-sm font-bold text-white shadow transition enabled:hover:bg-[#0a3d2a] disabled:cursor-not-allowed disabled:opacity-40 touch-target"
           >
-            {submitting ? "..." : showConfetti ? "✓" : "Submit 🏌️"}
+            {submitting ? "..." : showConfetti ? "✓" : "Submit "}
           </button>
         </div>
       </div>
@@ -314,7 +314,7 @@ export default function TeamEntryForm({
             disabled={!allTiersFilled || !teamName.trim() || submitting || showConfetti}
             className="rounded-full bg-[#0a3d2a] px-8 py-3 text-sm font-bold text-white shadow transition enabled:hover:bg-[#0a3d2a] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {submitting ? "Submitting..." : showConfetti ? "✓ Done!" : "Submit Team 🏌️"}
+            {submitting ? "Submitting..." : showConfetti ? "✓ Done!" : "Submit Team "}
           </button>
         </div>
       </div>

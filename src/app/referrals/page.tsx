@@ -76,7 +76,7 @@ export default function ReferralsPage() {
       });
       const j = await res.json();
       if (res.ok) {
-        setMsg(`✅ Invitation sent to ${email.trim()}`);
+        setMsg(`Invitation sent to ${email.trim()}`);
         setEmail("");
         const d = await fetch_();
         if (d) setData(d);
@@ -122,7 +122,7 @@ export default function ReferralsPage() {
   if (!data) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
-        <h1 className="text-2xl font-bold text-[#0f3d20] dark:text-green-400">🤝 Refer a Friend</h1>
+        <h1 className="text-2xl font-bold text-[#0f3d20] dark:text-green-400">Refer a Friend</h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           Invite friends to Fantasy Golf and you&apos;ll both get a <strong>50% off voucher</strong> when they enter their first paid team.
         </p>
@@ -136,7 +136,7 @@ export default function ReferralsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
-      <h1 className="text-2xl font-bold text-[#0f3d20] dark:text-green-400">🤝 Refer a Friend</h1>
+      <h1 className="text-2xl font-bold text-[#0f3d20] dark:text-green-400">Refer a Friend</h1>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         Invite friends — you&apos;ll both get a <strong>50% off voucher</strong> when they enter their first paid team.
       </p>
@@ -144,10 +144,10 @@ export default function ReferralsPage() {
       {/* Stats */}
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Invited", value: data.stats.invited, icon: "📨" },
-          { label: "Completed", value: data.stats.completed, icon: "✅" },
-          { label: "Vouchers", value: data.stats.vouchersEarned, icon: "🎟️" },
-          { label: "Used", value: data.stats.vouchersUsed, icon: "💸" },
+          { label: "Invited", value: data.stats.invited, icon: "mail" },
+          { label: "Completed", value: data.stats.completed, icon: "check" },
+          { label: "Vouchers", value: data.stats.vouchersEarned, icon: "ticket" },
+          { label: "Used", value: data.stats.vouchersUsed, icon: "money" },
         ].map((s) => (
           <div key={s.label} className="rounded-xl bg-white p-3 text-center shadow-sm dark:bg-zinc-900">
             <p className="text-xl">{s.icon}</p>
@@ -216,7 +216,7 @@ export default function ReferralsPage() {
       {/* Vouchers */}
       <div className="mt-6 rounded-2xl bg-white shadow-sm">
         <div className="border-b border-zinc-100 p-4 dark:border-zinc-800">
-          <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">🎟️ Your Vouchers</h2>
+          <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">Your Vouchers</h2>
         </div>
         {data.vouchers.length === 0 ? (
           <p className="p-4 text-sm text-zinc-400 dark:text-zinc-500">No vouchers yet — invite a friend to earn one!</p>
@@ -246,7 +246,7 @@ export default function ReferralsPage() {
       {/* Referrals list */}
       <div className="mt-6 rounded-2xl bg-white shadow-sm">
         <div className="border-b border-zinc-100 p-4 dark:border-zinc-800">
-          <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">📨 Referral History</h2>
+          <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">Referral History</h2>
         </div>
         {data.referrals.length === 0 ? (
           <p className="p-4 text-sm text-zinc-400 dark:text-zinc-500">No invitations sent yet.</p>

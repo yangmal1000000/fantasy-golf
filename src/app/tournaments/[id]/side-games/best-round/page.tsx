@@ -73,7 +73,7 @@ export default async function BestRoundPage({
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 text-xl shadow">
-            🎯
+            
           </div>
           <div>
             <h1 className="text-2xl font-bold text-amber-700 dark:text-amber-400">
@@ -154,7 +154,7 @@ export default async function BestRoundPage({
               {/* Winner banner */}
               {roundData.bestTeam && (
                 <div className="flex items-center gap-3 border-b border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/10 px-5 py-3">
-                  <span className="text-2xl">🏆</span>
+                  <span className="text-2xl"></span>
                   <div className="flex-1">
                     <p className="font-bold text-zinc-800 dark:text-zinc-200">
                       {roundData.bestTeam.teamName}
@@ -238,7 +238,7 @@ export default async function BestRoundPage({
         <div className="mt-8 overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 shadow-md">
           <div className="bg-amber-600 px-4 py-3">
             <h2 className="text-sm font-bold uppercase tracking-wide text-white">
-              🏆 Cumulative Round Wins
+              Cumulative Round Wins
             </h2>
           </div>
           <table className="w-full text-sm">

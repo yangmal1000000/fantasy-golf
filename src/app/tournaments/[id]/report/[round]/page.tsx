@@ -184,7 +184,7 @@ export default async function RoundReportPage({
         )}
         {strokesBehind != null && strokesBehind <= 0 && (
           <p className="mt-3 text-center text-sm font-bold text-[#d4a843]">
-            🏆 You&apos;re leading the field!
+            You&apos;re leading the field!
           </p>
         )}
       </div>
@@ -238,7 +238,7 @@ export default async function RoundReportPage({
       {potrScore != null && potrPlayers.length > 0 && (
         <div className="mt-6 overflow-hidden rounded-2xl border-2 border-[#d4a843]/40 bg-gradient-to-br from-amber-50 to-white shadow-sm">
           <div className="bg-[#d4a843]/20 px-4 py-2">
-            <h2 className="text-base font-bold text-[#0f3d20]">⭐ Player of the Round</h2>
+            <h2 className="text-base font-bold text-[#0f3d20]">Player of the Round</h2>
           </div>
           <div className="p-4">
             <p className="text-3xl font-extrabold text-[#0f3d20]">{potrScore}</p>

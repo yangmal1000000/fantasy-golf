@@ -200,7 +200,7 @@ export default async function LeagueDetailPage({
                       {tournament.name}
                     </Link>
                     <p className="text-xs text-zinc-500">
-                      📍 {tournament.course ?? "TBD"} · {formatDateRange(tournament.startDate, tournament.endDate)}
+                      {tournament.course ?? "TBD"} · {formatDateRange(tournament.startDate, tournament.endDate)}
                     </p>
                   </div>
 

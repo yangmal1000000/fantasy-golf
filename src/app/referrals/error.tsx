@@ -14,7 +14,7 @@ export default function ReferralsError({
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-6 text-center">
-        <p className="text-3xl">🤝</p>
+        <p className="text-3xl">HandshakeIcon</p>
         <h2 className="mt-2 text-lg font-bold text-red-700">Couldn&apos;t load referrals</h2>
         <p className="mt-1 text-sm text-red-600">
           {error.message || "Failed to load referral data."}

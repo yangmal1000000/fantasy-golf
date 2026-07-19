@@ -102,7 +102,7 @@ export default async function LeaderboardPage({
     {
       type: "top_golfer",
       title: "Top Golfer",
-      icon: "🏌️",
+      icon: "",
       href: `/tournaments/${id}/side-games/top-golfer`,
       leader: topGolferStandings[0]?.playerName ?? null,
       leaderName: topGolferStandings[0]?.userName ?? null,
@@ -112,7 +112,7 @@ export default async function LeaderboardPage({
     {
       type: "best_round",
       title: "Best Round",
-      icon: "🎯",
+      icon: "",
       href: `/tournaments/${id}/side-games/best-round`,
       leader: bestPerRound.find((r) => r.bestTeam)?.bestTeam?.teamName ?? null,
       leaderName: bestPerRound.find((r) => r.bestTeam)?.bestTeam?.ownerName ?? null,
@@ -122,7 +122,7 @@ export default async function LeaderboardPage({
     {
       type: "dark_horse",
       title: "Dark Horse",
-      icon: "⚡",
+      icon: "",
       href: `/tournaments/${id}/side-games/dark-horse`,
       leader: darkHorseStandings[0]?.playerName ?? null,
       leaderName: darkHorseStandings[0]?.userName ?? null,
@@ -143,7 +143,7 @@ export default async function LeaderboardPage({
           </Link>
         </div>
         <h1 className="mt-1 text-lg font-bold text-[#0a3d2a] dark:text-green-400 sm:mt-2 sm:text-2xl">
-          🏆 Leaderboard
+          Leaderboard
         </h1>
         <p className="text-xs text-zinc-600 dark:text-zinc-400 sm:text-sm">{tournament.name}</p>
       </div>
