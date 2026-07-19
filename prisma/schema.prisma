@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  teams     Team[]
+  leagues   LeagueMember[]
+  notifications Notification[]
+}
+
+model League {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  inviteCode  String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
+  members     LeagueMember[]
+}
+
+model LeagueMember {
+  id        String   @id @default(cuid())
+  leagueId  String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  league    League   @relation(references: [id], fields: [leagueId])
+  user      User     @relation(references: [id], fields: [userId])
+
+  @@unique([leagueId, userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  type      String   @default("info") // info, position_change, score_update, deadline
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(references: [id], fields: [userId])
+}
+
+model Tournament {
+  id          String   @id @default(cuid())
+  name        String
+  course      String?
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("upcoming") // upcoming, entries_open, in_progress, completed
+  par         Int      @default(72)
+  cutLine     Int?
+  entryFee    Int      @default(1500) // pence
+  currentRound Int     @default(0) // 0=not started, 1-4 rounds, 5=completed
+  prizePool   Int      @default(0) // total pence collected
+  payoutStructure String? // JSON: [{position: 1, percentage: 50}, ...]
+  category    String   @default("major") // major, signature, playoff, dpwt
+  tour        String   @default("pga") // pga, dpwt
+  createdAt   DateTime @default(now())
+  players     TournamentPlayer[]
+  teams       Team[]
+  scores      Score[]
+  messages    BroadcastMessage[]
+  sideBets    SideBet[]
+  sidePots    TournamentSidePot[]
+}
+
+model BroadcastMessage {
+  id           String   @id @default(cuid())
+  tournamentId String
+  subject      String
+  body         String
+  createdAt    DateTime @default(now())
+
+  tournament   Tournament @relation(references: [id], fields: [tournamentId])
+}
+
+enum Tier {
+  T1_10
+  T11_20
+  T21_30
+  T31_50
+  T51_PLUS
+}
+
+model Player {
+  id           String              @id @default(cuid())
+  name         String
+  country      String?
+  dataGolfRank Int?
+  createdAt    DateTime            @default(now())
+  tournaments  TournamentPlayer[]
+  scores       Score[]
+}
+
+model TournamentPlayer {
+  id           String    @id @default(cuid())
+  tournamentId String
+  playerId     String
+  tier         String    // T1_10, T11_20, T21_30, T31_50, T51_PLUS
+  selectionCount Int     @default(0)
+  madeCut      Boolean?
+  withdrew     Boolean   @default(false)
+
+  tournament   Tournament @relation(references: [id], fields: [tournamentId])
+  player       Player     @relation(references: [id], fields: [playerId])
+  selections   TeamSelection[]
+
+  @@unique([tournamentId, playerId])
+}
+
+model Team {
+  id           String   @id @default(cuid())
+  userId       String
+  tournamentId String
+  name         String   @default("My Team")
+  paid         Boolean  @default(false)
+  totalScore   Int      @default(0)
+  position     Int?
+  createdAt    DateTime @default(now())
+
+  user         User       @relation(references: [id], fields: [userId])
+  tournament   Tournament @relation(references: [id], fields: [tournamentId])
+  selections   TeamSelection[]
+}
+
+model TeamSelection {
+  id                  String   @id @default(cuid())
+  teamId              String
+  tournamentPlayerId  String
+
+  team                Team             @relation(references: [id], fields: [teamId])
+  tournamentPlayer    TournamentPlayer @relation(references: [id], fields: [tournamentPlayerId])
+
+  @@unique([teamId, tournamentPlayerId])
+}
+
+model Score {
+  id             String   @id @default(cuid())
+  tournamentId   String
+  playerId       String
+  round          Int      // 1, 2, 3, 4
+  strokes        Int?
+  isEstimated    Boolean  @default(false) // true if calculated from cut average
+  updatedAt      DateTime @updatedAt
+
+  tournament     Tournament @relation(references: [id], fields: [tournamentId])
+  player         Player     @relation(references: [id], fields: [playerId])
+
+  @@unique([tournamentId, playerId, round])
+}
+
+model SideBet {
+  id           String   @id @default(cuid())
+  tournamentId String
+  userId       String
+  type         String   // "top_golfer", "best_round", "dark_horse"
+  playerId     String?  // for top_golfer: which player they back
+  roundNumber  Int?     // for best_round: which round
+  paid         Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  tournament   Tournament @relation(references: [id], fields: [tournamentId])
+}
+
+model TournamentSidePot {
+  id           String   @id @default(cuid())
+  tournamentId String
+  type         String   // "top_golfer", "best_round", "dark_horse"
+  entryFee     Int      @default(500) // £5 per side bet
+  description  String
+  active       Boolean  @default(true)
+
+  tournament   Tournament @relation(references: [id], fields: [tournamentId])
+}
