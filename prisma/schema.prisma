@@ -56,6 +56,9 @@ model Tournament {
   id          String   @id @default(cuid())
   name        String
   course      String?
+  yardage     Int?
+  architect   String?
+  courseLocation String?
   startDate   DateTime
   endDate     DateTime
   status      String   @default("upcoming") // upcoming, entries_open, in_progress, completed

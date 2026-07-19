@@ -136,6 +136,98 @@ function getTournamentMeta(name: string) {
   };
 }
 
+// ── ESPN name alias map ────────────────────────────────────────────────────
+
+/**
+ * Maps our tournament DB names to known ESPN event names.
+ * ESPN often uses longer, sponsored, or slightly different names than what
+ * we store. This covers the 9 known mismatches.
+ */
+const TOURNAMENT_ALIASES: Record<string, string[]> = {
+  "The Masters": ["Masters Tournament", "The Masters Tournament"],
+  "Chevron Championship": ["The Chevron Championship", "Chevron Championship"],
+  "Mexico Open": ["Mexico Open at Vidanta", "Mexico Open"],
+  "Wells Fargo": ["Wells Fargo Championship"],
+  "Wells Fargo Championship": ["Wells Fargo Championship"],
+  "Byron Nelson": ["AT&T Byron Nelson", "Byron Nelson Championship"],
+  "Rocket Mortgage": ["Rocket Mortgage Classic"],
+  "Charles Schwab": ["Charles Schwab Challenge"],
+  "KPMG Women's PGA": ["KPMG Women's PGA Championship"],
+  "U.S. Women's Open": ["U.S. Women's Open Championship", "U.S. Women's Open"],
+};
+
+/**
+ * Normalize a tournament name for fuzzy comparison.
+ * Strips common suffixes (Championship, Classic, Tournament, Invitational,
+ * The, at <Venue>) so substring matches are more likely to succeed.
+ */
+function normalizeTournamentName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/^the\s+/, "")
+    .replace(/\s+(championship|classic|tournament|invitational|open championship)\s*$/g, "")
+    .replace(/\s+at\s+\w+.*$/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim();
+}
+
+/**
+ * Find the best matching ESPN event for a tournament.
+ * Uses exact match, aliases, substring, normalized, and slug comparison.
+ */
+function findMatchingESPNEvent(
+  events: ESPNEvent[],
+  tournamentName: string,
+  tournamentMeta: { slug: string }
+): ESPNEvent | undefined {
+  // 1. Exact match
+  let match = events.find((e) => e.name === tournamentName);
+  if (match) return match;
+
+  // 2. Alias match — check if any alias matches an ESPN event name
+  const aliases = TOURNAMENT_ALIASES[tournamentName];
+  if (aliases) {
+    for (const alias of aliases) {
+      match = events.find((e) => e.name === alias);
+      if (match) return match;
+      // Also try alias as substring
+      match = events.find((e) => e.name.includes(alias) || alias.includes(e.name));
+      if (match) return match;
+    }
+  }
+
+  // 3. Reverse alias lookup — check if any ESPN event name has an alias matching ours
+  for (const [db_name, espn_names] of Object.entries(TOURNAMENT_ALIASES)) {
+    if (db_name === tournamentName) continue;
+    for (const espnName of espn_names) {
+      match = events.find((e) => e.name === espnName && getTournamentMeta(e.name).slug === tournamentMeta.slug);
+      if (match) return match;
+    }
+  }
+
+  // 4. Substring match (original logic)
+  match = events.find(
+    (e) =>
+      e.name.includes(tournamentName) ||
+      tournamentName.includes(e.name)
+  );
+  if (match) return match;
+
+  // 5. Normalized fuzzy match
+  const normalizedTarget = normalizeTournamentName(tournamentName);
+  match = events.find((e) => {
+    const normalizedESPN = normalizeTournamentName(e.name);
+    return normalizedESPN === normalizedTarget ||
+      normalizedESPN.includes(normalizedTarget) ||
+      normalizedTarget.includes(normalizedESPN);
+  });
+  if (match) return match;
+
+  // 6. Slug match
+  match = events.find((e) => getTournamentMeta(e.name).slug === tournamentMeta.slug);
+  return match;
+}
+
 // ── Status helpers ─────────────────────────────────────────────────────────
 
 function computeStatus(startDate: string, endDate: string, espnStatus: string): string {
@@ -681,15 +773,9 @@ export async function syncTournamentResults(tournamentId?: string): Promise<Sync
         continue;
       }
 
-      // Find the matching event by name
+      // Find the matching event using alias-aware helper
       const meta = getTournamentMeta(tournament.name);
-      const matchingEvent = data.events.find(
-        (e) =>
-          e.name === tournament.name ||
-          e.name.includes(tournament.name) ||
-          tournament.name.includes(e.name) ||
-          getTournamentMeta(e.name).slug === meta.slug
-      );
+      const matchingEvent = findMatchingESPNEvent(data.events, tournament.name, meta);
 
       if (!matchingEvent) {
         errors.push(`No matching ESPN event for "${tournament.name}"`);
@@ -767,15 +853,9 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
         continue;
       }
 
-      // Find matching event
+      // Find matching event using alias-aware helper
       const meta = getTournamentMeta(tournament.name);
-      const matchingEvent = data.events.find(
-        (e) =>
-          e.name === tournament.name ||
-          e.name.includes(tournament.name) ||
-          tournament.name.includes(e.name) ||
-          getTournamentMeta(e.name).slug === meta.slug
-      );
+      const matchingEvent = findMatchingESPNEvent(data.events, tournament.name, meta);
 
       if (!matchingEvent) {
         errors.push(`No matching ESPN event for "${tournament.name}"`);
@@ -877,6 +957,126 @@ export async function cleanupYearBranding(): Promise<SyncResult> {
   }
 
   return { ok: true, updated, details: { merged, total: tournaments.length }, errors };
+}
+
+// ── Static course data for venue fixes ─────────────────────────────────────
+
+/**
+ * Static course data for PGA Tour events that commonly show "TBD" or null.
+ * Used by fixVenues() to backfill missing course, yardage, architect, location.
+ * Keyed by tournament slug.
+ */
+const STATIC_COURSE_DATA: Record<string, {
+  course: string;
+  yardage?: number;
+  architect?: string;
+  courseLocation?: string;
+}> = {
+  // Majors
+  "masters": { course: "Augusta National Golf Club", yardage: 7545, architect: "Bobby Jones / Alister MacKenzie", courseLocation: "Augusta, Georgia" },
+  "pga-championship": { course: "Quail Hollow Club", yardage: 7600, architect: "George Cobb", courseLocation: "Charlotte, North Carolina" },
+  "us-open": { course: "Oakmont Country Club", yardage: 7372, architect: "Henry Fownes", courseLocation: "Oakmont, Pennsylvania" },
+  "the-open": { course: "Royal Birkdale Golf Club", yardage: 7133, architect: "George Lowe / Fred Hawtree", courseLocation: "Southport, England" },
+
+  // Signature events
+  "players-championship": { course: "TPC Sawgrass (Stadium Course)", yardage: 7275, architect: "Pete Dye", courseLocation: "Ponte Vedra Beach, Florida" },
+  "genesis-invitational": { course: "Riviera Country Club", yardage: 7322, architect: "George C. Thomas", courseLocation: "Pacific Palisades, California" },
+  "arnold-palmer-invitational": { course: "Bay Hill Golf Club", yardage: 7466, architect: "Dick Wilson / Arnold Palmer", courseLocation: "Orlando, Florida" },
+  "memorial-tournament": { course: "Muirfield Village Golf Club", yardage: 7392, architect: "Jack Nicklaus", courseLocation: "Dublin, Ohio" },
+
+  // Playoffs
+  "tour-championship": { course: "East Lake Golf Club", yardage: 7419, architect: "Donald Ross", courseLocation: "Atlanta, Georgia" },
+  "fedex-st-jude-championship": { course: "TPC Southwind", yardage: 7244, architect: "Ron Prichard", courseLocation: "Memphis, Tennessee" },
+  "bmw-championship": { course: "Castle Pines Golf Club", yardage: 7642, architect: "Jack Nicklaus", courseLocation: "Castle Rock, Colorado" },
+
+  // Regular PGA Tour events — the ones that commonly show TBD
+  "att-pebble-beach-pro-am": { course: "Pebble Beach Golf Links", yardage: 6964, architect: "Jack Neville / Douglas Grant", courseLocation: "Pebble Beach, California" },
+  "puerto-rico-open": { course: "Grand Reserve Golf Club", yardage: 7508, architect: "Rees Jones", courseLocation: "Rio Grande, Puerto Rico" },
+  "texas-childrens-houston-open": { course: "Memorial Park Golf Course", yardage: 7432, architect: "John Bredemus / Tom Doak", courseLocation: "Houston, Texas" },
+  "masters-tournament": { course: "Augusta National Golf Club", yardage: 7545, architect: "Bobby Jones / Alister MacKenzie", courseLocation: "Augusta, Georgia" },
+
+  // Additional common events
+  "wells-fargo-championship": { course: "Quail Hollow Club", yardage: 7600, architect: "George Cobb", courseLocation: "Charlotte, North Carolina" },
+  "byron-nelson": { course: "TPC Craig Ranch", yardage: 7468, architect: "Tom Weiskopf", courseLocation: "McKinney, Texas" },
+  "att-byron-nelson": { course: "TPC Craig Ranch", yardage: 7468, architect: "Tom Weiskopf", courseLocation: "McKinney, Texas" },
+  "mexico-open": { course: "Vidanta Vallarta", yardage: 7536, architect: "Greg Norman", courseLocation: "Nuevo Vallarta, Mexico" },
+  "rocket-mortgage-classic": { course: "Detroit Golf Club", yardage: 7370, architect: "Donald Ross", courseLocation: "Detroit, Michigan" },
+  "charles-schwab-challenge": { course: "Colonial Country Club", yardage: 7209, architect: "John Bredemus / Perry Maxwell", courseLocation: "Fort Worth, Texas" },
+  "farmers-insurance-open": { course: "Torrey Pines Golf Course (South)", yardage: 7702, architect: "William P. Bell / Rees Jones", courseLocation: "La Jolla, California" },
+  "sony-open-in-hawaii": { course: "Waialae Country Club", yardage: 7044, architect: "Seth Raynor", courseLocation: "Honolulu, Hawaii" },
+  "american-express": { course: "PGA West (Stadium Course)", yardage: 7187, architect: "Pete Dye", courseLocation: "La Quinta, California" },
+  "wm-phoenix-open": { course: "TPC Scottsdale (Stadium Course)", yardage: 7261, architect: "Jay Morrish / Tom Weiskopf", courseLocation: "Scottsdale, Arizona" },
+  "cognizant-classic": { course: "PGA National Resort (Champion Course)", yardage: 7147, architect: "Jack Nicklaus", courseLocation: "Palm Beach Gardens, Florida" },
+  "Valspar Championship": { course: "Innisbrook Resort (Copperhead)", yardage: 7340, architect: "Larry Packard", courseLocation: "Palm Harbor, Florida" },
+  "valspar-championship": { course: "Innisbrook Resort (Copperhead)", yardage: 7340, architect: "Larry Packard", courseLocation: "Palm Harbor, Florida" },
+  "RBC Heritage": { course: "Harbour Town Golf Links", yardage: 7121, architect: "Pete Dye / Jack Nicklaus", courseLocation: "Hilton Head Island, South Carolina" },
+  "rbc-heritage": { course: "Harbour Town Golf Links", yardage: 7121, architect: "Pete Dye / Jack Nicklaus", courseLocation: "Hilton Head Island, South Carolina" },
+  "Zurich Classic": { course: "TPC Louisiana", yardage: 7399, architect: "Pete Dye", courseLocation: "Avondale, Louisiana" },
+  "zurich-classic": { course: "TPC Louisiana", yardage: 7399, architect: "Pete Dye", courseLocation: "Avondale, Louisiana" },
+  "HP Byron Nelson Championship": { course: "TPC Four Seasons", yardage: 7114, architect: "Jay Morrish", courseLocation: "Irving, Texas" },
+
+  // Women's majors
+  "chevron-championship": { course: "The Club at Carlton Woods", yardage: 6745, architect: "Jack Nicklaus", courseLocation: "The Woodlands, Texas" },
+  "kpmg-womens-pga-championship": { course: "Sahalee Country Club", yardage: 6799, architect: "Rees Jones / Ted Robinson", courseLocation: "Sammamish, Washington" },
+  "us-womens-open": { course: "Lancaster Country Club", yardage: 6775, architect: "William Flynn", courseLocation: "Lancaster, Pennsylvania" },
+};
+
+/**
+ * fixVenues
+ * ---------
+ * Backfills missing course names, yardage, architect, and course location
+ * for tournaments that have null/TBD course data, using the static course map.
+ */
+export async function fixVenues(): Promise<SyncResult> {
+  const errors: string[] = [];
+  let updated = 0;
+  let skipped = 0;
+
+  const tournaments = await prisma.tournament.findMany();
+
+  for (const t of tournaments) {
+    const meta = getTournamentMeta(t.name);
+    const courseData = STATIC_COURSE_DATA[t.id] ?? STATIC_COURSE_DATA[meta.slug];
+
+    if (!courseData) {
+      skipped++;
+      continue;
+    }
+
+    // Build update object for fields that are missing or TBD
+    const updateData: Record<string, unknown> = {};
+
+    if (!t.course || t.course === "TBD" || t.course.trim() === "") {
+      updateData.course = courseData.course;
+    }
+
+    if (t.yardage == null && courseData.yardage != null) {
+      updateData.yardage = courseData.yardage;
+    }
+    if (t.architect == null && courseData.architect) {
+      updateData.architect = courseData.architect;
+    }
+    if (t.courseLocation == null && courseData.courseLocation) {
+      updateData.courseLocation = courseData.courseLocation;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      skipped++;
+      continue;
+    }
+
+    try {
+      await prisma.tournament.update({
+        where: { id: t.id },
+        data: updateData,
+      });
+      updated++;
+    } catch (e) {
+      errors.push(`Failed to update venue for "${t.name}": ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  return { ok: true, updated, skipped, errors };
 }
 
 // ── Link All Players to Tournaments ────────────────────────────────────────
