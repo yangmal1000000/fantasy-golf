@@ -87,7 +87,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
             <p className="mt-3 text-sm font-semibold text-zinc-600">No tournaments available</p>
           </div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {visibleTournaments.map((t) => {
               const status = STATUS_CONFIG[t.status] ?? STATUS_CONFIG.upcoming;
               const canEnter = t.status === "entries_open" || t.status === "upcoming";
@@ -97,10 +97,10 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
                 <Link
                   key={t.id}
                   href={canEnter ? `/tournaments/${t.id}/enter` : `/tournaments/${t.id}/leaderboard`}
-                  className="group flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2 transition hover:border-zinc-300 dark:hover:border-zinc-700 sm:gap-4 sm:p-3"
+                  className="group flex items-center gap-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2 py-1.5 transition hover:border-zinc-300 dark:hover:border-zinc-700 sm:gap-3 sm:px-3 sm:py-2"
                 >
                   {/* Thumbnail */}
-                  <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-lg sm:h-[80px] sm:w-[100px]">
+                  <div className="h-[56px] w-[56px] shrink-0 overflow-hidden rounded-md sm:h-[64px] sm:w-[80px]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={courseImage(t.id)}
@@ -112,8 +112,8 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
 
                   {/* Data */}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h2 className="truncate text-sm font-bold text-zinc-900 dark:text-white">{t.name}</h2>
+                    <div className="flex items-center gap-1.5">
+                      <h2 className="truncate text-[13px] font-bold text-zinc-900 dark:text-white">{t.name}</h2>
                       {isLive && (
                         <span className="flex shrink-0 items-center gap-0.5 rounded bg-[#c44545] px-1 py-0.5">
                           <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
@@ -121,15 +121,13 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
                         </span>
                       )}
                     </div>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500">
-                      <MapPinIcon className="h-3 w-3 shrink-0" />
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
                       <span className="truncate">{t.course ?? "TBD"}</span>
                       <span className="text-zinc-300">·</span>
                       <span className="whitespace-nowrap tabular">{formatDateRange(t.startDate, t.endDate)}</span>
                     </div>
-                    <div className="mt-1.5 flex items-center gap-3 text-xs">
+                    <div className="mt-1 flex items-center gap-2.5 text-[11px]">
                       <span className="inline-flex items-center gap-1">
-                        <UsersIcon className="h-3 w-3 text-zinc-400" />
                         <span className="font-semibold tabular text-zinc-700 dark:text-zinc-300">{t._count.teams}</span>
                         <span className="text-zinc-400">teams</span>
                       </span>
