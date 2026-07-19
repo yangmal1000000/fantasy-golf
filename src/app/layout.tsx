@@ -24,8 +24,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fantasy Golf — The Open 2026",
-  description: "Pick your dream team for The Open Championship 2026. £15 entry, winner takes all.",
+  title: "Fantasy Golf",
+  description: "Pick your dream team. £15 entry, winner takes all.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -40,16 +40,16 @@ export const metadata: Metadata = {
     apple: [{ url: "/icon-192.png", sizes: "192x192" }],
   },
   openGraph: {
-    title: "Fantasy Golf — The Open 2026",
-    description: "Pick your dream team for The Open Championship 2026. £15 entry, winner takes all.",
+    title: "Fantasy Golf",
+    description: "Pick your dream team. £15 entry, winner takes all.",
     url: "https://fantasy-golf-phi.vercel.app",
     siteName: "Fantasy Golf",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Fantasy Golf — The Open 2026",
-    description: "Pick your dream team for The Open Championship 2026. £15 entry, winner takes all.",
+    title: "Fantasy Golf",
+    description: "Pick your dream team. £15 entry, winner takes all.",
   },
 };
 
@@ -106,7 +106,7 @@ function Footer() {
           <span className="text-white/30">·</span>
           <Link href="/contact" className="transition hover:text-[#c8a951]">Contact</Link>
         </div>
-        <p className="mt-3 text-xs">Fantasy Golf &middot; The Open Championship 2026 &middot; Royal Birkdale</p>
+        <p className="mt-3 text-xs">Fantasy Golf &middot; Major Sweepstake</p>
         <p className="mt-1 text-xs text-white/65">For entertainment purposes only. Not affiliated with the R&amp;A, PGA Tour, or DP World Tour.</p>
         <p className="mt-1 text-xs text-white/60">Course images are artistic impressions, not actual photographs.</p>
       </div>

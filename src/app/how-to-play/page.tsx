@@ -227,7 +227,7 @@ export default function HowToPlayPage() {
       <section className="mt-8 sm:mt-10 rounded-2xl bg-gradient-to-r from-[#0a3d2a] to-[#1a5c3e] p-6 text-center text-white sm:p-8">
         <h2 className="text-lg font-bold sm:text-xl">Ready to play?</h2>
         <p className="mt-1 text-white/80">
-          Build your dream team for The Open 2026.
+          Build your dream team.
         </p>
         <Link
           href="/tournaments"

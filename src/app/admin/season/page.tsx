@@ -308,7 +308,7 @@ export default function SeasonManagementPage() {
                   type="number"
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  min={2025}
+                  min={2024}
                   max={2100}
                   className="w-28 rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
                 />

@@ -102,16 +102,16 @@ export const STATUS_CONFIG: Record<string, { label: string; badgeClass: string }
  */
 export const COURSE_IMAGES: Record<string, string> = {
   // Men's
-  "masters-2026": "/courses/augusta.jpg",
-  "pga-championship-2026": "/courses/quail-hollow.jpg",
-  "us-open-2026": "/courses/oakmont.jpg",
-  "the-open-2026": "/courses/royal-birkdale.jpg",
-  "players-2026": "/courses/tpc-sawgrass.jpg",
-  "genesis-2026": "/courses/riviera.jpg",
-  "arnold-palmer-2026": "/courses/bay-hill.jpg",
-  "memorial-2026": "/courses/muirfield-village.jpg",
-  "tour-championship-2026": "/courses/east-lake.jpg",
-  "bmw-pga-2026": "/courses/wentworth.jpg",
+  "masters": "/courses/augusta.jpg",
+  "pga-championship": "/courses/quail-hollow.jpg",
+  "us-open": "/courses/oakmont.jpg",
+  "the-open": "/courses/royal-birkdale.jpg",
+  "players-championship": "/courses/tpc-sawgrass.jpg",
+  "genesis-invitational": "/courses/riviera.jpg",
+  "arnold-palmer-invitational": "/courses/bay-hill.jpg",
+  "memorial-tournament": "/courses/muirfield-village.jpg",
+  "tour-championship": "/courses/east-lake.jpg",
+  "bmw-pga-championship": "/courses/wentworth.jpg",
   // Women's LPGA — specific course images not yet shipped; fall back to default.
 };
 

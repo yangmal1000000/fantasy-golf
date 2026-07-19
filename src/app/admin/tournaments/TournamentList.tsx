@@ -242,7 +242,7 @@ function CreateForm({ onDone }: { onDone: () => void }) {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="The Open 2026"
+            placeholder="The Open"
             className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-[#1a6b3c]"
           />
         </Field>
