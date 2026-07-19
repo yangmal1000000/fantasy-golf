@@ -102,7 +102,7 @@ export default async function Home() {
           <img src="/hero-main.jpg" alt="" className="h-full w-full object-cover" />
         </div>
         <div className="relative mx-auto max-w-5xl px-4">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c8a951]">The 2026 Major Sweepstake</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c8a951]">Major Sweepstake</p>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Fantasy Golf</h1>
           <p className="mt-1 text-sm text-white/80">Pick 5 pros. Pay £15. Beat your mates.</p>
           <div className="mt-3 flex gap-2">
@@ -273,7 +273,7 @@ export default async function Home() {
             <Testimonial
               quote="Won £900 at The Masters! Best £15 I ever spent."
               name="James M."
-              detail="Masters 2025 Winner"
+              detail="Major Champion Winner"
             />
             <Testimonial
               quote="Our office runs a league every major. 20+ guys picking teams. Brilliant format."
@@ -307,7 +307,7 @@ export default async function Home() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "SportsActivityLocation",
-            name: "Fantasy Golf — The Open 2026",
+            name: "Fantasy Golf",
             description: "Pick 5 pros across 5 tiers. Pay £15. Beat your mates across all 4 majors.",
             url: "https://fantasy-golf-phi.vercel.app",
             sport: "Golf",

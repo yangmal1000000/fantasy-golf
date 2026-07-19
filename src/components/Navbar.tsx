@@ -24,7 +24,7 @@ export default function Navbar() {
           <NavLink href="/players" label="Players" active={pathname.startsWith("/players")} />
           <NavLink href="/my-teams" label="My Teams" active={pathname.startsWith("/my-teams")} />
           <NavLink href="/leagues" label="Leagues" active={pathname.startsWith("/leagues")} />
-          <NavLink href="/tournaments/the-open-2026/leaderboard" label="Leaderboard" hideOnMd active={pathname.includes("/leaderboard")} />
+          <NavLink href="/power-rankings" label="Power Rankings" hideOnMd active={pathname.includes("/power-rankings")} />
           <NavLink href="/how-to-play" label="How to Play" hideOnMd active={pathname === "/how-to-play"} />
         </nav>
 

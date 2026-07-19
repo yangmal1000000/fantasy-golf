@@ -11,7 +11,7 @@ export default function NavLinks() {
     { href: "/players", label: "Players", active: pathname.startsWith("/players") },
     { href: "/my-teams", label: "My Teams", active: pathname.startsWith("/my-teams") },
     { href: "/leagues", label: "Leagues", active: pathname.startsWith("/leagues") },
-    { href: "/tournaments/the-open-2026/leaderboard", label: "Leaderboard", hideOnMd: true, active: pathname.includes("/leaderboard") },
+    { href: "/power-rankings", label: "Power Rankings", hideOnMd: true, active: pathname.includes("/power-rankings") },
     { href: "/how-to-play", label: "How to Play", hideOnMd: true, active: pathname === "/how-to-play" },
   ];
 

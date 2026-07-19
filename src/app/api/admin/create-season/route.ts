@@ -21,9 +21,9 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const year: number = Number(body.year);
 
-    if (!year || year < 2025 || year > 2100) {
+    if (!year || year < 2024 || year > 2100) {
       return NextResponse.json(
-        { ok: false, error: "Invalid year. Provide a year between 2025 and 2100." },
+        { ok: false, error: "Invalid year. Provide a year between 2024 and 2100." },
         { status: 400 }
       );
     }

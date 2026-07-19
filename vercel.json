@@ -1,8 +1,20 @@
 {
-  "regions": ["fra1"],
-  "functions": {
-    "src/app/tournaments/[id]/leaderboard/page.tsx": {
-      "maxDuration": 30
+  "crons": [
+    {
+      "path": "/api/sync/live",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/sync/rankings",
+      "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/sync/schedule",
+      "schedule": "0 6 1 * *"
+    },
+    {
+      "path": "/api/sync/results",
+      "schedule": "0 22 * * *"
     }
-  }
+  ]
 }

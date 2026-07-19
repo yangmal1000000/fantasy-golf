@@ -1,7 +1,7 @@
 {
-  "name": "Fantasy Golf — The Open 2026",
+  "name": "Fantasy Golf",
   "short_name": "Fantasy Golf",
-  "description": "Pick your dream team for The Open Championship 2026. £15 entry, winner takes all.",
+  "description": "Pick your dream team. £15 entry, winner takes all.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0f0c",
