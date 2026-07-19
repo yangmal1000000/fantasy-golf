@@ -40,10 +40,10 @@ export default function AchievementsPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
         <div className="animate-pulse space-y-3">
-          <div className="h-24 rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-48 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50" />
+          <div className="h-16 rounded-lg bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-40 rounded-lg bg-zinc-100 dark:bg-zinc-800/50" />
         </div>
       </div>
     );
@@ -51,18 +51,14 @@ export default function AchievementsPage() {
 
   if (!data) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
-        {/* Header */}
-        <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6 text-white shadow-lg">
-          <p className="text-xs uppercase tracking-wide text-white/60">Your Trophy Room</p>
+      <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
+        <div className="overflow-hidden rounded-xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-5 text-white">
           <h1 className="text-xl font-bold tracking-tight">Achievements</h1>
-          <p className="mt-1 text-sm text-white/70">
-            Unlock badges for wins, podiums, upsets, and milestones as you play.
-          </p>
+          <p className="mt-1 text-sm text-white/70">Unlock badges for wins, podiums, upsets, and milestones.</p>
         </div>
         <SignInPrompt
           title="Sign in to earn badges"
-          message="Track your fantasy golf achievements, from first entry to major champion. Unlock badges for wins, podiums, upsets, and consistency across tournaments."
+          message="Track your fantasy golf achievements — from first entry to major champion."
         />
       </div>
     );
@@ -73,30 +69,25 @@ export default function AchievementsPage() {
   const overallPct = Math.round((earnedCount / totalCount) * 100);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+    <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
       {/* Header */}
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6 text-white shadow-lg">
+      <div className="overflow-hidden rounded-xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-5 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-white/60">Your Trophy Room</p>
             <h1 className="text-xl font-bold tracking-tight">Achievements</h1>
+            <p className="mt-0.5 text-xs text-white/65">Your trophy room</p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-extrabold text-yellow-300">
-              {earnedCount}
-              <span className="text-base text-white/55">/{totalCount}</span>
+            <p className="text-2xl font-extrabold text-yellow-300">
+              {earnedCount}<span className="text-sm text-white/55">/{totalCount}</span>
             </p>
-            <p className="text-xs text-white/65">Earned</p>
+            <p className="text-[10px] text-white/65">Earned</p>
           </div>
         </div>
-        {/* Overall progress bar */}
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/15">
-          <div
-            className="h-full bg-gradient-to-r from-yellow-300 to-amber-500 transition-all duration-500"
-            style={{ width: `${overallPct}%` }}
-          />
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15">
+          <div className="h-full bg-gradient-to-r from-yellow-300 to-amber-500 transition-all duration-500" style={{ width: `${overallPct}%` }} />
         </div>
-        <p className="mt-1 text-xs text-white/65">{overallPct}% complete</p>
+        <p className="mt-1 text-[10px] text-white/65">{overallPct}% complete</p>
       </div>
 
       {/* Badge grid */}
