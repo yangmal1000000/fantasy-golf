@@ -74,5 +74,20 @@ Fix tournaments page filtering and homepage credibility issues.
 - No other £15 references found in page.tsx
 - Commit: `bbc9dee` (bundled with T1 completedCount fix)
 
+### T3: Homepage — hide £0 prize pot when empty ✅
+- When totalPot === 0, trust bar shows "{N} Open to Enter" (entries-open count) or "Free to Preview"
+- Added `entriesOpenCount` query (`prisma.tournament.count({ where: { status: "entries_open" } })`)
+- Commit: `17e64bb`
+
+### T4: Tournaments page — add status filter chips ✅
+- Added `?status=` searchParam: "upcoming" (default), "live", "all"
+- Backward compat: `?past=1` maps to `status=all`
+- Replaced "Show/Hide Past Events" toggle with 3 chips: Upcoming / Live / All
+- "Upcoming" = upcoming + entries_open + in_progress (hides completed)
+- "Live" = in_progress only
+- "All" = everything
+- Context-aware empty state messages per status
+- Commit: `1a2da04`
+
 ## Next Action
-T3: Homepage — hide £0 prize pot when empty
+All tasks (T1–T4) complete. No further work needed.
