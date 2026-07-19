@@ -224,7 +224,7 @@ export default function LeaguesClient({
                     <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{league.description}</p>
                   )}
                   <p className="mt-1 text-xs text-zinc-400">
-                    👥 {league.memberCount} {league.memberCount === 1 ? "member" : "members"}
+                    {league.memberCount} {league.memberCount === 1 ? "member" : "members"}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
