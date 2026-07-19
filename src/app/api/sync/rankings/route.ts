@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { syncOWGRRankings, recalculateAllTiers } from "@/lib/data-sync";
 
 // Maximum duration for Vercel serverless function
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
  * POST /api/sync/rankings
