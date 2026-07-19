@@ -192,9 +192,21 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             if (!players || players.length === 0) return null;
             return (
               <div key={tier} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-                <div className="border-b border-zinc-100 dark:border-zinc-800 px-3 py-2">
-                  <h3 className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{tierLabels[tier]}</h3>
-                  <p className="text-[10px] text-zinc-400">{players.length} players</p>
+                <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 px-3 py-2">
+                  <div>
+                    <h3 className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{tierLabels[tier]}</h3>
+                    <p className="text-[10px] text-zinc-400">{players.length} players</p>
+                  </div>
+                  {hasScores && (
+                    <div className="flex items-center gap-1.5 tabular text-[9px] font-bold uppercase text-zinc-400">
+                      <span className="w-6 text-center">R1</span>
+                      <span className="w-6 text-center">R2</span>
+                      <span className="w-6 text-center">R3</span>
+                      <span className="w-6 text-center">R4</span>
+                      <span className="w-10 text-center border-l border-zinc-200 dark:border-zinc-700 pl-1.5">Tot</span>
+                      <span className="w-8 text-center">Par</span>
+                    </div>
+                  )}
                 </div>
                 <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
                   {players.map((tp) => {
