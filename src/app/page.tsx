@@ -95,65 +95,33 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col">
-      {/* ===== Hero Section ===== */}
-      <section className="relative h-[55vh] min-h-[360px] w-full overflow-hidden sm:h-[60vh] sm:min-h-[400px]">
-        <Image
-          src="/hero-main.jpg"
-          alt="Fantasy Golf"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0a3d2a]" />
-        <div className="absolute inset-0 flex items-center">
-          <div className="mx-auto w-full max-w-5xl px-4 text-center text-white">
-            <p className="mb-2 text-sm font-bold uppercase tracking-[0.3em] text-[#c8a951] sm:mb-3 sm:text-base md:text-lg drop-shadow-lg">
-              The 2026 Major Sweepstake
-            </p>
-            <h1 className="text-4xl font-extrabold tracking-tight drop-shadow-2xl sm:text-5xl md:text-7xl">
-              Fantasy Golf
-            </h1>
-            <p className="mx-auto mt-4 max-w-xl text-base text-white/90 drop-shadow-lg sm:mt-5 sm:text-lg md:text-xl">
-              Pick 5 pros. Pay £15. Beat your mates across all 4 majors.
-            </p>
-            <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:gap-4">
-              {tournament && (
-                <Link
-                  href={`/tournaments/${tournament.id}/enter`}
-                  className="rounded-full bg-[#c8a951] px-8 py-3.5 text-center text-base font-bold text-[#1a1a1a] shadow-xl transition hover:scale-105 hover:bg-[#d4b76a] sm:px-10"
-                >
-                  Build Your Team →
-                </Link>
-              )}
-              <Link
-                href="/how-to-play"
-                className="rounded-full bg-white px-8 py-3 text-center text-base font-semibold text-[#0a3d2a] shadow-xl transition hover:scale-105 hover:bg-white/90"
-              >
-                How to Play
-              </Link>
-            </div>
+      {/* ===== Hero — Compact dashboard header ===== */}
+      <section className="relative overflow-hidden bg-[#0a3d2a] py-6 sm:py-8">
+        <div className="absolute inset-0 opacity-20">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/hero-main.jpg" alt="" className="h-full w-full object-cover" />
+        </div>
+        <div className="relative mx-auto max-w-3xl px-4">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c8a951]">The 2026 Major Sweepstake</p>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Fantasy Golf</h1>
+          <p className="mt-1 text-sm text-white/80">Pick 5 pros. Pay £15. Beat your mates.</p>
+          <div className="mt-3 flex gap-2">
+            {tournament && (
+              <Link href={`/tournaments/${tournament.id}/enter`} className="rounded-lg bg-[#c8a951] px-5 py-2 text-sm font-bold text-[#1a1a1a] transition hover:bg-[#d4b76a]">Build Your Team →</Link>
+            )}
+            <Link href="/tournaments" className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white border border-white/20 transition hover:bg-white/20">Browse</Link>
           </div>
         </div>
       </section>
 
-      {/* ===== Trust Bar ===== */}
-      <section className="border-b border-[#e5e2dc] bg-[#ffffff] py-4 dark:border-[#2a2d2c] dark:bg-[#1a1d1c]">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 text-center text-sm font-semibold text-[#6b6b6b] dark:text-[#999999]">
-          <span className="inline-flex items-center gap-1.5">
-            <TrophyIcon className="h-4 w-4 text-[#c8a951]" />
-            1,000+ Players
-          </span>
-          <span className="text-[#e5e2dc] dark:text-[#2a2d2c]">·</span>
-          <span className="inline-flex items-center gap-1.5">
-            <PoundIcon className="h-4 w-4 text-[#c8a951]" />
-            £25,000+ Prize Pools
-          </span>
-          <span className="text-[#e5e2dc] dark:text-[#2a2d2c]">·</span>
-          <span className="inline-flex items-center gap-1.5">
-            <FlagIcon className="h-4 w-4 text-[#c8a951]" />
-            15 Tournaments
-          </span>
+      {/* ===== Trust Bar — Inline ===== */}
+      <section className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1d1c] py-2">
+        <div className="mx-auto flex max-w-3xl items-center justify-center gap-4 px-4 text-xs font-medium text-zinc-500">
+          <span className="inline-flex items-center gap-1"><TrophyIcon className="h-3 w-3 text-[#c8a951]" />1,000+ Players</span>
+          <span className="text-zinc-300">·</span>
+          <span className="inline-flex items-center gap-1"><PoundIcon className="h-3 w-3 text-[#c8a951]" />£25k+ Pots</span>
+          <span className="text-zinc-300">·</span>
+          <span className="inline-flex items-center gap-1"><FlagIcon className="h-3 w-3 text-[#c8a951]" />15 Events</span>
         </div>
       </section>
 
