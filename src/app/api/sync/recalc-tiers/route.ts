@@ -8,11 +8,18 @@ export const maxDuration = 300;
  * POST /api/sync/recalc-tiers
  * Recalculates tier assignments for ALL TournamentPlayer records
  * based on their player's current dataGolfRank. No ESPN fetch.
+ * Pass ?offset=N to skip ahead (for chunked invocation).
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const offset = parseInt(searchParams.get("offset") ?? "0", 10);
+  const BATCH = 500;
+
   const tournamentPlayers = await prisma.tournamentPlayer.findMany({
     include: { player: { select: { dataGolfRank: true } } },
-    take: 500,
+    skip: offset,
+    take: BATCH,
+    orderBy: { id: "asc" },
   });
 
   let changed = 0;
@@ -27,12 +34,16 @@ export async function POST() {
     }
   }
 
-  const remaining = await prisma.tournamentPlayer.count();
+  const total = await prisma.tournamentPlayer.count();
+  const processed = offset + tournamentPlayers.length;
 
   return NextResponse.json({
     checked: tournamentPlayers.length,
     changed,
-    remaining,
-    done: tournamentPlayers.length < 500,
+    offset,
+    processed,
+    total,
+    done: processed >= total,
+    nextOffset: processed < total ? processed : null,
   });
 }
