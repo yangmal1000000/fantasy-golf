@@ -352,6 +352,17 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       {/* The Field — players by tier */}
       <div className="mt-6">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-zinc-500">The Field</h2>
+        {tournament.players.length === 0 ? (
+          <div className="rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-8 text-center">
+            <div className="mb-2 text-3xl">⛳</div>
+            <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+              Field will be announced closer to the event
+            </p>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Check back closer to tournament week for the full player field.
+            </p>
+          </div>
+        ) : (
         <div className="space-y-3">
           {tierOrder.map((tier) => {
             const players = playersByTier[tier];
@@ -412,6 +423,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );
