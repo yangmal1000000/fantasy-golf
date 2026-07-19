@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Flag from "@/components/Flag";
 
-export interface PGAPlayerScore {
+export interface TournamentPlayerScore {
   playerId: string;
   playerName: string;
   country: string | null;
@@ -19,11 +19,9 @@ export interface PGAPlayerScore {
 export default function TournamentLeaderboard({
   players,
   par,
-  tournamentId,
 }: {
-  players: PGAPlayerScore[];
+  players: TournamentPlayerScore[];
   par: number;
-  tournamentId: string;
 }) {
   const [showFull, setShowFull] = useState(false);
   const visible = showFull ? players : players.slice(0, 20);

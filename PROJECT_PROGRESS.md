@@ -26,27 +26,31 @@ Fix the tournament detail page and restore the leaderboard/scoreboard for comple
 - Top 20 shown by default, "Show Full Field" button to expand
 - Build must pass
 
-### T2: Tournament detail — add course profile section
+### T2: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
+### T2-ORIGINAL: Course profile section
 - In `src/app/tournaments/[id]/page.tsx`, add a "Course Profile" section below the header
 - Show: course name, par, yardage (if available in schema — if field doesn't exist, skip gracefully), location
 - Display as an info card with a map pin icon
 - If data not available, show "Course details TBA"
 - Build must pass
 
-### T3: Tournament detail — add winner card for completed events
+### T3: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
+### T3-ORIGINAL: Winner card
 - In `src/app/tournaments/[id]/page.tsx`, for completed tournaments:
   - Query the Score table to find the player with the lowest total strokes
   - Display a "Winner" card with: trophy icon, player name, country flag, total score, to par
   - Show runner-up too (2nd place)
 - Build must pass
 
-### T4: Tournament detail — add cut line info
+### T4: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
+### T4-ORIGINAL: Cut line info
 - For completed/in-progress tournaments:
   - Calculate or display the cut line (typically top 65 + ties after R2)
   - Show "Cut Line: +X" or "Made the Cut: N players"
 - Build must pass
 
-### T5: Tournament detail — improve field display for upcoming tournaments
+### T5: ASSIGNED TO PARALLEL AGENT — SKIP THIS TASK
+### T5-ORIGINAL: Empty state for field
 - When a tournament has no linked players (field is empty):
   - Show a proper empty state: "Field will be announced closer to the event"
   - Don't render empty tier sections
