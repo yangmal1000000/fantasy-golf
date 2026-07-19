@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { syncTournamentResults } from "@/lib/data-sync";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
  * POST /api/sync/results
