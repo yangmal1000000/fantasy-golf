@@ -60,14 +60,10 @@ export default async function MyTeamsPage() {
 
   return (
     <Suspense fallback={<TournamentListSkeleton />}>
-    <div className="mx-auto max-w-4xl px-3 py-6 sm:px-4 sm:py-8">
+    <div className="mx-auto max-w-3xl px-3 py-4 sm:px-4 sm:py-6">
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl font-bold text-[#0a3d2a] dark:text-green-400 sm:text-3xl">My Teams</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          All your fantasy golf entries across every tournament.
-        </p>
-      </div>
+      <h1 className="text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-green-400 sm:text-2xl">My Teams</h1>
+      <p className="mt-0.5 text-xs text-zinc-500">All your fantasy golf entries</p>
 
       {teamData.length === 0 ? (
         /* Empty state */
@@ -89,7 +85,7 @@ export default async function MyTeamsPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4 sm:gap-5">
+        <div className="grid gap-2 sm:gap-3">
           {teamData.map(({ team, scoreResult }) => {
             const tournament = team.tournament;
             const status = STATUS_CONFIG[tournament.status] ?? STATUS_CONFIG.upcoming;
@@ -110,29 +106,23 @@ export default async function MyTeamsPage() {
             return (
               <div
                 key={team.id}
-                className="overflow-hidden rounded-2xl bg-white shadow-md transition hover:shadow-lg dark:bg-zinc-900"
+                className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 transition hover:border-zinc-300 dark:hover:border-zinc-700"
               >
                 {/* Card header */}
-                <div className="flex items-start justify-between gap-3 bg-gradient-to-r from-[#0a3d2a] to-[#0a3d2a] p-4 text-white sm:p-5">
+                <div className="flex items-center justify-between bg-[#0a3d2a] px-3 py-2 text-white sm:px-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${status.badgeClass}`}>
-                        {status.label}
-                      </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${status.badgeClass}`}>{status.label}</span>
                       {scoreResult && (
-                        <span className="text-xs text-white/60">
-                          {formatDateRange(tournament.startDate, tournament.endDate)}
-                        </span>
+                        <span className="text-[11px] text-white/60 tabular">{formatDateRange(tournament.startDate, tournament.endDate)}</span>
                       )}
                     </div>
-                    <h2 className="mt-1.5 text-lg font-bold sm:text-xl">{tournament.name}</h2>
-                    <p className="mt-0.5 text-sm text-white/70">
-                      {tournament.course ?? "TBD"}
-                    </p>
+                    <h2 className="mt-1 text-sm font-bold sm:text-base">{tournament.name}</h2>
+                    <p className="mt-0 text-[11px] text-white/70">{tournament.course ?? "TBD"}</p>
                   </div>
                   {scoreResult && (
                     <div className="text-center shrink-0">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-full text-base font-extrabold sm:h-12 sm:w-12 sm:text-lg ${
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-extrabold sm:h-10 sm:w-10 ${
                         scoreResult.position === 1
                           ? "bg-[#c8a951] text-[#1a1a1a]"
                           : "bg-white/15 text-white"
