@@ -32,16 +32,16 @@ export default async function BlogPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#0f3d20]">📰 The Clubhouse Blog</h1>
-        <p className="mt-1 text-sm text-zinc-600">
+        <h1 className="text-2xl font-bold text-[#0f3d20] dark:text-green-400">📰 The Clubhouse Blog</h1>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           Pre-tournament previews, strategy guides, and golf insights.
         </p>
       </div>
 
       {posts.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-12 text-center">
+        <div className="rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
           <p className="text-4xl">📝</p>
-          <p className="mt-3 text-sm text-zinc-500">No articles yet. Check back soon!</p>
+          <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">No articles yet. Check back soon!</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -49,7 +49,7 @@ export default async function BlogPage() {
             <Link
               key={post.id}
               href={`/blog/${post.slug}`}
-              className="group overflow-hidden rounded-2xl bg-white shadow-sm transition hover:shadow-md"
+              className="group overflow-hidden rounded-2xl bg-white shadow-sm transition hover:shadow-md dark:bg-zinc-900"
             >
               {/* Color header */}
               <div className="h-32 bg-gradient-to-br from-[#0f3d20] to-[#1a6b3c] p-4">
@@ -69,10 +69,10 @@ export default async function BlogPage() {
               </div>
 
               <div className="p-4">
-                <h2 className="text-base font-bold text-[#0f3d20] group-hover:underline">
+                <h2 className="text-base font-bold text-[#0f3d20] group-hover:underline dark:text-green-400">
                   {post.title}
                 </h2>
-                <p className="mt-1 text-xs text-zinc-400">
+                <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
                   by {post.author} ·{" "}
                   {post.publishedAt
                     ? new Date(post.publishedAt).toLocaleDateString("en-GB", {
@@ -82,7 +82,7 @@ export default async function BlogPage() {
                       })
                     : "Draft"}
                 </p>
-                <p className="mt-2 text-sm text-zinc-600 line-clamp-2">
+                <p className="mt-2 text-sm text-zinc-600 line-clamp-2 dark:text-zinc-400">
                   {post.excerpt ?? ""}
                 </p>
               </div>

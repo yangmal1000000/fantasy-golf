@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { TIER_CONFIG } from "@/lib/ui";
+import { useAuth } from "@/components/AuthProvider";
 
 interface PredictionPlayer {
   playerId: string;
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export default function DailyPredictionClient({ tournamentId, currentUserId }: Props) {
+  const { signInWithGoogle } = useAuth();
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -115,7 +117,46 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
+        <div className="mb-4 text-xs">
+          <Link
+            href={`/tournaments/${tournamentId}/leaderboard`}
+            className="text-zinc-500 hover:text-[#1a6b3c]"
+          >
+            ← Back
+          </Link>
+        </div>
+        <div className="rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-8 text-center sm:p-12">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100 text-3xl">
+            🎯
+          </div>
+          {currentUserId ? (
+            <>
+              <p className="text-lg font-semibold text-zinc-700">Predictions unavailable</p>
+              <p className="mt-1 text-sm text-zinc-500">
+                This tournament doesn&apos;t have daily predictions open yet. Check back soon!
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-lg font-semibold text-zinc-700">Sign in to play</p>
+              <p className="mt-1 text-sm text-zinc-500">
+                Daily predictions are a free mini-game — sign in with Google to start picking!
+              </p>
+              <button
+                onClick={() => signInWithGoogle()}
+                className="mt-5 inline-block rounded-full bg-purple-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-purple-700"
+              >
+                Sign In with Google →
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const { tournament, players, myPredictions, streak, leaderboard } = data;
   const eligiblePlayers = players.filter((p) => !p.withdrew);
@@ -162,17 +203,17 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
           const isPicking = pickMode === round;
 
           return (
-            <div key={round} className="rounded-2xl bg-white shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
-                <h3 className="font-bold text-[#0f3d20]">
+            <div key={round} className="rounded-2xl bg-white shadow-sm overflow-hidden dark:bg-zinc-900">
+              <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+                <h3 className="font-bold text-[#0f3d20] dark:text-green-400">
                   Round {round}
                   {round === data.activeRound && (
-                    <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                    <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-950 dark:text-green-400">
                       Active
                     </span>
                   )}
                   {isLocked && (
-                    <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-500">
+                    <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
                       Locked
                     </span>
                   )}
@@ -192,17 +233,17 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">⛳</span>
                     <div className="flex-1">
-                      <p className="font-semibold text-zinc-800">{myPlayer.name}</p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="font-semibold text-zinc-800 dark:text-zinc-200">{myPlayer.name}</p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
                         {myPlayer.country ?? ""} {TIER_CONFIG[myPlayer.tier]?.short ?? ""}
                       </p>
                     </div>
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500">
                       {new Date(myPick!.createdAt).toLocaleDateString("en-GB")}
                     </span>
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-400">
+                  <p className="text-sm text-zinc-400 dark:text-zinc-500">
                     {isLocked ? "No pick made for this round." : "No pick yet — choose a golfer!"}
                   </p>
                 )}
@@ -217,14 +258,14 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
                         onClick={() => savePick(p.playerId, round)}
                         className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition hover:border-[#1a6b3c] hover:bg-green-50 disabled:opacity-50 ${
                           myPick?.playerId === p.playerId
-                            ? "border-[#1a6b3c] bg-green-50"
-                            : "border-zinc-200 bg-white"
+                            ? "border-[#1a6b3c] bg-green-50 dark:border-green-700 dark:bg-green-950"
+                            : "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
                         }`}
                       >
                         <span className="text-lg">{TIER_CONFIG[p.tier]?.icon ?? "🏌️"}</span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-zinc-800">{p.name}</p>
-                          <p className="text-xs text-zinc-500">
+                          <p className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-200">{p.name}</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
                             {TIER_CONFIG[p.tier]?.short ?? ""} {p.country ?? ""}
                           </p>
                         </div>
@@ -245,39 +286,39 @@ export default function DailyPredictionClient({ tournamentId, currentUserId }: P
       )}
 
       {/* Leaderboard */}
-      <div className="mt-8 rounded-2xl bg-white shadow-sm">
-        <div className="border-b border-zinc-100 p-4">
-          <h2 className="text-base font-bold text-[#0f3d20]">📊 Prediction Leaderboard</h2>
-          <p className="text-xs text-zinc-500">Lowest total strokes across picked rounds</p>
+      <div className="mt-8 rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
+        <div className="border-b border-zinc-100 p-4 dark:border-zinc-800">
+          <h2 className="text-base font-bold text-[#0f3d20] dark:text-green-400">📊 Prediction Leaderboard</h2>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">Lowest total strokes across picked rounds</p>
         </div>
         {leaderboard.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-400">No picks yet. Be the first!</p>
+          <p className="p-4 text-sm text-zinc-400 dark:text-zinc-500">No picks yet. Be the first!</p>
         ) : (
-          <div className="divide-y divide-zinc-50">
+          <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {leaderboard.slice(0, 20).map((row) => (
               <div
                 key={row.userId}
                 className={`flex items-center gap-3 p-3 ${
-                  row.userId === currentUserId ? "bg-amber-50" : ""
+                  row.userId === currentUserId ? "bg-amber-50 dark:bg-amber-950/50" : ""
                 }`}
               >
                 <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                   row.position === 1
                     ? "bg-[#d4a843] text-[#1a3a20]"
-                    : "bg-zinc-100 text-zinc-600"
+                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
                 }`}>
                   {row.position}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm font-semibold text-zinc-800">
+                  <p className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-200">
                     {row.userName}
                     {row.userId === currentUserId && (
                       <span className="ml-1 text-xs text-[#1a6b3c]">(you)</span>
                     )}
                   </p>
-                  <p className="text-xs text-zinc-400">{row.picks} picks</p>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500">{row.picks} picks</p>
                 </div>
-                <span className="text-sm font-bold text-[#0f3d20]">
+                <span className="text-sm font-bold text-[#0f3d20] dark:text-green-400">
                   {row.total > 0 ? row.total : "—"}
                 </span>
               </div>

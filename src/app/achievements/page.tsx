@@ -51,7 +51,7 @@ export default function AchievementsPage() {
   if (!data) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8">
-        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
+        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
           Please sign in to view achievements.
         </div>
       </div>
@@ -90,6 +90,19 @@ export default function AchievementsPage() {
       </div>
 
       {/* Badge grid */}
+      {earnedCount === 0 && (
+        <div className="mt-4 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 p-4 text-center dark:border-amber-900 dark:bg-amber-950">
+          <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">
+            🏆 You haven&apos;t earned any achievements yet — enter a tournament to start collecting badges!
+          </p>
+          <Link
+            href="/tournaments"
+            className="mt-2 inline-block text-sm font-bold text-[#1a6b3c] hover:underline"
+          >
+            Browse Tournaments →
+          </Link>
+        </div>
+      )}
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         {data.achievements.map((a) => {
           const pct = a.progress
@@ -103,7 +116,7 @@ export default function AchievementsPage() {
               className={`relative overflow-hidden rounded-2xl border-2 p-4 text-center transition ${
                 a.earned
                   ? `border-transparent bg-gradient-to-br ${a.color} shadow-lg`
-                  : "border-zinc-200 bg-zinc-50"
+                  : "border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900"
               }`}
             >
               {/* Icon */}
@@ -113,14 +126,14 @@ export default function AchievementsPage() {
 
               {/* Label */}
               <p className={`mt-2 text-sm font-bold ${
-                a.earned ? "text-white" : "text-zinc-500"
+                a.earned ? "text-white" : "text-zinc-500 dark:text-zinc-400"
               }`}>
                 {a.label}
               </p>
 
               {/* Description */}
               <p className={`mt-1 text-xs ${
-                a.earned ? "text-white/80" : "text-zinc-400"
+                a.earned ? "text-white/80" : "text-zinc-400 dark:text-zinc-500"
               }`}>
                 {a.description}
               </p>
@@ -128,13 +141,13 @@ export default function AchievementsPage() {
               {/* Progress */}
               {!a.earned && a.progress && (
                 <div className="mt-3">
-                  <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
                     <div
                       className="h-full bg-[#1a6b3c] transition-all"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <p className="mt-1 text-xs text-zinc-400">
+                  <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
                     {a.progress.current}/{a.progress.target}
                   </p>
                 </div>

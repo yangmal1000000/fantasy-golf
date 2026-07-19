@@ -208,19 +208,19 @@ export default function ReferralsPage() {
         {data.vouchers.length === 0 ? (
           <p className="p-4 text-sm text-zinc-400">No vouchers yet — invite a friend to earn one!</p>
         ) : (
-          <div className="divide-y divide-zinc-50">
+          <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {data.vouchers.map((v) => (
               <div key={v.id} className="flex items-center justify-between p-3">
                 <div>
-                  <code className="font-mono text-sm font-bold text-[#1a6b3c]">{v.code}</code>
-                  <p className="text-xs text-zinc-500">
+                  <code className="font-mono text-sm font-bold text-[#1a6b3c] dark:text-green-400">{v.code}</code>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     {v.discountPercent}% off · {v.source}
                   </p>
                 </div>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                   v.used
-                    ? "bg-zinc-100 text-zinc-400"
-                    : "bg-green-100 text-green-700"
+                    ? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500"
+                    : "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
                 }`}>
                   {v.used ? "Used" : "Available"}
                 </span>
@@ -238,19 +238,19 @@ export default function ReferralsPage() {
         {data.referrals.length === 0 ? (
           <p className="p-4 text-sm text-zinc-400">No invitations sent yet.</p>
         ) : (
-          <div className="divide-y divide-zinc-50">
+          <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {data.referrals.map((r) => (
               <div key={r.id} className="flex items-center justify-between p-3">
                 <div>
-                  <p className="text-sm font-medium text-zinc-700">{r.email}</p>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{r.email}</p>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500">
                     {new Date(r.createdAt).toLocaleDateString("en-GB")}
                   </p>
                 </div>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                   r.status === "completed"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-amber-100 text-amber-700"
+                    ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
                 }`}>
                   {r.status === "completed" ? "Joined" : "Pending"}
                 </span>

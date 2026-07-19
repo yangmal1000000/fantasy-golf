@@ -189,6 +189,37 @@ export default async function AdminDashboard() {
               </Link>
             </div>
           </div>
+
+          {/* Content & Engagement Links */}
+          <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-zinc-200">
+            <h2 className="font-semibold text-zinc-900">Content &amp; Engagement</h2>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Link
+                href="/power-rankings"
+                className="rounded-lg border border-zinc-200 px-3 py-2 text-center text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                📈 Power Rankings
+              </Link>
+              <Link
+                href="/achievements"
+                className="rounded-lg border border-zinc-200 px-3 py-2 text-center text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                🏆 Achievements
+              </Link>
+              <Link
+                href="/blog"
+                className="rounded-lg border border-zinc-200 px-3 py-2 text-center text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                📰 Blog
+              </Link>
+              <Link
+                href="/referrals"
+                className="rounded-lg border border-zinc-200 px-3 py-2 text-center text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                🤝 Referrals
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
