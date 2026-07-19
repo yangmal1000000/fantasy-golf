@@ -155,7 +155,7 @@ export default async function PowerRankingsPage() {
       {/* Header */}
       <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6 text-white shadow-lg">
         <p className="text-xs uppercase tracking-wide text-white/60">Weekly AI Rankings</p>
-        <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold">
+        <h1 className="mt-1 flex items-center gap-2 text-xl font-bold tracking-tight">
           <TrendingUpIcon className="h-6 w-6" /> The Power Rankings
         </h1>
         <p className="mt-1 text-sm text-white/70">
