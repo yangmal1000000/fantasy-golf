@@ -10,7 +10,10 @@ import { formatDateRange, STATUS_CONFIG, courseImage, CATEGORY_CONFIG } from "@/
 import CountdownTimer from "@/components/CountdownTimer";
 import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
-import { GolfFlagIcon, MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, StarIcon } from "@/components/icons";
+import { GolfFlagIcon, MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, StarIcon, TrophyIcon } from "@/components/icons";
+
+// Cache for 60 seconds — dramatically reduces DB load and page latency
+export const revalidate = 60;
 
 type TournamentRow = {
   id: string; name: string; course: string | null;
@@ -21,8 +24,9 @@ type TournamentRow = {
 
 export default async function TournamentsPage({ searchParams }: { searchParams: Promise<{ tour?: string; cat?: string; year?: string; past?: string; status?: string }> }) {
   const params = await searchParams;
-  const tour = params.tour ?? "men";
+  const tour = params.tour ?? "all";
   const showWomen = tour === "women";
+  const showAll = tour === "all";
   const activeCategory = params.cat ?? "all";
   const activeYear = params.year ?? "all";
   // Status filter: "upcoming" (default), "live", "all"
@@ -36,7 +40,11 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
       orderBy: { startDate: "asc" },
       include: { _count: { select: { teams: true, players: true } } },
     });
-    let filtered = all.filter((t) => (showWomen ? t.tour === "lpga" : t.tour !== "lpga"));
+    let filtered = all.filter((t) => {
+      if (showAll) return true; // show both tours
+      if (showWomen) return t.tour === "lpga";
+      return t.tour !== "lpga"; // men's
+    });
     // Year filter
     if (activeYear !== "all") {
       filtered = filtered.filter((t) => new Date(t.startDate).getFullYear().toString() === activeYear);
@@ -56,7 +64,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     tournaments = [...filtered].sort((a, b) => a.startDate.getTime() - b.startDate.getTime()) as TournamentRow[];
   } catch {}
 
-  const categoryKeys = showWomen ? ["all", "lpga_major", "major"] : ["all", "major", "signature", "playoff", "dpwt", "regular"];
+  const categoryKeys = showWomen ? ["all", "lpga_major", "major"] : showAll ? ["all", "major", "signature", "playoff", "dpwt", "regular", "lpga_major"] : ["all", "major", "signature", "playoff", "dpwt", "regular"];
   const categoryCounts: Record<string, number> = {};
   for (const t of tournaments) categoryCounts[t.category] = (categoryCounts[t.category] ?? 0) + 1;
 
@@ -102,15 +110,18 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
         {/* Header */}
         <div className="mb-3">
           <h1 className="text-xl font-bold tracking-tight text-[#0a3d2a] dark:text-green-400 sm:text-2xl">Tournaments</h1>
-          <p className="mt-0.5 text-xs text-zinc-500">{visibleTournaments.length} {showWomen ? "women's" : "men's"} events</p>
+          <p className="mt-0.5 text-xs text-zinc-500">{visibleTournaments.length} {showAll ? "" : showWomen ? "women's " : "men's "}events</p>
         </div>
 
-        {/* Tour toggle */}
+        {/* Tour toggle — All / Men's / Women's */}
         <div className="mt-2 flex gap-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-0.5">
-          <Link href={buildHref("men", activeCategory, activeYear)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${!showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+          <Link href={buildHref("all", activeCategory, activeYear)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition sm:text-sm ${showAll ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+            <TrophyIcon className="h-4 w-4" /> All
+          </Link>
+          <Link href={buildHref("men", activeCategory, activeYear)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition sm:text-sm ${!showWomen && !showAll ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
             <GolfFlagIcon className="h-4 w-4" /> Men&apos;s
           </Link>
-          <Link href={buildHref("women", activeCategory, activeYear)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
+          <Link href={buildHref("women", activeCategory, activeYear)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition sm:text-sm ${showWomen ? "bg-[#0a3d2a] text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"}`}>
             <StarIcon className="h-4 w-4" /> Women&apos;s
           </Link>
         </div>
