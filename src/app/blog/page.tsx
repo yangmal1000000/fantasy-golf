@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { NewspaperIcon, NoteIcon, GolfFlagIcon } from "@/components/icons";
 import { ensureSchema } from "@/lib/db-ensure";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // ISR — rebuild every hour
 
 export const metadata: Metadata = {
   title: "Blog — Fantasy Golf",

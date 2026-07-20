@@ -4,7 +4,7 @@ import Link from "next/link";
 import PlayersTable, { type PlayerRowData, type FormResult } from "./PlayersTable";
 import { GolfFlagIcon, StarIcon } from "@/components/icons";
 
-export const revalidate = 60;
+export const revalidate = 300; // ISR — 5 minutes
 
 export const metadata: Metadata = {
   title: "Player Rankings — Fantasy Golf",
