@@ -379,6 +379,32 @@ export default async function PlayerDetailPage({
         </div>
       </div>
 
+      {/* ── Bio Section ── */}
+      {player.bio && (
+        <div className="mt-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            {player.photoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={player.photoUrl}
+                alt={player.name}
+                className="hidden sm:block h-20 w-20 rounded-xl object-cover shrink-0"
+                loading="lazy"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">About</h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                {player.bio}
+              </p>
+              {player.birthplace && (
+                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{player.birthplace}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Main grid ── */}
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         {/* ── Season Stats ── */}
