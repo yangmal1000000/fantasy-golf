@@ -229,6 +229,24 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               <p className="text-[10px] uppercase text-zinc-400">Par</p>
               <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.par}</p>
             </div>
+            {tournament.yardage && (
+              <div>
+                <p className="text-[10px] uppercase text-zinc-400">Yardage</p>
+                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.yardage.toLocaleString()} yds</p>
+              </div>
+            )}
+            {tournament.architect && (
+              <div>
+                <p className="text-[10px] uppercase text-zinc-400">Architect</p>
+                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.architect}</p>
+              </div>
+            )}
+            {tournament.courseLocation && (
+              <div>
+                <p className="text-[10px] uppercase text-zinc-400">Location</p>
+                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.courseLocation}</p>
+              </div>
+            )}
             <div>
               <p className="text-[10px] uppercase text-zinc-400">Tour</p>
               <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 uppercase">{tournament.tour}</p>
