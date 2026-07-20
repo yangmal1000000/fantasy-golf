@@ -36,6 +36,9 @@ export interface PlayerRowData {
 interface PlayersTableProps {
   players: PlayerRowData[];
   countries: string[];
+  totalPages?: number;
+  currentPage?: number;
+  tour?: string;
 }
 
 type SortColumn =
@@ -98,7 +101,7 @@ const COUNTRY_NAMES: Record<string, string> = {
   POL: "Poland",
 };
 
-export default function PlayersTable({ players, countries }: PlayersTableProps) {
+export default function PlayersTable({ players, countries, totalPages, currentPage, tour }: PlayersTableProps) {
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<string>("all");
   const [countryFilter, setCountryFilter] = useState<string>("all");
@@ -510,6 +513,31 @@ export default function PlayersTable({ players, countries }: PlayersTableProps) 
           >
             Clear filters
           </button>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages && totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-2">
+          {currentPage! > 1 && (
+            <a
+              href={`/players?tour=${tour ?? "men"}&page=${currentPage! - 1}`}
+              className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 transition"
+            >
+              ← Prev
+            </a>
+          )}
+          <span className="text-sm text-zinc-500 px-2">
+            Page {currentPage} of {totalPages}
+          </span>
+          {currentPage! < totalPages && (
+            <a
+              href={`/players?tour=${tour ?? "men"}&page=${currentPage! + 1}`}
+              className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 transition"
+            >
+              Next →
+            </a>
+          )}
         </div>
       )}
     </div>

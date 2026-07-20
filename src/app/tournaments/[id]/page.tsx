@@ -115,7 +115,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       {/* Header banner */}
       <div className="relative mt-2 overflow-hidden rounded-xl">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={courseImage(tournament.id)} alt={tournament.course || tournament.name} className="h-40 w-full object-cover sm:h-48" />
+        <img src={courseImage(tournament.id, tournament.course)} alt={tournament.course || tournament.name} className="h-40 w-full object-cover sm:h-48" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a3d2a]/95 via-[#0a3d2a]/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white sm:p-5">
           <div className="flex items-center gap-2">
