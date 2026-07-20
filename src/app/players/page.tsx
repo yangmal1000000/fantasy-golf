@@ -126,9 +126,13 @@ export default async function PlayersPage({
   for (const player of players) {
     if (player.country) allCountries.add(player.country);
 
-    // Determine tour from player ID prefix (reliable)
-    // Men: player-1, player-2...  Women: wplayer-1, wplayer-2...
-    const isPlayerWomen = player.id.startsWith("wplayer");
+    // Determine tour from tournament links — a player is "women's" if
+    // the majority of their tournaments are LPGA, otherwise men's
+    const playerTournamentsAll = player.tournaments.filter(
+      (tp) => tournamentMap.has(tp.tournamentId),
+    );
+    const isPlayerWomen = playerTournamentsAll.length > 0 &&
+      playerTournamentsAll.filter((tp) => tournamentMap.get(tp.tournamentId)?.tour === "lpga").length > playerTournamentsAll.length / 2;
     if (isWomen && !isPlayerWomen) continue;
     if (!isWomen && isPlayerWomen) continue;
 

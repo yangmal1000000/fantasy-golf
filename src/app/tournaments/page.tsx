@@ -47,7 +47,9 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     if (statusFilter === "live") {
       filtered = filtered.filter((t) => t.status === "in_progress");
     } else if (statusFilter === "upcoming") {
-      filtered = filtered.filter((t) => t.status !== "completed");
+      const upcoming = filtered.filter((t) => t.status !== "completed");
+      // If no upcoming tournaments exist, fall back to showing all (don't show empty page)
+      filtered = upcoming.length > 0 ? upcoming : filtered;
     }
     // statusFilter === "all" → no filtering
     // Strict chronological order (earliest first)
