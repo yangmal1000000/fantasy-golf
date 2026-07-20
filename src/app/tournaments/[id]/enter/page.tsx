@@ -94,6 +94,7 @@ export default async function EnterTeamPage({
                 playerId: tp.playerId,
                 name: tp.player.name,
                 country: tp.player.country,
+                photoUrl: tp.player.photoUrl,
                 dataGolfRank: tp.player.dataGolfRank,
                 tier: tp.tier,
               })),

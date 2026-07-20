@@ -153,6 +153,7 @@ export default async function TeamDetailPage({
                   <PlayerAvatar
                     name={p.playerName}
                     country={playerCountry}
+                    photoUrl={p.photoUrl}
                     size="md"
                   />
                   <div className="min-w-0">

@@ -6,6 +6,7 @@ export interface PlayerScoreSummary {
   playerId: string;
   playerName: string;
   country: string | null;
+  photoUrl: string | null;
   tier: string;
   roundScores: (number | null)[]; // [R1, R2, R3, R4]
   totalStrokes: number;
@@ -124,6 +125,7 @@ export async function calculateLeaderboard(
         playerId: player.id,
         playerName: player.name,
         country: player.country,
+        photoUrl: player.photoUrl,
         tier: tp.tier,
         roundScores,
         totalStrokes,
@@ -248,6 +250,7 @@ export async function calculateTeamScore(
       playerId: player.id,
       playerName: player.name,
       country: player.country,
+      photoUrl: player.photoUrl,
       tier: tp.tier,
       roundScores,
       totalStrokes,
@@ -312,7 +315,7 @@ export async function getPlayerScoreSummary(
   const totalStrokes = roundScores.reduce<number>((sum, s) => sum + (s ?? 0), 0);
   const roundsPlayed = roundScores.filter((s) => s != null).length;
 
-  return { playerId, playerName: player?.name ?? "Unknown", country: player?.country ?? null, tier, roundScores, totalStrokes, roundsPlayed, madeCut, withdrew, isEstimated };
+  return { playerId, playerName: player?.name ?? "Unknown", country: player?.country ?? null, photoUrl: player?.photoUrl ?? null, tier, roundScores, totalStrokes, roundsPlayed, madeCut, withdrew, isEstimated };
 }
 
 // ---------- Cut Logic ----------

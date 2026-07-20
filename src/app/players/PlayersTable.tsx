@@ -24,6 +24,7 @@ export interface PlayerRowData {
   id: string;
   name: string;
   country: string | null;
+  photoUrl: string | null;
   dataGolfRank: number | null;
   tier: string | null;
   tournamentCount: number;
@@ -363,7 +364,7 @@ export default function PlayersTable({ players, countries, totalPages, currentPa
                     {/* Player */}
                     <td className="px-3 py-2.5">
                       <Link href={`/players/${p.id}`} className="flex items-center gap-2 group">
-                        <PlayerAvatar name={p.name} country={p.country} size="sm" />
+                        <PlayerAvatar name={p.name} country={p.country} photoUrl={p.photoUrl} size="sm" />
                         <span className="font-semibold text-zinc-900 dark:text-white group-hover:text-[#1a6b3c] dark:group-hover:text-green-400 group-hover:underline">
                           {p.name}
                         </span>
@@ -458,7 +459,7 @@ export default function PlayersTable({ players, countries, totalPages, currentPa
               className="block rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 transition active:scale-[0.98]"
             >
               <div className="flex items-center gap-2.5">
-                <PlayerAvatar name={p.name} country={p.country} size="sm" />
+                <PlayerAvatar name={p.name} country={p.country} photoUrl={p.photoUrl} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-zinc-900 dark:text-white text-sm truncate">{p.name}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">

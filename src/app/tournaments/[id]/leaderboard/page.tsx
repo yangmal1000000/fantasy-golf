@@ -433,7 +433,7 @@ export default async function LeaderboardPage({
                                 className="flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2 py-1"
                                 title={`${p.playerName} (${p.tier}): ${p.roundScores.filter((s) => s != null).join(", ") || "no scores"}`}
                               >
-                                <PlayerAvatar name={p.playerName} country={country} size="sm" />
+                                <PlayerAvatar name={p.playerName} country={country} photoUrl={p.photoUrl} size="sm" />
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-1">
                                     <Flag countryCode={country} size="sm" />
@@ -506,7 +506,7 @@ export default async function LeaderboardPage({
                                 key={p.playerId}
                                 className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5"
                               >
-                                <PlayerAvatar name={p.playerName} country={country} size="sm" />
+                                <PlayerAvatar name={p.playerName} country={country} photoUrl={p.photoUrl} size="sm" />
                                 <TierBadge tier={p.tier} size="sm" />
                               </span>
                             );

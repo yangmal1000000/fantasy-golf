@@ -329,7 +329,7 @@ export default async function PlayerDetailPage({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
           {/* Avatar */}
           <div className="flex items-center gap-3 sm:flex-col sm:items-start sm:gap-2">
-            <PlayerAvatar name={player.name} country={player.country} size="md" />
+            <PlayerAvatar name={player.name} country={player.country} photoUrl={player.photoUrl} size="md" />
           </div>
 
           {/* Name + details */}
