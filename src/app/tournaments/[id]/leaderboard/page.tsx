@@ -27,6 +27,7 @@ import MiniLeaderboard, { type MiniLeaderboardEntry } from "@/components/MiniLea
 import { LeaderboardSkeleton } from "@/components/Skeletons";
 import LeaderboardRefresh from "./LeaderboardRefresh";
 import TournamentLeaderboard, { type TournamentPlayerScore } from "./TournamentLeaderboard";
+import { toParClass, toParDisplay, positionBadgeClass } from "@/lib/score-colors";
 
 export default async function LeaderboardPage({
   params,
@@ -389,12 +390,7 @@ export default async function LeaderboardPage({
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {results.map((r) => {
                   const vsPar = r.vsPar;
-                  const parClass =
-                    vsPar < 0
-                      ? "text-red-500 font-bold"
-                      : vsPar === 0
-                        ? "text-zinc-600 dark:text-zinc-400"
-                        : "text-zinc-500 dark:text-zinc-500";
+                  const parClass = toParClass(vsPar);
 
                   return (
                     <tr key={r.teamId} className="transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
@@ -403,11 +399,7 @@ export default async function LeaderboardPage({
                         <div className="flex items-center gap-1">
                           <span
                             className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                              r.position === 1
-                                ? "bg-[#c8a951] text-[#1a1a1a]"
-                                : r.position <= 3
-                                  ? "bg-[#0a3d2a] text-white"
-                                  : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
+                              positionBadgeClass(r.position)
                             }`}
                           >
                             {r.position}
@@ -464,8 +456,7 @@ export default async function LeaderboardPage({
 
                       {/* vs Par */}
                       <td className={`px-4 py-3 text-right text-sm ${parClass}`}>
-                        {vsPar > 0 ? "+" : ""}
-                        {vsPar === 0 ? "E" : vsPar}
+                        {toParDisplay(vsPar)}
                       </td>
                     </tr>
                   );
@@ -526,13 +517,8 @@ export default async function LeaderboardPage({
                         <p className="text-base font-bold tabular text-[#0a3d2a] dark:text-green-400">
                           {r.totalStrokes}
                         </p>
-                        <p className={`text-xs font-semibold ${
-                          vsPar < 0 ? "text-red-500" :
-                          vsPar === 0 ? "text-zinc-500 dark:text-zinc-400" :
-                          "text-zinc-500 dark:text-zinc-400"
-                        }`}>
-                          {vsPar > 0 ? "+" : ""}
-                          {vsPar === 0 ? "E" : vsPar}
+                        <p className={`text-xs font-semibold ${toParClass(vsPar)}`}>
+                          {toParDisplay(vsPar)}
                         </p>
                       </div>
                     </div>

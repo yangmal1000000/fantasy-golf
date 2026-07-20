@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   TIER_CONFIG,
 } from "@/lib/ui";
+import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
 import TierBadge from "@/components/TierBadge";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import Flag from "@/components/Flag";
@@ -595,9 +596,9 @@ export default async function PlayerDetailPage({
                         <p
                           className={`text-[10px] font-medium ${
                             diff < 0
-                              ? "text-green-600 dark:text-green-400"
+                              ? "text-red-600 dark:text-red-400"
                               : diff > 0
-                                ? "text-red-500 dark:text-red-400"
+                                ? "text-zinc-800 dark:text-zinc-500"
                                 : "text-zinc-400"
                           }`}
                         >
@@ -618,7 +619,7 @@ export default async function PlayerDetailPage({
                   <span
                     className={`text-xs font-bold ${
                       consistency < 2
-                        ? "text-green-600 dark:text-green-400"
+                        ? "text-red-600 dark:text-red-400"
                         : consistency < 3.5
                           ? "text-amber-600 dark:text-amber-400"
                           : "text-red-500 dark:text-red-400"
@@ -724,9 +725,9 @@ export default async function PlayerDetailPage({
                               <span
                                 className={`font-medium ${
                                   diff! < 0
-                                    ? "text-green-600 dark:text-green-400"
+                                    ? "text-red-600 dark:text-red-400"
                                     : diff! > 0
-                                      ? "text-red-500 dark:text-red-400"
+                                      ? "text-zinc-800 dark:text-zinc-500"
                                       : "text-zinc-600 dark:text-zinc-300"
                                 }`}
                               >
@@ -744,15 +745,9 @@ export default async function PlayerDetailPage({
                       <td className="px-3 py-2.5 text-center">
                         {f.total ? (
                           <span
-                            className={`font-bold ${
-                              f.toPar < 0
-                                ? "text-green-600 dark:text-green-400"
-                                : f.toPar > 0
-                                  ? "text-red-500 dark:text-red-400"
-                                  : "text-zinc-500"
-                            }`}
+                            className={`font-bold ${toParClass(f.toPar)}`}
                           >
-                            {f.toPar === 0 ? "E" : f.toPar > 0 ? `+${f.toPar}` : f.toPar}
+                            {toParDisplay(f.toPar)}
                           </span>
                         ) : (
                           <span className="text-zinc-300">—</span>
@@ -808,9 +803,9 @@ export default async function PlayerDetailPage({
                           <p className="text-[10px] text-zinc-400">R{i + 1}</p>
                           <p className={`text-sm font-bold ${
                             r != null && r < f.par
-                              ? "text-green-600 dark:text-green-400"
+                              ? "text-red-600 dark:text-red-400"
                               : r != null && r > f.par
-                                ? "text-red-500 dark:text-red-400"
+                                ? "text-zinc-800 dark:text-zinc-500"
                                 : "text-zinc-600 dark:text-zinc-300"
                           }`}>
                             {r ?? "—"}
@@ -825,13 +820,13 @@ export default async function PlayerDetailPage({
                       <span
                         className={`text-sm font-bold ${
                           f.toPar < 0
-                            ? "text-green-600 dark:text-green-400"
+                            ? "text-red-600 dark:text-red-400"
                             : f.toPar > 0
-                              ? "text-red-500 dark:text-red-400"
+                              ? "text-zinc-800 dark:text-zinc-500"
                               : "text-zinc-500"
                         }`}
                       >
-                        {f.toPar === 0 ? "E" : f.toPar > 0 ? `+${f.toPar}` : f.toPar}
+                        {toParDisplay(f.toPar)}
                       </span>
                     </div>
                     {tp?.madeCut === false && (

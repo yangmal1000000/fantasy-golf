@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP } from "@/lib/ui";
+import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
 import { MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, GolfFlagIcon, TrophyIcon, TargetIcon, BoltIcon, FlagIcon } from "@/components/icons";
 
 export const revalidate = 60;
@@ -276,11 +277,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                 <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
                   {winnerEntry[1].total}
                 </span>
-                <span className={`font-semibold ${
-                  winnerEntry[1].toPar < 0 ? "text-green-600" :
-                  winnerEntry[1].toPar === 0 ? "text-zinc-500" : "text-red-500"
-                }`}>
-                  ({winnerEntry[1].toPar === 0 ? "E" : `${winnerEntry[1].toPar > 0 ? "+" : ""}${winnerEntry[1].toPar}`})
+                <span className={`font-semibold ${toParClass(winnerEntry[1].toPar)}`}>
+                  ({toParDisplay(winnerEntry[1].toPar)})
                 </span>
                 {playerCountryMap.get(winnerEntry[0]) && (
                   <span className="text-xs text-zinc-400">{playerCountryMap.get(winnerEntry[0])}</span>
@@ -303,11 +301,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                   <span className="font-bold tabular text-zinc-700 dark:text-zinc-300">
                     {runnerUpEntry[1].total}
                   </span>
-                  <span className={`font-semibold ${
-                    runnerUpEntry[1].toPar < 0 ? "text-green-600" :
-                    runnerUpEntry[1].toPar === 0 ? "text-zinc-500" : "text-red-500"
-                  }`}>
-                    ({runnerUpEntry[1].toPar === 0 ? "E" : `${runnerUpEntry[1].toPar > 0 ? "+" : ""}${runnerUpEntry[1].toPar}`})
+                  <span className={`font-semibold ${toParClass(runnerUpEntry[1].toPar)}`}>
+                    ({toParDisplay(runnerUpEntry[1].toPar)})
                   </span>
                   {playerCountryMap.get(runnerUpEntry[0]) && (
                     <span className="text-xs text-zinc-400">{playerCountryMap.get(runnerUpEntry[0])}</span>
@@ -402,14 +397,14 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                         {hasScores && sc && (
                           <span className="flex items-center gap-1.5 tabular text-[11px]">
                             {sc.rounds.map((r, i) => (
-                              <span key={i} className={`w-6 text-center rounded ${r === null ? "text-zinc-300" : r < par ? "text-green-600 font-semibold" : r > par ? "text-red-500" : "text-zinc-600 dark:text-zinc-400"}`}>{r ?? "—"}</span>
+                              <span key={i} className={`w-6 text-center rounded ${roundScoreClass(r, par)}`}>{r ?? "—"}</span>
                             ))}
                             <span className="w-10 text-right font-bold border-l border-zinc-100 dark:border-zinc-800 pl-1.5">
                               {missedCut ? <span className="text-red-500">CUT</span> : total}
                             </span>
                             {!missedCut && toPar !== null && (
-                              <span className={`w-8 text-right font-bold ${toPar < 0 ? "text-green-600" : toPar > 0 ? "text-red-500" : "text-zinc-500"}`}>
-                                {toPar === 0 ? "E" : `${toPar > 0 ? "+" : ""}${toPar}`}
+                              <span className={`w-8 text-right font-bold ${toParClass(toPar!)}`}>
+                                {toParDisplay(toPar!)}
                               </span>
                             )}
                           </span>

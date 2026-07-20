@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { calculateLeaderboard } from "@/lib/scoring";
 import Link from "next/link";
 import { TrendingUpIcon, StarIcon, TrendingDownIcon } from "@/components/icons";
+import { toParClass, toParDisplay, positionBadgeClass } from "@/lib/score-colors";
 
 export const revalidate = 600; // ISR — rebuild every 10 min
 
@@ -175,7 +176,7 @@ export default async function PowerRankingsPage() {
               {teamOfTheWeek.ownerName} · {teamOfTheWeek.tournamentName}
             </p>
             <p className="mt-1 text-sm text-zinc-700">
-              Total: {teamOfTheWeek.totalStrokes} ({teamOfTheWeek.vsPar === 0 ? "E" : `${teamOfTheWeek.vsPar > 0 ? "+" : ""}${teamOfTheWeek.vsPar}`})
+              Total: {teamOfTheWeek.totalStrokes} ({toParDisplay(teamOfTheWeek.vsPar)})
             </p>
           </div>
         )}
@@ -247,12 +248,8 @@ export default async function PowerRankingsPage() {
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-sm font-bold text-[#0f3d20] dark:text-green-400">{t.totalStrokes}</p>
-                  <p className={`text-xs ${
-                    t.vsPar < 0 ? "text-red-500" :
-                    t.vsPar === 0 ? "text-zinc-500" :
-                    "text-zinc-500 dark:text-zinc-400"
-                  }`}>
-                    {t.vsPar === 0 ? "E" : `${t.vsPar > 0 ? "+" : ""}${t.vsPar}`}
+                  <p className={`text-xs ${toParClass(t.vsPar)}`}>
+                    {toParDisplay(t.vsPar)}
                   </p>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">#{t.position}</p>
                 </div>
