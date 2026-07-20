@@ -207,7 +207,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
                         {/* Thumbnail */}
                         <div className="relative h-[64px] w-[64px] shrink-0 overflow-hidden rounded-lg sm:h-[72px] sm:w-[96px]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={courseImage(t.id)} alt={t.course || t.name} loading="lazy" className="h-full w-full object-cover" />
+                          <img src={courseImage(t.id, t.course)} alt={t.course || t.name} loading="lazy" className="h-full w-full object-cover" />
                           {isLive && (
                             <div className="absolute left-1 top-1 flex items-center gap-0.5 rounded bg-[#c44545] px-1 py-0.5">
                               <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />

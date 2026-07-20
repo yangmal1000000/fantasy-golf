@@ -26,6 +26,7 @@ function formFromPosition(position: number | null, madeCut: boolean | null): For
 
 interface SearchParams {
   tour?: string;
+  page?: string;
 }
 
 export default async function PlayersPage({
@@ -36,11 +37,19 @@ export default async function PlayersPage({
   const sp = await searchParams;
   const tour = sp.tour === "women" ? "women" : "men";
   const isWomen = tour === "women";
+  const page = parseInt(sp.page ?? "1", 10);
+  const pageSize = 100;
+  const skip = (page - 1) * pageSize;
 
   /* ── Fetch all data in parallel ── */
   const [players, tournaments, allScores, allTPs, teamGroups] = await Promise.all([
     prisma.player.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        country: true,
+        dataGolfRank: true,
+        tour: true,
         tournaments: {
           include: {
             tournament: { select: { id: true, name: true, category: true, tour: true, par: true, startDate: true } },
@@ -126,13 +135,18 @@ export default async function PlayersPage({
   for (const player of players) {
     if (player.country) allCountries.add(player.country);
 
-    // Determine tour from tournament links — a player is "women's" if
-    // the majority of their tournaments are LPGA, otherwise men's
-    const playerTournamentsAll = player.tournaments.filter(
-      (tp) => tournamentMap.has(tp.tournamentId),
-    );
-    const isPlayerWomen = playerTournamentsAll.length > 0 &&
-      playerTournamentsAll.filter((tp) => tournamentMap.get(tp.tournamentId)?.tour === "lpga").length > playerTournamentsAll.length / 2;
+    // Determine tour: explicit Player.tour field takes priority,
+    // then fallback to tournament-link-based detection
+    let isPlayerWomen: boolean;
+    if (player.tour) {
+      isPlayerWomen = player.tour === "lpga";
+    } else {
+      const playerTournamentsAll = player.tournaments.filter(
+        (tp) => tournamentMap.has(tp.tournamentId),
+      );
+      isPlayerWomen = playerTournamentsAll.length > 0 &&
+        playerTournamentsAll.filter((tp) => tournamentMap.get(tp.tournamentId)?.tour === "lpga").length > playerTournamentsAll.length / 2;
+    }
     if (isWomen && !isPlayerWomen) continue;
     if (!isWomen && isPlayerWomen) continue;
 
@@ -227,6 +241,8 @@ export default async function PlayersPage({
     return a.name.localeCompare(b.name);
   });
 
+  const totalPages = Math.ceil(rows.length / pageSize);
+  const paginatedRows = rows.slice(skip, skip + pageSize);
   const countries = Array.from(allCountries).sort();
 
   /* ── Stats summary ── */
@@ -276,7 +292,7 @@ export default async function PlayersPage({
       </div>
 
       {/* ── Table ── */}
-      <PlayersTable players={rows} countries={countries} />
+      <PlayersTable players={paginatedRows} countries={countries} totalPages={totalPages} currentPage={page} tour={tour} />
     </div>
   );
 }

@@ -111,19 +111,49 @@ export const STATUS_CONFIG: Record<string, { label: string; badgeClass: string }
  *  If you add new images to /public/courses/, add the mapping here too.
  */
 export const COURSE_IMAGES: Record<string, string> = {
-  // Men's
+  // Men's — by slug ID
   "masters": "/courses/augusta.jpg",
   "pga-championship": "/courses/quail-hollow.jpg",
   "us-open": "/courses/oakmont.jpg",
   "the-open": "/courses/royal-birkdale.jpg",
   "players-championship": "/courses/tpc-sawgrass.jpg",
   "genesis-invitational": "/courses/riviera.jpg",
-  "arnold-palmer-invitational": "/courses/bay-hill.jpg",
+  "arnold-palmer": "/courses/bay-hill.jpg",
   "memorial-tournament": "/courses/muirfield-village.jpg",
   "tour-championship": "/courses/east-lake.jpg",
-  "bmw-pga-championship": "/courses/wentworth.jpg",
-  // Women's LPGA — specific course images not yet shipped; fall back to default.
+  "bmw-pga": "/courses/wentworth.jpg",
 };
+
+/** Keyword → image mapping for course-name-based matching */
+const COURSE_KEYWORD_IMAGES: { keywords: string[]; image: string }[] = [
+  { keywords: ["augusta"], image: "/courses/augusta.jpg" },
+  { keywords: ["bay hill", "bay-hill"], image: "/courses/bay-hill.jpg" },
+  { keywords: ["east lake", "east-lake"], image: "/courses/east-lake.jpg" },
+  { keywords: ["muirfield"], image: "/courses/muirfield-village.jpg" },
+  { keywords: ["oakmont"], image: "/courses/oakmont.jpg" },
+  { keywords: ["quail hollow", "quail-hollow"], image: "/courses/quail-hollow.jpg" },
+  { keywords: ["riviera"], image: "/courses/riviera.jpg" },
+  { keywords: ["royal birkdale", "royal-birkdale", "birkdale", "st andrews", "st. andrews", "old course", "links", "renaissance", "harbour town", "aberdeen"], image: "/courses/royal-birkdale.jpg" },
+  { keywords: ["tpc sawgrass", "sawgrass", "tpc scottsdale", "tpc deere", "tpc craig", "tpc san antonio", "tpc southwind", "innisbrook", "colonial", "harbour", "southwind"], image: "/courses/tpc-sawgrass.jpg" },
+  { keywords: ["wentworth"], image: "/courses/wentworth.jpg" },
+  { keywords: ["torrey pines", "farmers"], image: "/courses/oakmont.jpg" },
+];
+
+export function courseImage(tournamentId: string, courseName?: string | null): string {
+  // 1. Explicit ID match
+  if (COURSE_IMAGES[tournamentId]) return COURSE_IMAGES[tournamentId];
+
+  // 2. Course name keyword match
+  if (courseName) {
+    const lower = courseName.toLowerCase();
+    for (const entry of COURSE_KEYWORD_IMAGES) {
+      if (entry.keywords.some((kw) => lower.includes(kw))) return entry.image;
+    }
+  }
+
+  // 3. Fallback
+  return "/courses/default.jpg";
+}
 
 export const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string; icon: string }> = {
   major: { label: "Major", badgeClass: "bg-amber-100 text-amber-800 border-amber-300", icon: "trophy" },
@@ -134,6 +164,4 @@ export const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string
   regular: { label: "Regular", badgeClass: "bg-zinc-100 text-zinc-600 border-zinc-300", icon: "flag" },
 };
 
-export function courseImage(tournamentId: string): string {
-  return COURSE_IMAGES[tournamentId] ?? "/courses/default.jpg";
-}
+

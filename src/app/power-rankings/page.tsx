@@ -4,8 +4,7 @@ import { calculateLeaderboard } from "@/lib/scoring";
 import Link from "next/link";
 import { TrendingUpIcon, StarIcon, TrendingDownIcon } from "@/components/icons";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 300;
+export const revalidate = 600; // ISR — rebuild every 10 min
 
 export const metadata: Metadata = {
   title: "Power Rankings — Fantasy Golf",
@@ -158,6 +157,7 @@ export default async function PowerRankingsPage() {
         <h1 className="mt-1 flex items-center gap-2 text-xl font-bold tracking-tight">
           <TrendingUpIcon className="h-6 w-6" /> The Power Rankings
         </h1>
+        <span className="sr-only">Power Rankings</span>
         <p className="mt-1 text-sm text-white/70">
           Top 20 fantasy teams across all active tournaments, ranked by scoring vs par.
         </p>

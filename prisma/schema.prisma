@@ -102,6 +102,7 @@ model Player {
   name         String
   country      String?
   dataGolfRank Int?
+  tour         String?             // "pga", "lpga", "dpwt" — null means infer from tournaments
   createdAt    DateTime            @default(now())
   tournaments  TournamentPlayer[]
   scores       Score[]

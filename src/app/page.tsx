@@ -229,7 +229,7 @@ export default async function Home() {
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
             <div className="relative h-28 overflow-hidden sm:h-36">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={courseImage(tournament.id)} alt={tournament.course || tournament.name} className="h-full w-full object-cover" />
+              <img src={courseImage(tournament.id, tournament.course)} alt={tournament.course || tournament.name} className="h-full w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a3d2a]/90 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
                 <div className="flex items-center justify-between">
@@ -264,7 +264,7 @@ export default async function Home() {
               <Link key={t.id} href={`/tournaments/${t.id}/enter`} className="group flex items-center gap-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2 py-1.5 transition hover:border-zinc-300 dark:hover:border-zinc-700">
                 <div className="h-[48px] w-[48px] shrink-0 overflow-hidden rounded-md">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={courseImage(t.id)} alt={t.course || t.name} loading="lazy" className="h-full w-full object-cover" />
+                  <img src={courseImage(t.id, t.course)} alt={t.course || t.name} loading="lazy" className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-bold text-zinc-900 dark:text-white">{t.name}</p>

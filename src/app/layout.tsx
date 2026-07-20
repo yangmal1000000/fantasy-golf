@@ -21,7 +21,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Fantasy Golf",
-  description: "Pick your dream team. £15 entry, winner takes all.",
+  description: "Pick your dream team. £10 entry, winner takes all.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Fantasy Golf",
-    description: "Pick your dream team. £15 entry, winner takes all.",
+    description: "Pick your dream team. £10 entry, winner takes all.",
     url: "https://fantasy-golf-phi.vercel.app",
     siteName: "Fantasy Golf",
     type: "website",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Fantasy Golf",
-    description: "Pick your dream team. £15 entry, winner takes all.",
+    description: "Pick your dream team. £10 entry, winner takes all.",
   },
 };
 
