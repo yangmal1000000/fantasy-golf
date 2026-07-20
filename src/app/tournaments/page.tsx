@@ -15,7 +15,7 @@ import TournamentSearch from "./TournamentSearch";
 import { GolfFlagIcon, MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, StarIcon, TrophyIcon } from "@/components/icons";
 
 // Cache for 60 seconds — dramatically reduces DB load and page latency
-export const revalidate = 60;
+export const revalidate = 300; // ISR — 5 minutes
 
 type TournamentRow = {
   id: string; name: string; course: string | null;
