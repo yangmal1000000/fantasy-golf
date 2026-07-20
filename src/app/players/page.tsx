@@ -50,6 +50,7 @@ export default async function PlayersPage({
         country: true,
         dataGolfRank: true,
         tour: true,
+        photoUrl: true,
         tournaments: {
           include: {
             tournament: { select: { id: true, name: true, category: true, tour: true, par: true, startDate: true } },
@@ -222,6 +223,7 @@ export default async function PlayersPage({
       id: player.id,
       name: player.name,
       country: player.country,
+      photoUrl: player.photoUrl,
       dataGolfRank: player.dataGolfRank,
       tier: bestTier,
       tournamentCount,

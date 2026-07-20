@@ -13,6 +13,7 @@ interface TierPlayer {
   playerId: string;
   name: string;
   country: string | null;
+  photoUrl: string | null;
   dataGolfRank: number | null;
   tier: string;
 }
@@ -248,7 +249,7 @@ export default function TeamEntryForm({
                         }`}
                       >
                         <div className="flex items-center gap-2.5 sm:gap-3">
-                          <PlayerAvatar name={p.name} country={p.country} size="sm" />
+                          <PlayerAvatar name={p.name} country={p.country} photoUrl={p.photoUrl} size="sm" />
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-zinc-900 dark:text-white">
                               {p.name}

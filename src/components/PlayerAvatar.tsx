@@ -1,6 +1,5 @@
 /**
- * PlayerAvatar — Deterministic avatar from player initials.
- * Background colour derived from country flag colours or name hash.
+ * PlayerAvatar — Shows player photo if available, falls back to initials avatar.
  *
  * Sizes: sm (28px), md (48px)
  */
@@ -32,7 +31,6 @@ const COUNTRY_COLORS: Record<string, [string, string]> = {
   SUI: ["#dc2626", "#ffffff"],
   CZE: ["#1e40af", "#dc2626"],
   POL: ["#ffffff", "#dc2626"],
-  AUS_ETH: ["#fbbf24", "#166534"],
 };
 
 function hashString(s: string): number {
@@ -53,14 +51,52 @@ function getInitials(name: string): string {
 interface PlayerAvatarProps {
   name: string;
   country?: string | null;
+  photoUrl?: string | null;
   size?: "sm" | "md";
 }
 
 export default function PlayerAvatar({
   name,
   country,
+  photoUrl,
   size = "sm",
 }: PlayerAvatarProps) {
+  const dim = size === "sm" ? 28 : 48;
+
+  // If we have a real photo, show it
+  if (photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={photoUrl}
+        alt={name}
+        width={dim}
+        height={dim}
+        className="shrink-0 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800"
+        style={{ width: dim, height: dim }}
+        loading="lazy"
+        onError={(e) => {
+          // Hide broken image, show fallback by replacing with initials avatar
+          (e.target as HTMLImageElement).style.display = "none";
+          const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement | null;
+          if (fallback) fallback.style.display = "";
+        }}
+      />
+    );
+  }
+
+  return <InitialsAvatar name={name} country={country} size={size} />;
+}
+
+function InitialsAvatar({
+  name,
+  country,
+  size = "sm",
+}: {
+  name: string;
+  country?: string | null;
+  size?: "sm" | "md";
+}) {
   const initials = getInitials(name);
   const dim = size === "sm" ? 28 : 48;
   const fontSize = size === "sm" ? 11 : 18;
@@ -99,7 +135,6 @@ export default function PlayerAvatar({
         </linearGradient>
       </defs>
       <circle cx="20" cy="20" r="20" fill={`url(#${gradId})`} />
-      {/* Simple silhouette suggestion — small arc at bottom */}
       <ellipse cx="20" cy="33" rx="12" ry="8" fill="rgba(255,255,255,0.08)" />
       <text
         x="20"
