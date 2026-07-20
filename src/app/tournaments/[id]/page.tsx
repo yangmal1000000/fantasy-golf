@@ -53,9 +53,19 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   const hasScores = scores.length > 0;
 
   // Compute winner and runner-up for completed tournaments
+  // Sort: most rounds played first (prefer 4-round finishers), then lowest total
   const sortedScorers = [...scoreMap.entries()]
     .filter(([, s]) => s.roundsPlayed > 0)
-    .sort((a, b) => a[1].total - b[1].total);
+    .sort((a, b) => {
+      // Players who made the cut (played R3+) always rank above those who didn't
+      const aMadeCut = a[1].roundsPlayed >= 3;
+      const bMadeCut = b[1].roundsPlayed >= 3;
+      if (aMadeCut !== bMadeCut) return aMadeCut ? -1 : 1;
+      // Among same cut status, more rounds = higher ranked
+      if (a[1].roundsPlayed !== b[1].roundsPlayed) return b[1].roundsPlayed - a[1].roundsPlayed;
+      // Then by lowest total
+      return a[1].total - b[1].total;
+    });
   const winnerEntry = sortedScorers[0];
   const runnerUpEntry = sortedScorers[1];
   // Build playerId -> name map for winner display
@@ -225,11 +235,15 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       </div>
 
       {/* Action buttons */}
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {canEnter ? (
+      <div className={`mt-4 grid grid-cols-2 gap-2 ${tournament._count.teams > 0 ? "sm:grid-cols-4" : "sm:grid-cols-2"} `}>
+          {canEnter && tournament._count.players > 0 ? (
           <Link href={`/tournaments/${tournament.id}/enter`} className="flex items-center justify-center gap-1.5 rounded-lg bg-[#0a3d2a] dark:bg-green-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1a5c3e]">
             <GolfFlagIcon className="h-4 w-4" /> Enter Team
           </Link>
+        ) : canEnter && tournament._count.players === 0 ? (
+          <div className="flex items-center justify-center gap-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-4 py-2.5 text-sm font-bold text-zinc-400">
+            Field TBA
+          </div>
         ) : (
           <div className="flex items-center justify-center gap-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-4 py-2.5 text-sm font-bold text-zinc-400">
             Entries Closed
@@ -238,12 +252,16 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         <Link href={`/tournaments/${tournament.id}/leaderboard`} className="flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:border-zinc-300">
           <ChartBarIcon className="h-4 w-4" /> Leaderboard
         </Link>
-        <Link href={`/tournaments/${tournament.id}/draft-board`} className="flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:border-zinc-300">
-          <UsersIcon className="h-4 w-4" /> Draft Board
-        </Link>
-        <Link href={`/tournaments/${tournament.id}/side-games`} className="flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:border-zinc-300">
-          <TargetIcon className="h-4 w-4" /> Side Games
-        </Link>
+        {tournament._count.teams > 0 && (
+          <Link href={`/tournaments/${tournament.id}/draft-board`} className="flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:border-zinc-300">
+            <UsersIcon className="h-4 w-4" /> Draft Board
+          </Link>
+        )}
+        {tournament._count.teams > 0 && (
+          <Link href={`/tournaments/${tournament.id}/side-games`} className="flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:border-zinc-300">
+            <TargetIcon className="h-4 w-4" /> Side Games
+          </Link>
+        )}
       </div>
 
       {/* Live tracker link for in-progress */}
