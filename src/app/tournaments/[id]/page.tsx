@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP } from "@/lib/ui";
+import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP, majorTheme } from "@/lib/ui";
 import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
 import { MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, GolfFlagIcon, TrophyIcon, TargetIcon, BoltIcon, FlagIcon } from "@/components/icons";
 
@@ -90,6 +90,10 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   const cutScore = r2Scores.length > 0 ? r2Scores[Math.min(64, r2Scores.length - 1)]?.r2Total : null;
 
   const status = STATUS_CONFIG[tournament.status] ?? STATUS_CONFIG.upcoming;
+  const theme = majorTheme(tournament.id);
+  const winnerCardClass = theme
+    ? theme.winnerCardClass
+    : "border-[#c8a951]/40 bg-gradient-to-br from-[#c8a951]/10 to-transparent";
   const cat = CATEGORY_CONFIG[tournament.category];
   const canEnter = tournament.status === "entries_open" || tournament.status === "upcoming";
   const isLive = tournament.status === "in_progress";
@@ -132,6 +136,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           <div className="flex items-center gap-2">
             <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${status.badgeClass}`}>{status.label}</span>
             {cat && <span className="rounded-md bg-white/15 px-2 py-0.5 text-[10px] font-semibold">{cat.label}</span>}
+            {theme && <span className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${theme.badgeClass}`}>{theme.name}</span>}
             {isLive && tournament.currentRound > 0 && (
               <span className="flex items-center gap-1 rounded-md bg-[#c44545] px-2 py-0.5 text-[10px] font-bold">
                 <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" /> ROUND {tournament.currentRound}
@@ -282,7 +287,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       {isCompleted && winnerEntry && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {/* Winner */}
-          <div className="flex items-center gap-3 rounded-xl border-2 border-[#c8a951]/40 bg-gradient-to-br from-[#c8a951]/10 to-transparent p-4 shadow-sm">
+          <div className="flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm ${winnerCardClass}">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#c8a951] text-2xl shadow-md">
               🏆
             </div>

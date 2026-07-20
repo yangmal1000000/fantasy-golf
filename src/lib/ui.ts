@@ -179,6 +179,57 @@ const COURSE_KEYWORD_IMAGES: { keywords: string[]; image: string }[] = [
   { keywords: ["sahalee"], image: "/courses/tpc-sawgrass.jpg" },
 ];
 
+export const MAJOR_THEMES: Record<string, {
+  name: string;
+  headerBg: string;       // gradient classes for header banner
+  headerText: string;
+  accentColor: string;    // hex for badges, borders
+  badgeClass: string;
+  winnerCardClass: string;
+  cutLineClass: string;
+}> = {
+  "masters": {
+    name: "The Masters",
+    headerBg: "from-[#006747] via-[#00854a] to-[#00a35c]",
+    headerText: "text-[#f5c518]",
+    accentColor: "#f5c518",
+    badgeClass: "bg-[#f5c518]/20 text-[#f5c518] border-[#f5c518]/40",
+    winnerCardClass: "border-[#f5c518]/40 bg-gradient-to-br from-[#f5c518]/10 to-transparent",
+    cutLineClass: "text-[#f5c518]",
+  },
+  "pga-championship": {
+    name: "PGA Championship",
+    headerBg: "from-[#1a3a6b] via-[#2a5298] to-[#3a6db8]",
+    headerText: "text-[#d4a843]",
+    accentColor: "#d4a843",
+    badgeClass: "bg-[#d4a843]/20 text-[#d4a843] border-[#d4a843]/40",
+    winnerCardClass: "border-[#d4a843]/40 bg-gradient-to-br from-[#d4a843]/10 to-transparent",
+    cutLineClass: "text-[#d4a843]",
+  },
+  "us-open": {
+    name: "U.S. Open",
+    headerBg: "from-[#1a2540] via-[#2a3555] to-[#3a4565]",
+    headerText: "text-[#c0c5ce]",
+    accentColor: "#9ca3af",
+    badgeClass: "bg-white/10 text-[#c0c5ce] border-white/20",
+    winnerCardClass: "border-[#9ca3af]/40 bg-gradient-to-br from-white/5 to-transparent",
+    cutLineClass: "text-[#9ca3af]",
+  },
+  "the-open": {
+    name: "The Open Championship",
+    headerBg: "from-[#7c1a1a] via-[#9c2a2a] to-[#bc3a3a]",
+    headerText: "text-[#d4a843]",
+    accentColor: "#d4a843",
+    badgeClass: "bg-[#d4a843]/20 text-[#d4a843] border-[#d4a843]/40",
+    winnerCardClass: "border-[#d4a843]/40 bg-gradient-to-br from-[#7c1a1a]/10 to-transparent",
+    cutLineClass: "text-[#d4a843]",
+  },
+};
+
+export function majorTheme(tournamentId: string) {
+  return MAJOR_THEMES[tournamentId] ?? null;
+}
+
 export function courseImage(tournamentId: string, courseName?: string | null): string {
   // 1. Explicit ID match
   if (COURSE_IMAGES[tournamentId]) return COURSE_IMAGES[tournamentId];
