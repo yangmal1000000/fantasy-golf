@@ -108,7 +108,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     // Take first winner per tournament
     for (const w of winners) {
       if (!winnerMap.has(w.tournamentId)) {
-        winnerMap.set(w.tournamentId, { name: w.playerName, toPar: w.total - w.par * 4 });
+        winnerMap.set(w.tournamentId, { name: w.playerName, toPar: Number(w.total) - Number(w.par) * 4 });
       }
     }
   }
