@@ -29,6 +29,11 @@ const NAV_ITEMS = [
     href: "/admin/settings",
     icon: "⚙️",
   },
+  {
+    label: "Data Feeds",
+    href: "/admin/data",
+    icon: "📡",
+  },
 ];
 
 const TOURNAMENT_SUBNAV = [

@@ -98,14 +98,44 @@ enum Tier {
 }
 
 model Player {
-  id           String              @id @default(cuid())
-  name         String
-  country      String?
-  dataGolfRank Int?
-  tour         String?             // "pga", "lpga", "dpwt" — null means infer from tournaments
-  createdAt    DateTime            @default(now())
-  tournaments  TournamentPlayer[]
-  scores       Score[]
+  id             String              @id @default(cuid())
+  name           String
+  country        String?
+  dataGolfRank   Int?
+  tour           String?             // "pga", "lpga", "dpwt"
+  // Enrichment fields (from public data feeds)
+  photoUrl       String?
+  bio            String?             @db.Text
+  dateOfBirth    DateTime?
+  turnedPro      Int?
+  heightCm       Int?
+  weightKg       Int?
+  college        String?
+  birthplace     String?
+  careerEarnings String?             // stored as string for display
+  wtRank         Int?                // Official World Golf Ranking
+  fedexRank      Int?
+  enrichedAt     DateTime?
+  createdAt      DateTime            @default(now())
+  tournaments    TournamentPlayer[]
+  scores         Score[]
+}
+
+model FeedStatus {
+  id            String   @id @default(cuid())
+  feedType      String   // "rankings", "results", "players", "photos", "schedule"
+  feedSource    String   // "espn", "owgr", "datagolf", "wikipedia", "pga_tour"
+  status        String   @default("idle") // idle, running, success, error
+  lastRunAt     DateTime?
+  nextRunAt     DateTime?
+  recordsTotal  Int      @default(0)
+  recordsSynced Int      @default(0)
+  errorCount    Int      @default(0)
+  lastError     String?  @db.Text
+  lastMessage   String?  @db.Text
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model TournamentPlayer {
