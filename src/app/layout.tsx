@@ -41,11 +41,20 @@ export const metadata: Metadata = {
     url: "https://fantasy-golf-phi.vercel.app",
     siteName: "Fantasy Golf",
     type: "website",
+    images: [
+      {
+        url: "https://fantasy-golf-phi.vercel.app/og-image.jpg",
+        width: 1024,
+        height: 1024,
+        alt: "Fantasy Golf — Pick 5 pros. Beat your mates.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Fantasy Golf",
     description: "Pick your dream team. £10 entry, winner takes all.",
+    images: ["https://fantasy-golf-phi.vercel.app/og-image.jpg"],
   },
 };
 
