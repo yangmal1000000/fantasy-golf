@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   description: "Browse and enter upcoming fantasy golf tournaments.",
 };
 import { formatDateRange, STATUS_CONFIG, courseImage, CATEGORY_CONFIG } from "@/lib/ui";
+import { toParDisplay } from "@/lib/score-colors";
 import CountdownTimer from "@/components/CountdownTimer";
 import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
@@ -85,6 +86,31 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
       t.name.toLowerCase().includes(searchQuery) ||
       (t.course ?? "").toLowerCase().includes(searchQuery)
     );
+  }
+
+  // Fetch winners for completed tournaments
+  const completedIds = tournaments.filter(t => t.status === "completed").map(t => t.id);
+  const winnerMap = new Map<string, { name: string; toPar: number }>();
+  if (completedIds.length > 0) {
+    const winners = await prisma.$queryRawUnsafe(`
+      SELECT s."tournamentId", p.name AS "playerName",
+             SUM(s.strokes) AS total,
+             s2.par
+      FROM "Score" s
+      JOIN "Player" p ON p.id = s."playerId"
+      JOIN "Tournament" s2 ON s2.id = s."tournamentId"
+      WHERE s."tournamentId" = ANY($1::text[]) AND s.strokes IS NOT NULL
+      GROUP BY s."tournamentId", p.id, s2.par
+      HAVING COUNT(s.strokes) >= 3
+      ORDER BY s."tournamentId", SUM(s.strokes) ASC
+    `, completedIds) as { tournamentId: string; playerName: string; total: number; par: number }[];
+    
+    // Take first winner per tournament
+    for (const w of winners) {
+      if (!winnerMap.has(w.tournamentId)) {
+        winnerMap.set(w.tournamentId, { name: w.playerName, toPar: w.total - w.par * 4 });
+      }
+    }
   }
 
   // Group by month for display
@@ -276,6 +302,17 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
                               Starts in {daysUntil} day{daysUntil === 1 ? "" : "s"}
                             </div>
                           )}
+                          {t.status === "completed" && (() => {
+                            const winner = winnerMap.get(t.id);
+                            if (!winner) return null;
+                            return (
+                              <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-[#c8a951]">
+                                <span>🏆</span>
+                                <span className="truncate font-semibold">{winner.name}</span>
+                                <span className="text-red-600 dark:text-red-400">({toParDisplay(winner.toPar)})</span>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* CTA */}
