@@ -10,6 +10,7 @@ import { formatDateRange, STATUS_CONFIG, courseImage, CATEGORY_CONFIG } from "@/
 import CountdownTimer from "@/components/CountdownTimer";
 import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
+import TournamentSearch from "./TournamentSearch";
 import { GolfFlagIcon, MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, StarIcon, TrophyIcon } from "@/components/icons";
 
 // Cache for 60 seconds — dramatically reduces DB load and page latency
@@ -22,7 +23,7 @@ type TournamentRow = {
   _count: { teams: number; players: number };
 };
 
-export default async function TournamentsPage({ searchParams }: { searchParams: Promise<{ tour?: string; cat?: string; year?: string; past?: string; status?: string }> }) {
+export default async function TournamentsPage({ searchParams }: { searchParams: Promise<{ tour?: string; cat?: string; year?: string; past?: string; status?: string; q?: string }> }) {
   const params = await searchParams;
   const tour = params.tour ?? "all";
   const showWomen = tour === "women";
@@ -31,7 +32,8 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
   const activeYear = params.year ?? "all";
   // Status filter: "upcoming" (default), "live", "all"
   // Backward compat: ?past=1 maps to status=all
-  const statusFilter = params.status ?? (params.past === "1" ? "all" : "upcoming");
+  const statusFilter = params.status ?? "all";
+  const searchQuery = (params.q ?? "").trim().toLowerCase();
 
   let tournaments: TournamentRow[] = [];
   let completedCount = 0;
@@ -73,8 +75,17 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
   for (const t of tournaments) yearSet.add(new Date(t.startDate).getFullYear());
   const years = Array.from(yearSet).sort((a, b) => a - b);
 
-  // Apply category filter (tournaments already has past-filter applied above)
-  const visibleTournaments = activeCategory === "all" ? tournaments : tournaments.filter((t) => t.category === activeCategory);
+  // Apply category filter
+  let visibleTournaments = activeCategory === "all" ? tournaments : tournaments.filter((t) => t.category === activeCategory);
+
+  // Apply search filter
+  const isSearching = searchQuery.length > 0;
+  if (isSearching) {
+    visibleTournaments = visibleTournaments.filter((t) =>
+      t.name.toLowerCase().includes(searchQuery) ||
+      (t.course ?? "").toLowerCase().includes(searchQuery)
+    );
+  }
 
   // Group by month for display
   const monthLabels = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -92,7 +103,8 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
     if (t !== "men") p.set("tour", t);
     if (c !== "all") p.set("cat", c);
     if (y !== "all") p.set("year", y);
-    if (s !== "upcoming") p.set("status", s);
+    if (s !== "all") p.set("status", s);
+    if (isSearching) p.set("q", searchQuery);
     const qs = p.toString();
     return `/tournaments${qs ? `?${qs}` : ""}`;
   }
@@ -170,10 +182,17 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
               </Link>
             );
           })}
-          {statusFilter === "all" && completedCount > 0 && (
+          {statusFilter === "all" && completedCount > 0 && !isSearching && (
             <span className="ml-auto text-xs text-zinc-400">{completedCount} completed</span>
           )}
         </div>
+
+        {/* Search input — client-side filter via debounce redirect */}
+        <TournamentSearch
+          defaultValue={searchQuery}
+          baseUrl="/tournaments"
+          baseParams={{ tour, cat: activeCategory, year: activeYear, status: statusFilter }}
+        />
 
         {/* Tournament list — grouped by month */}
         {visibleTournaments.length === 0 ? (
@@ -261,8 +280,10 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
 
                         {/* CTA */}
                         <div className="flex shrink-0 items-center gap-1.5">
-                          {canEnter ? (
+                          {canEnter && t._count.players > 0 ? (
                             <span className="rounded-lg bg-[#0a3d2a] dark:bg-green-600 px-3 py-1.5 text-xs font-bold text-white transition group-hover:bg-[#1a5c3e]">Enter</span>
+                          ) : canEnter && t._count.players === 0 ? (
+                            <span className="rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-zinc-400">Field TBA</span>
                           ) : (
                             <span className="rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-zinc-500">View</span>
                           )}
