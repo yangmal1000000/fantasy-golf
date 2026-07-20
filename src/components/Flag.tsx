@@ -63,6 +63,14 @@ const FLAG_MAP: Record<string, { flag: string; name: string }> = {
   UAE: { flag: "🇦🇪", name: "United Arab Emirates" },
   KSA: { flag: "🇸🇦", name: "Saudi Arabia" },
   QAT: { flag: "🇶🇦", name: "Qatar" },
+  // Additional codes used in DB
+  SKO: { flag: "🇰🇷", name: "South Korea" },
+  SCT: { flag: "🏴", name: "Scotland" },
+  PUR: { flag: "🇵🇷", name: "Puerto Rico" },
+  FIJ: { flag: "🇫🇯", name: "Fiji" },
+  CAY: { flag: "🇰🇾", name: "Cayman Islands" },
+  ISL: { flag: "🇮🇸", name: "Iceland" },
+  ROM: { flag: "🇷🇴", name: "Romania" },
 };
 
 interface FlagProps {
