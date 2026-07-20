@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Flag from "@/components/Flag";
+import { roundScoreClass, toParClass, toParDisplay, positionBadgeClass } from "@/lib/score-colors";
 
 export interface TournamentPlayerScore {
   playerId: string;
@@ -105,15 +106,7 @@ export default function TournamentLeaderboard({
                       {r === null ? (
                         <span className="text-zinc-300 dark:text-zinc-600">—</span>
                       ) : (
-                        <span
-                          className={
-                            r < par
-                              ? "text-green-600 font-semibold"
-                              : r > par
-                                ? "text-red-500"
-                                : "text-zinc-600 dark:text-zinc-400"
-                          }
-                        >
+                        <span className={roundScoreClass(r, par)}>
                           {r}
                         </span>
                       )}
@@ -123,16 +116,8 @@ export default function TournamentLeaderboard({
                     {!p.madeCut && p.roundsPlayed < 2 ? "WD" : p.total}
                   </td>
                   <td className="px-3 py-2.5 text-right text-sm font-bold tabular">
-                    <span
-                      className={
-                        p.toPar < 0
-                          ? "text-green-600"
-                          : p.toPar === 0
-                            ? "text-zinc-500"
-                            : "text-red-500"
-                      }
-                    >
-                      {p.toPar === 0 ? "E" : `${p.toPar > 0 ? "+" : ""}${p.toPar}`}
+                    <span className={toParClass(p.toPar)}>
+                      {toParDisplay(p.toPar)}
                     </span>
                   </td>
                 </tr>
@@ -172,15 +157,7 @@ export default function TournamentLeaderboard({
                       {p.rounds.map((r, i) => (
                         <span
                           key={i}
-                          className={
-                            r === null
-                              ? "text-zinc-300 dark:text-zinc-600"
-                              : r < par
-                                ? "text-green-600 font-semibold"
-                                : r > par
-                                  ? "text-red-500"
-                                  : "text-zinc-500"
-                          }
+                          className={roundScoreClass(r, par)}
                         >
                           {r ?? "—"}
                         </span>
@@ -192,16 +169,8 @@ export default function TournamentLeaderboard({
                   <p className="text-base font-bold tabular text-[#0a3d2a] dark:text-green-400">
                     {!p.madeCut && p.roundsPlayed < 2 ? "WD" : p.total}
                   </p>
-                  <p
-                    className={`text-xs font-semibold ${
-                      p.toPar < 0
-                        ? "text-green-600"
-                        : p.toPar === 0
-                          ? "text-zinc-500"
-                          : "text-red-500"
-                    }`}
-                  >
-                    {p.toPar === 0 ? "E" : `${p.toPar > 0 ? "+" : ""}${p.toPar}`}
+                  <p className={`text-xs font-semibold ${toParClass(p.toPar)}`}>
+                    {toParDisplay(p.toPar)}
                   </p>
                 </div>
               </Link>
