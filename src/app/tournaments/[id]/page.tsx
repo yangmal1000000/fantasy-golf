@@ -128,10 +128,10 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       <Link href="/tournaments" className="text-xs text-zinc-500 hover:text-[#0a3d2a] dark:hover:text-green-400">← Tournaments</Link>
 
       {/* Header banner */}
-      <div className="relative mt-2 overflow-hidden rounded-xl">
+      <div className={`relative mt-2 overflow-hidden rounded-xl ${theme ? `ring-1 ${theme.borderAccent}` : ""}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={courseImage(tournament.id, tournament.course)} alt={tournament.course || tournament.name} className="h-40 w-full object-cover sm:h-48" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a3d2a]/95 via-[#0a3d2a]/40 to-transparent" />
+        <div className={`absolute inset-0 bg-gradient-to-t ${theme ? theme.headerOverlay : "from-[#0a3d2a]/95 via-[#0a3d2a]/40 to-transparent"}`} />
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white sm:p-5">
           <div className="flex items-center gap-2">
             <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${status.badgeClass}`}>{status.label}</span>
@@ -143,8 +143,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               </span>
             )}
           </div>
-          <h1 className="mt-1.5 text-xl font-bold tracking-tight sm:text-2xl">{tournament.name}</h1>
-          <p className="mt-0.5 flex items-center gap-1.5 text-xs text-white/90">
+          <h1 className={`mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${theme ? theme.headerText : "text-white"}`}>{tournament.name}</h1>
+          <p className={`mt-0.5 flex items-center gap-1.5 text-xs ${theme ? theme.headerSubtext + "/80" : "text-white/90"}`}>
             <MapPinIcon className="h-3 w-3" />
             {tournament.course ?? "TBD"} · {formatDateRange(tournament.startDate, tournament.endDate)}
           </p>
@@ -153,20 +153,20 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
       {/* Stats row */}
       <div className="mt-3 grid grid-cols-4 gap-2">
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2.5 text-center">
-          <p className="text-lg font-bold tabular text-[#0a3d2a] dark:text-green-400">{tournament._count.teams}</p>
+        <div className={`rounded-lg border bg-white dark:bg-zinc-900 p-2.5 text-center ${theme ? theme.borderAccent : "border-zinc-200 dark:border-zinc-800"}`}>
+          <p className={`text-lg font-bold tabular ${theme ? theme.statsAccent : "text-[#0a3d2a] dark:text-green-400"}`}>{tournament._count.teams}</p>
           <p className="text-[10px] text-zinc-500">Teams</p>
         </div>
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2.5 text-center">
-          <p className="text-lg font-bold tabular text-[#0a3d2a] dark:text-green-400">{tournament._count.players}</p>
+        <div className={`rounded-lg border bg-white dark:bg-zinc-900 p-2.5 text-center ${theme ? theme.borderAccent : "border-zinc-200 dark:border-zinc-800"}`}>
+          <p className={`text-lg font-bold tabular ${theme ? theme.statsAccent : "text-[#0a3d2a] dark:text-green-400"}`}>{tournament._count.players}</p>
           <p className="text-[10px] text-zinc-500">Players</p>
         </div>
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2.5 text-center">
-          <p className="text-lg font-bold tabular text-[#c8a951]">{formatGBP(tournament.entryFee)}</p>
+        <div className={`rounded-lg border bg-white dark:bg-zinc-900 p-2.5 text-center ${theme ? theme.borderAccent : "border-zinc-200 dark:border-zinc-800"}`}>
+          <p className="text-lg font-bold tabular" style={theme ? { color: theme.accentHex } : { color: "#c8a951" }}>{formatGBP(tournament.entryFee)}</p>
           <p className="text-[10px] text-zinc-500">Entry</p>
         </div>
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2.5 text-center">
-          <p className="text-lg font-bold tabular text-[#0a3d2a] dark:text-green-400">{tournament.par}</p>
+        <div className={`rounded-lg border bg-white dark:bg-zinc-900 p-2.5 text-center ${theme ? theme.borderAccent : "border-zinc-200 dark:border-zinc-800"}`}>
+          <p className={`text-lg font-bold tabular ${theme ? theme.statsAccent : "text-[#0a3d2a] dark:text-green-400"}`}>{tournament.par}</p>
           <p className="text-[10px] text-zinc-500">Par</p>
         </div>
       </div>
@@ -193,18 +193,18 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
       {/* Prize pool + countdown */}
       {potValue > 0 && (
-        <div className="mt-2 flex items-center justify-between rounded-lg border border-[#c8a951]/30 bg-gradient-to-r from-[#c8a951]/10 to-transparent p-3">
+        <div className={`mt-2 flex items-center justify-between rounded-lg border p-3 ${theme ? theme.potCardClass : "border-[#c8a951]/30 bg-gradient-to-r from-[#c8a951]/10 to-transparent"}`}>
           <div className="flex items-center gap-2">
-            <TrophyIcon className="h-5 w-5 text-[#c8a951]" />
+            <TrophyIcon className="h-5 w-5" style={{ color: theme ? theme.accentHex : "#c8a951" }} />
             <div>
               <p className="text-xs text-zinc-500">Prize Pool</p>
-              <p className="text-lg font-bold tabular text-[#c8a951]">£{potValue.toLocaleString()}</p>
+              <p className="text-lg font-bold tabular" style={{ color: theme ? theme.accentHex : "#c8a951" }}>£{potValue.toLocaleString()}</p>
             </div>
           </div>
           {canEnter && daysUntil > 0 && (
             <div className="text-right">
               <p className="text-xs text-zinc-500">Starts in</p>
-              <p className="text-lg font-bold tabular text-[#0a3d2a] dark:text-green-400">{daysUntil} day{daysUntil === 1 ? "" : "s"}</p>
+              <p className={`text-lg font-bold tabular ${theme ? theme.statsAccent : "text-[#0a3d2a] dark:text-green-400"}`}>{daysUntil} day{daysUntil === 1 ? "" : "s"}</p>
             </div>
           )}
         </div>
@@ -305,9 +305,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       {isCompleted && winnerEntry && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {/* Winner */}
-          <div className="flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm ${winnerCardClass}">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#c8a951] text-2xl shadow-md">
-              🏆
+          <div className={`flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm ${winnerCardClass}`}>
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${theme ? theme.winnerIconBg : "bg-[#c8a951]"} text-2xl shadow-md`}>
+              {theme ? theme.winnerEmoji : "🏆"}
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-wide text-[#c8a951]">Winner</p>
@@ -357,13 +357,13 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
       {/* Cut line info */}
       {showCutInfo && (
-        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 text-sm shadow-sm">
+        <div className={`mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border p-3 text-sm shadow-sm ${theme ? `${theme.cutBadgeClass}` : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"}`}>
           <div className="flex items-center gap-2">
             <span className="text-base">✂️</span>
             <span className="font-bold uppercase text-xs tracking-wide text-zinc-500">Cut Line</span>
           </div>
           {tournament.cutLine != null ? (
-            <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
+            <span className={`font-bold tabular ${theme ? theme.cutLineClass : "text-[#0a3d2a] dark:text-green-400"}`}>
               {tournament.cutLine > tournament.par * 2 ? "+" : ""}{tournament.cutLine - tournament.par * 2 === 0 ? "E" : tournament.cutLine - tournament.par * 2}
             </span>
           ) : cutScore != null ? (

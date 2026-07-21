@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "Leaderboard — Fantasy Golf",
   description: "Live tournament leaderboard with real-time scoring, projected cut line, and side game standings.",
 };
-import { formatGBP } from "@/lib/ui";
+import { formatGBP, majorTheme } from "@/lib/ui";
 import {
   ensureDefaultSidePots,
   getTopGolferStandings,
@@ -119,6 +119,7 @@ export default async function LeaderboardPage({
     countryMap.set(tp.playerId, tp.player.country);
   }
 
+  const theme = majorTheme(tournament.id);
   const isLive = tournament.status === "in_progress";
   const canEnter = tournament.status === "entries_open" || tournament.status === "upcoming";
   const potTotal = tournament._count.teams * tournament.entryFee;
@@ -399,7 +400,7 @@ export default async function LeaderboardPage({
                         <div className="flex items-center gap-1">
                           <span
                             className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                              positionBadgeClass(r.position)
+                              r.position === 1 && theme ? theme.positionFirst : positionBadgeClass(r.position)
                             }`}
                           >
                             {r.position}
