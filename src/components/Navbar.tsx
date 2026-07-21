@@ -20,6 +20,7 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-0.5 sm:flex">
+          <NavLink href="/dashboard" label="Dashboard" active={pathname.startsWith("/dashboard")} />
           <NavLink href="/tournaments" label="Tournaments" active={pathname.startsWith("/tournaments")} />
           <NavLink href="/players" label="Players" active={pathname.startsWith("/players")} />
           <NavLink href="/my-teams" label="My Teams" active={pathname.startsWith("/my-teams")} />
