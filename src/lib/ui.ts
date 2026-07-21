@@ -351,6 +351,15 @@ export function majorTheme(tournamentId: string): MajorTheme | null {
   return null;
 }
 
+/** Returns the major key (e.g. "masters") if tournamentId is a major, else null */
+export function majorKey(tournamentId: string): string | null {
+  if (MAJOR_THEMES[tournamentId]) return tournamentId;
+  for (const { pattern, key } of MAJOR_SLUG_PATTERNS) {
+    if (pattern.test(tournamentId)) return key;
+  }
+  return null;
+}
+
 export function courseImage(tournamentId: string, courseName?: string | null): string {
   // 1. Explicit ID match
   if (COURSE_IMAGES[tournamentId]) return COURSE_IMAGES[tournamentId];

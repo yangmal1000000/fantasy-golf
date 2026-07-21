@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP, majorTheme } from "@/lib/ui";
+import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP, majorTheme, majorKey } from "@/lib/ui";
 import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
 import { calculateLeaderboard, type TeamScoreResult } from "@/lib/scoring";
+import MajorScoreboard from "@/components/MajorScoreboard";
 import { MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, GolfFlagIcon, TrophyIcon, TargetIcon, BoltIcon, FlagIcon } from "@/components/icons";
 
 export const revalidate = 60;
@@ -130,6 +131,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   } catch {}
   const hasFantasyTeams = fantasyLeaderboard.length > 0;
   const topTeams = fantasyLeaderboard.slice(0, 5);
+
+  // Detect major for skeuomorphic scoreboard
+  const mk = majorKey(id);
 
   return (
     <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
@@ -444,8 +448,37 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </section>
       )}
 
-      {/* The Field — players by tier */}
-      <div className="mt-6">
+      {/* ===== Skeuomorphic Major Scoreboard (replaces generic field for majors with scores) ===== */}
+      {mk && hasScores ? (
+        <div className="mt-6">
+          <MajorScoreboard
+            players={[...scoreMap.entries()]
+              .filter(([, s]) => s.roundsPlayed > 0)
+              .sort((a, b) => {
+                const aMadeCut = a[1].roundsPlayed >= 3;
+                const bMadeCut = b[1].roundsPlayed >= 3;
+                if (aMadeCut !== bMadeCut) return aMadeCut ? -1 : 1;
+                if (a[1].roundsPlayed !== b[1].roundsPlayed) return b[1].roundsPlayed - a[1].roundsPlayed;
+                return a[1].total - b[1].total;
+              })
+              .map(([pid, s], idx) => ({
+                playerId: pid,
+                playerName: playerNameMap.get(pid) ?? "Unknown",
+                country: playerCountryMap.get(pid) ?? null,
+                rounds: s.rounds,
+                total: s.total,
+                toPar: s.toPar,
+                roundsPlayed: s.roundsPlayed,
+                position: idx + 1,
+                madeCut: s.madeCut,
+              }))}
+            par={tournament.par}
+            major={mk as "masters" | "pga-championship" | "us-open" | "the-open"}
+          />
+        </div>
+      ) : (
+        <div className="mt-6">
+          {/* The Field — players by tier */}
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-zinc-500">The Field</h2>
         {tournament.players.length === 0 ? (
           <div className="rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-8 text-center">
@@ -519,7 +552,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           })}
         </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
