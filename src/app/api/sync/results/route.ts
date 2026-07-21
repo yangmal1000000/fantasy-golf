@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { recalculateTeamScores } from "@/lib/team-scores";
 
 /**
  * POST /api/sync/results
@@ -201,6 +202,11 @@ export async function POST(request: NextRequest) {
     totalSynced += tournamentSynced;
     totalPlayers += competitors.length;
     results.push(`${tournament.name}: ${tournamentSynced} scores from ${competitors.length} players (${isLpga ? "LPGA" : "PGA"})`);
+  }
+
+  // Recalculate team scores for all synced tournaments
+  for (const tournament of tournaments) {
+    await recalculateTeamScores(tournament.id);
   }
 
   // Update feed status
