@@ -9,7 +9,7 @@ import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
 import SignInPrompt from "@/components/SignInPrompt";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "My Teams — Fantasy Golf",

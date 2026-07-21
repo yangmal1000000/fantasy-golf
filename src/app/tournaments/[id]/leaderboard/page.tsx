@@ -4,7 +4,7 @@ import { calculateLeaderboard, type TeamScoreResult } from "@/lib/scoring";
 import { calculateProjectedStandings } from "@/lib/predictions";
 
 // Cache leaderboard for 30 seconds (ISR) — instant for most visitors
-export const revalidate = 30;
+export const revalidate = 60; // ISR — cache for 1 minute
 export const metadata: Metadata = {
   title: "Leaderboard — Fantasy Golf",
   description: "Live tournament leaderboard with real-time scoring, projected cut line, and side game standings.",

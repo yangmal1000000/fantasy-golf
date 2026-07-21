@@ -166,15 +166,8 @@ export async function calculateLeaderboard(
     }
   }
 
-  // Batch update positions (single query, non-blocking)
-  prisma.$transaction(
-    results.map((r) =>
-      prisma.team.update({
-        where: { id: r.teamId },
-        data: { position: r.position, totalScore: r.totalStrokes },
-      })
-    )
-  ).catch(() => {});
+  // NOTE: Removed $transaction write-back — was causing serverless timeouts on Vercel.
+  // Positions are computed in-memory on every request instead.
 
   return results;
 }
