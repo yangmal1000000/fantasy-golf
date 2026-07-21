@@ -19,10 +19,11 @@ export default function GlobalError({
         Something went wrong on our end. Try again, and if the problem persists
         let us know via the contact page.
       </p>
-      {process.env.NODE_ENV === "development" && (
-        <pre className="mt-4 max-w-lg overflow-x-auto rounded-lg bg-zinc-100 p-3 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-          {error.message}
-        </pre>
+      <pre className="mt-4 max-w-lg overflow-x-auto rounded-lg bg-zinc-100 p-3 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+        {error.message}
+      </pre>
+      {error.digest && (
+        <p className="mt-2 text-xs text-zinc-400">Digest: {error.digest}</p>
       )}
       <button
         onClick={reset}
