@@ -3,6 +3,8 @@ import { calculateTeamScore } from "@/lib/scoring";
 import { TIER_CONFIG } from "@/lib/ui";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+
+export const revalidate = 60;
 import TierBadge from "@/components/TierBadge";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import Flag from "@/components/Flag";

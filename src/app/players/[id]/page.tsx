@@ -11,7 +11,7 @@ import Flag from "@/components/Flag";
 import Sparkline from "@/components/Sparkline";
 import { GolferIcon, ChartBarIcon, MoneyIcon, StarIcon, TrendingUpIcon, BoltIcon, FinishFlagIcon, TargetIcon, TrophyIcon, IconByName } from "@/components/icons";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Player Profile — Fantasy Golf",

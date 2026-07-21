@@ -1,177 +1,140 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const SEARCH_API = "https://en.wikipedia.org/w/api.php";
-const REST = "https://en.wikipedia.org/api/rest_v1/page/summary/";
-const UA = "FantasyGolfBot/1.0 (contact: harry@fantasygolf.local)";
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const STATS = {
+  queried: 0,
+  photoFound: 0,
+  bioFound: 0,
+  bothFound: 0,
+  missed: 0,
+  errors: 0,
+};
 
-async function fetchJSON(url, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const res = await fetch(url, {
-        headers: { "User-Agent": UA, Accept: "application/json" },
-        signal: AbortSignal.timeout(15000),
-      });
-      if (res.status === 429) {
-        await sleep(3000 * (i + 1));
-        continue;
-      }
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      await sleep(1000 * (i + 1));
-    }
-  }
-  return null;
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
 }
 
-function normalize(s) {
-  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, " ");
-}
-
-function nameMatches(name, title) {
-  const n = normalize(name);
-  const t = normalize(title);
-  if (t === n || t === `${n} golfer`) return true;
-  if (t.startsWith(n + " ") || t.startsWith(n + "(")) return true;
-  return false;
-}
-
-async function searchWikipedia(query) {
-  const params = new URLSearchParams({
-    action: "query", list: "search", srsearch: query,
-    format: "json", srlimit: "5", origin: "*",
+async function fetchJson(url) {
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'FantasyGolf-Enrichment/1.0 (private project; contact@fantasygolf.app)',
+      'Accept': 'application/json',
+    },
+    signal: AbortSignal.timeout(8000),
   });
-  const data = await fetchJSON(`${SEARCH_API}?${params}`);
-  return data?.query?.search ?? [];
+  if (!res.ok) return null;
+  return res.json();
 }
 
-async function getSummary(title) {
-  const slug = encodeURIComponent(title.replace(/\s+/g, "_"));
-  const data = await fetchJSON(`${REST}${slug}`);
-  if (!data || data.type === "disambiguation") return null;
-  return data;
+function extractThumbnailUrl(pageData) {
+  if (!pageData || !pageData.originalimage) return null;
+  return pageData.originalimage.source || null;
 }
 
-async function enrichPlayer(name) {
-  // Try multiple search strategies
-  const queries = [`${name} golfer`, `${name} (golfer)`, `${name} PGA golf`];
-  const titleVariants = [
+function extractExtract(pageData) {
+  if (!pageData || !pageData.extract) return null;
+  let text = pageData.extract.trim();
+  if (text.length > 1500) {
+    text = text.slice(0, 1497) + '...';
+  }
+  return text || null;
+}
+
+async function tryQueryWikipedia(name) {
+  const variants = [
     `${name} (golfer)`,
     `${name} (American golfer)`,
     `${name} (English golfer)`,
     `${name} (Scottish golfer)`,
     `${name} (Australian golfer)`,
-    `${name} (South African golfer)`,
+    `${name} (professional golfer)`,
     name,
   ];
 
-  // First: direct REST API lookups with known title patterns
-  for (const variant of titleVariants) {
-    const summary = await getSummary(variant);
-    await sleep(400);
-    if (summary && nameMatches(name, summary.title)) {
-      // Verify golf context
-      const text = `${summary.extract || ""} ${summary.description || ""}`.toLowerCase();
-      if (text.includes("golf") || text.includes("pga") || text.includes("golfer") || text.includes("tour pro")) {
-        return summary;
-      }
-    }
-  }
+  for (const title of variants) {
+    const encoded = encodeURIComponent(title);
+    const restUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encoded}`;
 
-  // Fallback: search API
-  for (const q of queries) {
-    const results = await searchWikipedia(q);
-    await sleep(500);
-    for (const r of results) {
-      if (nameMatches(name, r.title)) {
-        const snippet = (r.snippet || "").toLowerCase();
-        if (snippet.includes("golf") || snippet.includes("pga") || snippet.includes("golfer") || snippet.includes("tour")) {
-          const summary = await getSummary(r.title);
-          await sleep(400);
-          if (summary) return summary;
+    try {
+      const data = await fetchJson(restUrl);
+      if (data && data.type !== 'disambiguation' && data.type !== 'no-extract') {
+        const photo = data.thumbnail?.source || data.originalimage?.source || null;
+        const bio = data.extract ? data.extract.trim().slice(0, 1500) : null;
+
+        // Sanity check: the extract should mention "golf" or "golfer"
+        if (bio && /golf/i.test(bio)) {
+          return { photo, bio, matchTitle: data.title };
         }
       }
+    } catch (e) {
+      // continue to next variant
     }
+
+    await sleep(150); // small delay between attempts
   }
 
   return null;
 }
 
 async function main() {
+  console.log('[enrich] Starting batch of 50...');
+
   const players = await prisma.player.findMany({
     where: { photoUrl: null },
     take: 50,
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
     select: { id: true, name: true },
   });
 
-  console.log(`=== FG Player Enrichment Batch ===`);
-  console.log(`Date: ${new Date().toISOString()}`);
-  console.log(`Players to process: ${players.length}\n`);
-
-  let enriched = 0, photoFound = 0, bioFound = 0, skipped = 0;
-  const errors = [];
+  console.log(`[enrich] Found ${players.length} players to process`);
 
   for (let i = 0; i < players.length; i++) {
     const p = players[i];
-    process.stdout.write(`[${i + 1}/${players.length}] ${p.name} ... `);
+    STATS.queried++;
 
     try {
-      const summary = await enrichPlayer(p.name);
+      const result = await tryQueryWikipedia(p.name);
 
-      if (!summary) {
-        console.log("✗ no match");
-        // Mark as attempted even without data
+      if (result && (result.photo || result.bio)) {
+        const update = { enrichedAt: new Date() };
+        if (result.photo) {
+          update.photoUrl = result.photo;
+          STATS.photoFound++;
+        }
+        if (result.bio) {
+          update.bio = result.bio;
+          STATS.bioFound++;
+        }
+        if (result.photo && result.bio) STATS.bothFound++;
+
         await prisma.player.update({
           where: { id: p.id },
-          data: { enrichedAt: new Date() },
+          data: update,
         });
-        skipped++;
-        continue;
+
+        console.log(`  [${i + 1}/${players.length}] ✓ ${p.name} → photo:${!!result.photo} bio:${!!result.bio} (matched: ${result.matchTitle})`);
+      } else {
+        STATS.missed++;
+        console.log(`  [${i + 1}/${players.length}] ✗ ${p.name} — no match`);
       }
-
-      console.log(`"${summary.title}"`);
-
-      const photoUrl = summary.thumbnail?.source || summary.originalimage || null;
-      const bio = summary.extract && summary.extract.length > 20 ? summary.extract : null;
-
-      const update = { enrichedAt: new Date() };
-      if (photoUrl) { update.photoUrl = photoUrl; photoFound++; }
-      if (bio) { update.bio = bio; bioFound++; }
-
-      await prisma.player.update({ where: { id: p.id }, data: update });
-      enriched++;
-
-      console.log(`   photo: ${photoUrl ? "✓" : "✗"}  bio: ${bio ? "✓" : "✗"}`);
-    } catch (err) {
-      console.log(`ERROR: ${err.message}`);
-      errors.push({ name: p.name, error: err.message });
-      skipped++;
-      await sleep(2000);
+    } catch (e) {
+      STATS.errors++;
+      console.error(`  [${i + 1}/${players.length}] ⚠ ${p.name} — error: ${e.message}`);
     }
+
+    // small delay between players
+    if (i < players.length - 1) await sleep(250);
   }
 
-  console.log("\n=== FINAL STATS ===");
-  console.log(`Processed:     ${players.length}`);
-  console.log(`Enriched:      ${enriched}`);
-  console.log(`Photos found:  ${photoFound}`);
-  console.log(`Bios found:    ${bioFound}`);
-  console.log(`Skipped:       ${skipped}`);
-  console.log(`Errors:        ${errors.length}`);
-  if (errors.length) {
-    console.log("Errors:");
-    for (const e of errors) console.log(`  - ${e.name}: ${e.error}`);
-  }
+  console.log('\n[enrich] === STATS ===');
+  console.log(JSON.stringify(STATS, null, 2));
+  console.log('[enrich] Done.');
 
-  // Remaining count
-  const remaining = await prisma.player.count({ where: { photoUrl: null } });
-  console.log(`\nPlayers still missing photo: ${remaining}`);
+  await prisma.$disconnect();
 }
 
-main()
-  .catch((e) => { console.error("Fatal:", e); process.exit(1); })
-  .finally(() => prisma.$disconnect());
+main().catch(e => {
+  console.error('[enrich] Fatal:', e);
+  process.exit(1);
+});

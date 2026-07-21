@@ -23,7 +23,7 @@ import {
   TicketIcon,
 } from "@/components/icons";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Dashboard — Fantasy Golf",
