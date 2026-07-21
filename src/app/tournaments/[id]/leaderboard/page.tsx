@@ -11,7 +11,7 @@ import PlayerAvatar from "@/components/PlayerAvatar";
 import Flag from "@/components/Flag";
 import TierBadge from "@/components/TierBadge";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Leaderboard — Fantasy Golf",
   description: "Tournament leaderboard with live scoring and standings.",
