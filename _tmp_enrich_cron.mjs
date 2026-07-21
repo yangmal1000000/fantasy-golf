@@ -1,10 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-
-const SEARCH_API = "https://en.wikipedia.org/w/api.php";
-const REST = "https://en.wikipedia.org/api/rest_v1/page/summary/";
 const UA = "FantasyGolfBot/1.0 (contact: harry@fantasygolf.local)";
+const REST = "https://en.wikipedia.org/api/rest_v1/page/summary/";
+const SEARCH = "https://en.wikipedia.org/w/api.php";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchJSON(url, retries = 3) {
@@ -14,86 +13,74 @@ async function fetchJSON(url, retries = 3) {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(15000),
       });
-      if (res.status === 429) {
-        await sleep(3000 * (i + 1));
-        continue;
-      }
+      if (res.status === 429) { await sleep(3000 * (i + 1)); continue; }
       if (!res.ok) return null;
       return await res.json();
-    } catch {
-      await sleep(1000 * (i + 1));
-    }
+    } catch { await sleep(1000 * (i + 1)); }
   }
   return null;
 }
 
-function normalize(s) {
+function norm(s) {
   return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, " ");
 }
 
-function nameMatches(name, title) {
-  const n = normalize(name);
-  const t = normalize(title);
+function nameMatch(name, title) {
+  const n = norm(name), t = norm(title);
   if (t === n || t === `${n} golfer`) return true;
   if (t.startsWith(n + " ") || t.startsWith(n + "(")) return true;
   return false;
 }
 
-async function searchWikipedia(query) {
-  const params = new URLSearchParams({
-    action: "query", list: "search", srsearch: query,
-    format: "json", srlimit: "5", origin: "*",
-  });
-  const data = await fetchJSON(`${SEARCH_API}?${params}`);
-  return data?.query?.search ?? [];
+function isGolfContext(text) {
+  const t = text.toLowerCase();
+  return t.includes("golf") || t.includes("pga") || t.includes("golfer") || t.includes("tour pro") || t.includes("dp World") || t.includes("european tour");
 }
 
-async function getSummary(title) {
-  const slug = encodeURIComponent(title.replace(/\s+/g, "_"));
-  const data = await fetchJSON(`${REST}${slug}`);
-  if (!data || data.type === "disambiguation") return null;
-  return data;
-}
-
+// Strategy: REST lookups with title variants, then search API fallback
 async function enrichPlayer(name) {
-  // Try multiple search strategies
-  const queries = [`${name} golfer`, `${name} (golfer)`, `${name} PGA golf`];
-  const titleVariants = [
+  // Direct REST lookups per instructions + common nationality variants
+  const restVariants = [
     `${name} (golfer)`,
     `${name} (American golfer)`,
     `${name} (English golfer)`,
     `${name} (Scottish golfer)`,
     `${name} (Australian golfer)`,
     `${name} (South African golfer)`,
+    `${name} (Irish golfer)`,
+    `${name} (Welsh golfer)`,
+    `${name} (Northern Irish golfer)`,
     name,
   ];
 
-  // First: direct REST API lookups with known title patterns
-  for (const variant of titleVariants) {
-    const summary = await getSummary(variant);
-    await sleep(400);
-    if (summary && nameMatches(name, summary.title)) {
-      // Verify golf context
-      const text = `${summary.extract || ""} ${summary.description || ""}`.toLowerCase();
-      if (text.includes("golf") || text.includes("pga") || text.includes("golfer") || text.includes("tour pro")) {
-        return summary;
-      }
+  for (const variant of restVariants) {
+    const slug = encodeURIComponent(variant.replace(/\s+/g, "_"));
+    const data = await fetchJSON(`${REST}${slug}`);
+    await sleep(350);
+    if (data && data.type !== "disambiguation" && nameMatch(name, data.title)) {
+      const ctx = `${data.extract || ""} ${data.description || ""}`;
+      if (isGolfContext(ctx)) return data;
     }
   }
 
   // Fallback: search API
-  for (const q of queries) {
-    const results = await searchWikipedia(q);
-    await sleep(500);
+  for (const q of [`${name} golfer`, `${name} PGA golf`, `${name} European tour golf`]) {
+    const params = new URLSearchParams({
+      action: "query", list: "search", srsearch: q,
+      format: "json", srlimit: "5", origin: "*",
+    });
+    const data = await fetchJSON(`${SEARCH}?${params}`);
+    await sleep(450);
+    const results = data?.query?.search ?? [];
     for (const r of results) {
-      if (nameMatches(name, r.title)) {
-        const snippet = (r.snippet || "").toLowerCase();
-        if (snippet.includes("golf") || snippet.includes("pga") || snippet.includes("golfer") || snippet.includes("tour")) {
-          const summary = await getSummary(r.title);
-          await sleep(400);
-          if (summary) return summary;
-        }
+      if (!nameMatch(name, r.title)) continue;
+      const snippet = r.snippet || "";
+      if (isGolfContext(snippet)) {
+        const slug = encodeURIComponent(r.title.replace(/\s+/g, "_"));
+        const summary = await fetchJSON(`${REST}${slug}`);
+        await sleep(350);
+        if (summary && summary.type !== "disambiguation") return summary;
       }
     }
   }
@@ -109,11 +96,11 @@ async function main() {
     select: { id: true, name: true },
   });
 
-  console.log(`=== FG Player Enrichment Batch ===`);
-  console.log(`Date: ${new Date().toISOString()}`);
+  console.log("=== FG Player Enrichment Batch ===");
+  console.log(`Started: ${new Date().toISOString()}`);
   console.log(`Players to process: ${players.length}\n`);
 
-  let enriched = 0, photoFound = 0, bioFound = 0, skipped = 0;
+  let enriched = 0, photoFound = 0, bioFound = 0, noMatch = 0;
   const errors = [];
 
   for (let i = 0; i < players.length; i++) {
@@ -125,16 +112,13 @@ async function main() {
 
       if (!summary) {
         console.log("✗ no match");
-        // Mark as attempted even without data
         await prisma.player.update({
           where: { id: p.id },
           data: { enrichedAt: new Date() },
         });
-        skipped++;
+        noMatch++;
         continue;
       }
-
-      console.log(`"${summary.title}"`);
 
       const photoUrl = summary.thumbnail?.source || summary.originalimage || null;
       const bio = summary.extract && summary.extract.length > 20 ? summary.extract : null;
@@ -146,11 +130,11 @@ async function main() {
       await prisma.player.update({ where: { id: p.id }, data: update });
       enriched++;
 
-      console.log(`   photo: ${photoUrl ? "✓" : "✗"}  bio: ${bio ? "✓" : "✗"}`);
+      console.log(`"${summary.title}" → photo:${photoUrl ? "✓" : "✗"} bio:${bio ? "✓" : "✗"}`);
     } catch (err) {
       console.log(`ERROR: ${err.message}`);
       errors.push({ name: p.name, error: err.message });
-      skipped++;
+      noMatch++;
       await sleep(2000);
     }
   }
@@ -160,16 +144,16 @@ async function main() {
   console.log(`Enriched:      ${enriched}`);
   console.log(`Photos found:  ${photoFound}`);
   console.log(`Bios found:    ${bioFound}`);
-  console.log(`Skipped:       ${skipped}`);
+  console.log(`No match:      ${noMatch}`);
   console.log(`Errors:        ${errors.length}`);
   if (errors.length) {
-    console.log("Errors:");
+    console.log("\nError details:");
     for (const e of errors) console.log(`  - ${e.name}: ${e.error}`);
   }
 
-  // Remaining count
   const remaining = await prisma.player.count({ where: { photoUrl: null } });
   console.log(`\nPlayers still missing photo: ${remaining}`);
+  console.log(`Finished: ${new Date().toISOString()}`);
 }
 
 main()
