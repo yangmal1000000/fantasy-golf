@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP, majorTheme } from "@/lib/ui";
 import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
+import { calculateLeaderboard, type TeamScoreResult } from "@/lib/scoring";
 import { MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, GolfFlagIcon, TrophyIcon, TargetIcon, BoltIcon, FlagIcon } from "@/components/icons";
 
 export const revalidate = 60;
@@ -121,6 +122,14 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   }
 
   const daysUntil = Math.ceil((tournament.startDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+  // Fetch fantasy team leaderboard for mini-leaderboard
+  let fantasyLeaderboard: TeamScoreResult[] = [];
+  try {
+    fantasyLeaderboard = await calculateLeaderboard(id);
+  } catch {}
+  const hasFantasyTeams = fantasyLeaderboard.length > 0;
+  const topTeams = fantasyLeaderboard.slice(0, 5);
 
   return (
     <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
@@ -385,6 +394,56 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </div>
       )}
 
+      {/* ===== Mini Leaderboard (Top 5 fantasy teams) ===== */}
+      {hasFantasyTeams && (
+        <section className="mt-6">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className={`flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${theme ? theme.cutLineClass : "text-zinc-500"}`}>
+              <TrophyIcon className="h-3.5 w-3.5" />
+              Fantasy Leaderboard
+            </h2>
+            <Link href={`/tournaments/${id}/leaderboard`} className={`text-xs font-medium hover:underline ${theme ? theme.cutLineClass : "text-[#0a3d2a] dark:text-green-400"}`}>
+              Full standings →
+            </Link>
+          </div>
+          <div className={`overflow-hidden rounded-xl border bg-white dark:bg-zinc-900 shadow-sm ${theme ? theme.borderAccent : "border-zinc-200 dark:border-zinc-800"}`}>
+            <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {topTeams.map((team) => (
+                <Link
+                  key={team.teamId}
+                  href={`/tournaments/${id}/teams/${team.teamId}`}
+                  className="flex items-center gap-3 px-3 py-2.5 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                >
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                    team.position === 1
+                      ? (theme ? theme.positionFirst : "bg-[#c8a951] text-[#1a1a1a]")
+                      : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
+                  }`}>
+                    {team.position}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-zinc-900 dark:text-white">{team.teamName}</p>
+                    <p className="truncate text-[11px] text-zinc-500">{team.ownerName}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`text-base font-bold tabular ${theme ? theme.statsAccent : "text-[#0a3d2a] dark:text-green-400"}`}>{team.totalStrokes}</p>
+                    <p className={`text-[11px] font-semibold ${toParClass(team.vsPar)}`}>
+                      {toParDisplay(team.vsPar)}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <Link
+              href={`/tournaments/${id}/leaderboard`}
+              className="block border-t border-zinc-100 dark:border-zinc-800 py-2 text-center text-xs font-semibold text-zinc-500 hover:text-[#0a3d2a] dark:hover:text-green-400"
+            >
+              View all {fantasyLeaderboard.length} teams →
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* The Field — players by tier */}
       <div className="mt-6">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-zinc-500">The Field</h2>
@@ -404,8 +463,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             const players = playersByTier[tier];
             if (!players || players.length === 0) return null;
             return (
-              <div key={tier} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-                <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 px-3 py-2">
+              <div key={tier} className={`rounded-xl border bg-white dark:bg-zinc-900 overflow-hidden ${theme ? theme.borderAccent : "border-zinc-200 dark:border-zinc-800"}`}>
+                <div className={`flex items-center justify-between border-b px-3 py-2 ${theme ? theme.tierHeaderClass : "border-zinc-100 dark:border-zinc-800"}`}>
                   <div>
                     <h3 className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{tierLabels[tier]}</h3>
                     <p className="text-[10px] text-zinc-400">{players.length} players</p>
