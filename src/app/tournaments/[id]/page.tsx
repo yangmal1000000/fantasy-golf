@@ -211,7 +211,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             <TrophyIcon className="h-5 w-5" style={{ color: theme ? theme.accentHex : "#c8a951" }} />
             <div>
               <p className="text-xs text-zinc-500">Prize Pool</p>
-              <p className="text-lg font-bold tabular" style={{ color: theme ? theme.accentHex : "#c8a951" }}>£{potValue.toLocaleString()}</p>
+              <p className="text-lg font-bold tabular" style={{ color: theme ? theme.accentHex : "#c8a951" }}>{formatGBP(potValue)}</p>
             </div>
           </div>
           {canEnter && daysUntil > 0 && (

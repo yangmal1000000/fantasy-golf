@@ -290,7 +290,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
                             {potValue > 0 && (
                               <>
                                 <span className="text-zinc-300 dark:text-zinc-700">|</span>
-                                <span className="text-zinc-500 dark:text-zinc-400 tabular">Pot £{potValue.toLocaleString()}</span>
+                                <span className="text-zinc-500 dark:text-zinc-400 tabular">Pot £{(potValue / 100).toFixed(0)}</span>
                               </>
                             )}
                             {cat && (
