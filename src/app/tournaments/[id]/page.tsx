@@ -413,29 +413,64 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           <div className={`overflow-hidden rounded-xl border bg-white dark:bg-zinc-900 shadow-sm ${theme ? theme.borderAccent : "border-zinc-200 dark:border-zinc-800"}`}>
             <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {topTeams.map((team) => (
-                <Link
-                  key={team.teamId}
-                  href={`/tournaments/${id}/teams/${team.teamId}`}
-                  className="flex items-center gap-3 px-3 py-2.5 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                >
-                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                    team.position === 1
-                      ? (theme ? theme.positionFirst : "bg-[#c8a951] text-[#1a1a1a]")
-                      : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
-                  }`}>
-                    {team.position}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-zinc-900 dark:text-white">{team.teamName}</p>
-                    <p className="truncate text-[11px] text-zinc-500">{team.ownerName}</p>
+                <div key={team.teamId} className="border-b border-zinc-100 dark:border-zinc-800 last:border-0">
+                  <Link
+                    href={`/tournaments/${id}/teams/${team.teamId}`}
+                    className="flex items-center gap-3 px-3 py-2.5 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  >
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                      team.position === 1
+                        ? (theme ? theme.positionFirst : "bg-[#c8a951] text-[#1a1a1a]")
+                        : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
+                    }`}>
+                      {team.position}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-zinc-900 dark:text-white">{team.teamName}</p>
+                      <p className="truncate text-[11px] text-zinc-500">{team.ownerName}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={`text-base font-bold tabular ${theme ? theme.statsAccent : "text-[#0a3d2a] dark:text-green-400"}`}>{team.totalStrokes}</p>
+                      <p className={`text-[11px] font-semibold ${toParClass(team.vsPar)}`}>
+                        {toParDisplay(team.vsPar)}
+                      </p>
+                    </div>
+                  </Link>
+                  {/* Player roster with tiers and scores */}
+                  <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-3 pb-2.5">
+                    {team.players.map((p) => {
+                      const pScore = p.roundScores.filter((s) => s != null).reduce((a, b) => a + (b as number), 0);
+                      const pRounds = p.roundScores.filter((s) => s != null).length;
+                      return (
+                        <Link
+                          key={p.playerId}
+                          href={`/players/${p.playerId}`}
+                          className="shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 px-2 py-1 transition hover:border-zinc-300 dark:hover:border-zinc-600"
+                          title={`${p.playerName} (${p.tier}): ${p.roundScores.map(s => s ?? "-").join(", ")}`}
+                        >
+                          <div className="flex items-center gap-1">
+                            <span className={`h-1.5 w-1.5 rounded-full ${
+                              p.tier === "T1_10" ? "bg-amber-400" :
+                              p.tier === "T11_20" ? "bg-blue-400" :
+                              p.tier === "T21_30" ? "bg-emerald-400" :
+                              p.tier === "T31_50" ? "bg-purple-400" :
+                              "bg-zinc-400"
+                            }`} />
+                            <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 whitespace-nowrap">{p.playerName.split(" ").slice(-1)[0]}</span>
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-1 tabular text-[9px]">
+                            {p.roundScores.map((r, i) => (
+                              <span key={i} className={r === null ? "text-zinc-300 dark:text-zinc-600" : roundScoreClass(r, tournament.par)}>
+                                {r ?? "-"}
+                              </span>
+                            ))}
+                            <span className="ml-0.5 font-bold text-zinc-600 dark:text-zinc-400">{pScore > 0 ? pScore : ""}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className={`text-base font-bold tabular ${theme ? theme.statsAccent : "text-[#0a3d2a] dark:text-green-400"}`}>{team.totalStrokes}</p>
-                    <p className={`text-[11px] font-semibold ${toParClass(team.vsPar)}`}>
-                      {toParDisplay(team.vsPar)}
-                    </p>
-                  </div>
-                </Link>
+                </div>
               ))}
             </div>
             <Link
