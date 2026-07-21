@@ -24,56 +24,78 @@ export default async function LeaderboardPage({
 }) {
   const { id } = await params;
 
-  const tournament = await prisma.tournament.findUnique({
-    where: { id },
-    include: { _count: { select: { teams: true } } },
-  });
+  let renderError: string | null = null;
 
-  if (!tournament) notFound();
+  let tournament: any;
+  let teams: any[] = [];
+  let pgaLeaderboard: TournamentPlayerScore[] = [];
+  let theme: any = null;
+  let hasFantasyTeams = false;
+  let potTotal = 0;
 
-  const theme = majorTheme(tournament.id);
+  try {
+    tournament = await prisma.tournament.findUnique({
+      where: { id },
+      include: { _count: { select: { teams: true } } },
+    });
+
+    if (!tournament) notFound();
+
+    theme = majorTheme(tournament.id);
+    potTotal = tournament._count.teams * tournament.entryFee;
+
+    teams = await getTeamsWithScores(id);
+    hasFantasyTeams = teams.length > 0 && teams.some((t: any) => t.position != null && t.position > 0);
+
+    if (!hasFantasyTeams) {
+      const pgaScoresRaw = await prisma.score.findMany({
+        where: { tournamentId: id },
+        include: { player: { select: { name: true, country: true } } },
+      });
+      // Build PGA leaderboard
+      const pgaMap = new Map<string, TournamentPlayerScore>();
+      for (const s of pgaScoresRaw) {
+        if (!pgaMap.has(s.playerId)) {
+          pgaMap.set(s.playerId, {
+            playerId: s.playerId, playerName: s.player.name, country: s.player.country,
+            rounds: [null, null, null, null], total: 0, toPar: 0, roundsPlayed: 0, madeCut: true, position: 0,
+          });
+        }
+        if (s.strokes !== null) pgaMap.get(s.playerId)!.rounds[s.round - 1] = s.strokes;
+      }
+      const par = tournament.par;
+      for (const p of pgaMap.values()) {
+        p.roundsPlayed = p.rounds.filter((r): r is number => r !== null).length;
+        p.total = p.rounds.filter((r): r is number => r !== null).reduce((a, b) => a + b, 0);
+        p.toPar = p.total - par * p.roundsPlayed;
+        p.madeCut = p.roundsPlayed >= 3;
+        pgaLeaderboard.push(p);
+      }
+      pgaLeaderboard.sort((a, b) => a.total - b.total);
+      let pos = 1;
+      for (let i = 0; i < pgaLeaderboard.length; i++) {
+        if (i > 0 && pgaLeaderboard[i].total !== pgaLeaderboard[i - 1].total) pos = i + 1;
+        pgaLeaderboard[i].position = pos;
+      }
+    }
+  } catch (err) {
+    renderError = err instanceof Error ? err.message : String(err);
+  }
+
+  if (renderError) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-12 text-center">
+        <h1 className="text-xl font-bold text-red-600">Debug: Leaderboard Error</h1>
+        <pre className="mt-4 overflow-x-auto rounded-lg bg-zinc-100 dark:bg-zinc-900 p-4 text-xs text-left">
+          {renderError}
+        </pre>
+        <Link href={`/tournaments/${id}`} className="mt-4 inline-block text-sm text-[#0a3d2a] hover:underline">← Back to tournament</Link>
+      </div>
+    );
+  }
+
   const isLive = tournament.status === "in_progress";
   const canEnter = tournament.status === "entries_open" || tournament.status === "upcoming";
-  const potTotal = tournament._count.teams * tournament.entryFee;
-
-  // Use pre-computed team scores (fast — single query, no calculation)
-  const teams = await getTeamsWithScores(id);
-  const hasFantasyTeams = teams.length > 0 && teams.some((t) => t.position != null && t.position > 0);
-
-  // Fetch PGA scores for display when no fantasy teams (single query)
-  const pgaScoresRaw = hasFantasyTeams ? [] : await prisma.score.findMany({
-    where: { tournamentId: id },
-    include: { player: { select: { name: true, country: true } } },
-  });
-
-  // Build PGA leaderboard
-  const pgaLeaderboard: TournamentPlayerScore[] = [];
-  if (pgaScoresRaw.length > 0) {
-    const pgaMap = new Map<string, TournamentPlayerScore>();
-    for (const s of pgaScoresRaw) {
-      if (!pgaMap.has(s.playerId)) {
-        pgaMap.set(s.playerId, {
-          playerId: s.playerId, playerName: s.player.name, country: s.player.country,
-          rounds: [null, null, null, null], total: 0, toPar: 0, roundsPlayed: 0, madeCut: true, position: 0,
-        });
-      }
-      if (s.strokes !== null) pgaMap.get(s.playerId)!.rounds[s.round - 1] = s.strokes;
-    }
-    const par = tournament.par;
-    for (const p of pgaMap.values()) {
-      p.roundsPlayed = p.rounds.filter((r): r is number => r !== null).length;
-      p.total = p.rounds.filter((r): r is number => r !== null).reduce((a, b) => a + b, 0);
-      p.toPar = p.total - par * p.roundsPlayed;
-      p.madeCut = p.roundsPlayed >= 3;
-      pgaLeaderboard.push(p);
-    }
-    pgaLeaderboard.sort((a, b) => a.total - b.total);
-    let pos = 1;
-    for (let i = 0; i < pgaLeaderboard.length; i++) {
-      if (i > 0 && pgaLeaderboard[i].total !== pgaLeaderboard[i - 1].total) pos = i + 1;
-      pgaLeaderboard[i].position = pos;
-    }
-  }
 
   return (
     <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
@@ -149,7 +171,7 @@ export default async function LeaderboardPage({
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap justify-center gap-2">
-                        {team.selections.map((sel) => (
+                        {team.selections.map((sel: any) => (
                           <div key={sel.id} className="flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2 py-1" title={sel.tournamentPlayer.player.name}>
                             <PlayerAvatar name={sel.tournamentPlayer.player.name} country={sel.tournamentPlayer.player.country} photoUrl={sel.tournamentPlayer.player.photoUrl} size="sm" />
                             <div className="flex flex-col">
@@ -187,7 +209,7 @@ export default async function LeaderboardPage({
                       <p className="truncate text-sm font-semibold text-[#0a3d2a] dark:text-green-400">{team.name}</p>
                       <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{team.user.name ?? team.user.email}</p>
                       <div className="mt-1 flex gap-1 overflow-x-auto no-scrollbar">
-                        {team.selections.map((sel) => (
+                        {team.selections.map((sel: any) => (
                           <span key={sel.id} className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5">
                             <PlayerAvatar name={sel.tournamentPlayer.player.name} country={sel.tournamentPlayer.player.country} photoUrl={sel.tournamentPlayer.player.photoUrl} size="sm" />
                             <TierBadge tier={sel.tournamentPlayer.tier} size="sm" />
