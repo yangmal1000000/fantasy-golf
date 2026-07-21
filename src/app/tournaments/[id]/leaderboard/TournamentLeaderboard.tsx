@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import Flag from "@/components/Flag";
-import { roundScoreClass, toParClass, toParDisplay, positionBadgeClass } from "@/lib/score-colors";
+import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
+import type { MajorTheme } from "@/lib/ui";
 
 export interface TournamentPlayerScore {
   playerId: string;
@@ -17,15 +18,39 @@ export interface TournamentPlayerScore {
   madeCut: boolean;
 }
 
+const DEFAULT_THEME = {
+  tableHeaderBg: "bg-[#0a3d2a]",
+  tableHeaderText: "text-white",
+  tableHeaderTextSecondary: "text-white/70",
+  positionFirst: "bg-[#c8a951] text-[#1a1a1a]",
+  sectionTitle: "text-[#0a3d2a] dark:text-green-400",
+  winnerRow: "bg-[#c8a951]/10",
+  accentHex: "#c8a951",
+  totalClass: "text-[#0a3d2a] dark:text-green-400",
+} as const;
+
 export default function TournamentLeaderboard({
   players,
   par,
+  theme,
 }: {
   players: TournamentPlayerScore[];
   par: number;
+  theme?: MajorTheme | null;
 }) {
   const [showFull, setShowFull] = useState(false);
   const visible = showFull ? players : players.slice(0, 20);
+
+  const t = theme ? {
+    tableHeaderBg: theme.tableHeaderBg,
+    tableHeaderText: theme.tableHeaderText,
+    tableHeaderTextSecondary: theme.tableHeaderTextSecondary,
+    positionFirst: theme.positionFirst,
+    sectionTitle: theme.headerSubtext,
+    winnerRow: "",
+    accentHex: theme.accentHex,
+    totalClass: theme.statsAccent,
+  } : DEFAULT_THEME;
 
   if (players.length === 0) {
     return (
@@ -45,19 +70,19 @@ export default function TournamentLeaderboard({
       {/* Section header */}
       <div className="mb-3 flex items-center gap-2">
         <span className="text-lg">🏌️</span>
-        <h2 className="text-base font-bold text-[#0a3d2a] dark:text-green-400 sm:text-lg">
+        <h2 className={`text-base font-bold sm:text-lg ${t.sectionTitle}`}>
           Tournament Leaderboard
         </h2>
         <span className="rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-          PGA Tour Scores
+          {theme ? theme.shortName + " Scores" : "PGA Tour Scores"}
         </span>
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 shadow-md">
+      <div className={`overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 shadow-md ${theme ? `ring-1 ${theme.borderAccent}` : ""}`}>
         {/* Desktop table */}
         <table className="hidden w-full text-sm sm:table">
-          <thead className="bg-[#0a3d2a] text-white">
+          <thead className={`${t.tableHeaderBg} ${t.tableHeaderText}`}>
             <tr>
               <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide">Pos</th>
               <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide">Player</th>
@@ -83,9 +108,9 @@ export default function TournamentLeaderboard({
                     <span
                       className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
                         isWinner
-                          ? "bg-[#c8a951] text-[#1a1a1a]"
+                          ? t.positionFirst
                           : p.position <= 3
-                            ? "bg-[#0a3d2a] text-white"
+                            ? "bg-[#0a3d2a] text-white dark:bg-green-700"
                             : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
                       }`}
                     >
@@ -112,7 +137,7 @@ export default function TournamentLeaderboard({
                       )}
                     </td>
                   ))}
-                  <td className="px-3 py-2.5 text-right text-sm font-bold tabular text-[#0a3d2a] dark:text-green-400">
+                  <td className={`px-3 py-2.5 text-right text-sm font-bold tabular ${t.totalClass}`}>
                     {!p.madeCut && p.roundsPlayed < 2 ? "WD" : p.total}
                   </td>
                   <td className="px-3 py-2.5 text-right text-sm font-bold tabular">
@@ -141,7 +166,7 @@ export default function TournamentLeaderboard({
                 <span
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                     isWinner
-                      ? "bg-[#c8a951] text-[#1a1a1a]"
+                      ? t.positionFirst
                       : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
                   }`}
                 >
@@ -166,7 +191,7 @@ export default function TournamentLeaderboard({
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-base font-bold tabular text-[#0a3d2a] dark:text-green-400">
+                  <p className={`text-base font-bold tabular ${t.totalClass}`}>
                     {!p.madeCut && p.roundsPlayed < 2 ? "WD" : p.total}
                   </p>
                   <p className={`text-xs font-semibold ${toParClass(p.toPar)}`}>

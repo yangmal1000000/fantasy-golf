@@ -179,55 +179,176 @@ const COURSE_KEYWORD_IMAGES: { keywords: string[]; image: string }[] = [
   { keywords: ["sahalee"], image: "/courses/tpc-sawgrass.jpg" },
 ];
 
-export const MAJOR_THEMES: Record<string, {
+export interface MajorTheme {
   name: string;
-  headerBg: string;       // gradient classes for header banner
-  headerText: string;
-  accentColor: string;    // hex for badges, borders
+  shortName: string;
+  // Header banner
+  headerOverlay: string;       // gradient overlay on course image
+  headerGradient: string;      // solid gradient (no image)
+  headerText: string;          // text color on header
+  headerSubtext: string;       // subtext color on header
+  // Accent
+  accentHex: string;
+  accentHexLight: string;
+  // Badge for tournament header
   badgeClass: string;
+  // Table header (leaderboard)
+  tableHeaderBg: string;
+  tableHeaderText: string;
+  tableHeaderTextSecondary: string;
+  // Winner card
   winnerCardClass: string;
+  winnerIconBg: string;
+  // Runner-up card
+  runnerUpCardClass: string;
+  // Cut line
   cutLineClass: string;
-}> = {
-  "masters": {
+  cutBadgeClass: string;
+  // Stats cards
+  statsAccent: string;
+  // Prize pot card
+  potCardClass: string;
+  // Live indicator
+  liveBadgeClass: string;
+  // Position badges (leaderboard)
+  positionFirst: string;
+  // Tier header row
+  tierHeaderClass: string;
+  // Unique CSS border accent
+  borderAccent: string;
+  // Emoji used in winner display
+  winnerEmoji: string;
+  // Pattern/decoration
+  pattern: string;
+}
+
+export const MAJOR_THEMES: Record<string, MajorTheme> = {
+  masters: {
     name: "The Masters",
-    headerBg: "from-[#006747] via-[#00854a] to-[#00a35c]",
-    headerText: "text-[#f5c518]",
-    accentColor: "#f5c518",
-    badgeClass: "bg-[#f5c518]/20 text-[#f5c518] border-[#f5c518]/40",
-    winnerCardClass: "border-[#f5c518]/40 bg-gradient-to-br from-[#f5c518]/10 to-transparent",
+    shortName: "Masters",
+    headerOverlay: "from-[#003820] via-[#005a30]/80 to-transparent",
+    headerGradient: "from-[#003820] via-[#006747] to-[#00854a]",
+    headerText: "text-white",
+    headerSubtext: "text-[#f5c518]",
+    accentHex: "#f5c518",
+    accentHexLight: "#ffd933",
+    badgeClass: "bg-[#f5c518]/20 text-[#f5c518] border-[#f5c518]/50",
+    tableHeaderBg: "bg-[#003820]",
+    tableHeaderText: "text-[#f5c518]",
+    tableHeaderTextSecondary: "text-white/70",
+    winnerCardClass: "border-[#f5c518]/50 bg-gradient-to-br from-[#f5c518]/15 via-[#006747]/5 to-transparent",
+    winnerIconBg: "bg-[#f5c518]",
+    runnerUpCardClass: "border-[#006747]/30 bg-gradient-to-br from-[#006747]/8 to-transparent",
     cutLineClass: "text-[#f5c518]",
+    cutBadgeClass: "bg-[#f5c518]/10 text-[#f5c518] border-[#f5c518]/30",
+    statsAccent: "text-[#006747] dark:text-[#3da06a]",
+    potCardClass: "border-[#f5c518]/40 bg-gradient-to-r from-[#f5c518]/15 via-[#006747]/5 to-transparent",
+    liveBadgeClass: "bg-[#c44545] text-white",
+    positionFirst: "bg-[#f5c518] text-[#1a1a1a]",
+    tierHeaderClass: "bg-[#003820]/5 dark:bg-[#003820]/20 border-[#f5c518]/20",
+    borderAccent: "border-[#f5c518]/30",
+    winnerEmoji: "🌱",
+    pattern: "masters-pattern",
   },
   "pga-championship": {
     name: "PGA Championship",
-    headerBg: "from-[#1a3a6b] via-[#2a5298] to-[#3a6db8]",
-    headerText: "text-[#d4a843]",
-    accentColor: "#d4a843",
-    badgeClass: "bg-[#d4a843]/20 text-[#d4a843] border-[#d4a843]/40",
-    winnerCardClass: "border-[#d4a843]/40 bg-gradient-to-br from-[#d4a843]/10 to-transparent",
+    shortName: "PGA Champ",
+    headerOverlay: "from-[#0d1f3c] via-[#1a3a6b]/80 to-transparent",
+    headerGradient: "from-[#0d1f3c] via-[#1a3a6b] to-[#2a5298]",
+    headerText: "text-white",
+    headerSubtext: "text-[#d4a843]",
+    accentHex: "#d4a843",
+    accentHexLight: "#e8c558",
+    badgeClass: "bg-[#d4a843]/20 text-[#d4a843] border-[#d4a843]/50",
+    tableHeaderBg: "bg-[#0d1f3c]",
+    tableHeaderText: "text-[#d4a843]",
+    tableHeaderTextSecondary: "text-white/70",
+    winnerCardClass: "border-[#d4a843]/50 bg-gradient-to-br from-[#d4a843]/15 via-[#1a3a6b]/5 to-transparent",
+    winnerIconBg: "bg-[#d4a843]",
+    runnerUpCardClass: "border-[#1a3a6b]/30 bg-gradient-to-br from-[#1a3a6b]/8 to-transparent",
     cutLineClass: "text-[#d4a843]",
+    cutBadgeClass: "bg-[#d4a843]/10 text-[#d4a843] border-[#d4a843]/30",
+    statsAccent: "text-[#1a3a6b] dark:text-[#5b8dd9]",
+    potCardClass: "border-[#d4a843]/40 bg-gradient-to-r from-[#d4a843]/15 via-[#1a3a6b]/5 to-transparent",
+    liveBadgeClass: "bg-[#c44545] text-white",
+    positionFirst: "bg-[#d4a843] text-[#1a1a1a]",
+    tierHeaderClass: "bg-[#0d1f3c]/5 dark:bg-[#0d1f3c]/20 border-[#d4a843]/20",
+    borderAccent: "border-[#d4a843]/30",
+    winnerEmoji: "🏆",
+    pattern: "pga-pattern",
   },
   "us-open": {
     name: "U.S. Open",
-    headerBg: "from-[#1a2540] via-[#2a3555] to-[#3a4565]",
-    headerText: "text-[#c0c5ce]",
-    accentColor: "#9ca3af",
-    badgeClass: "bg-white/10 text-[#c0c5ce] border-white/20",
-    winnerCardClass: "border-[#9ca3af]/40 bg-gradient-to-br from-white/5 to-transparent",
-    cutLineClass: "text-[#9ca3af]",
+    shortName: "US Open",
+    headerOverlay: "from-[#0a1428] via-[#1a2540]/85 to-transparent",
+    headerGradient: "from-[#0a1428] via-[#1a2540] to-[#2a3555]",
+    headerText: "text-white",
+    headerSubtext: "text-[#c0c5ce]",
+    accentHex: "#9ca3af",
+    accentHexLight: "#c0c5ce",
+    badgeClass: "bg-white/10 text-[#c0c5ce] border-white/25",
+    tableHeaderBg: "bg-[#0a1428]",
+    tableHeaderText: "text-[#c0c5ce]",
+    tableHeaderTextSecondary: "text-white/60",
+    winnerCardClass: "border-white/30 bg-gradient-to-br from-white/8 via-[#1a2540]/5 to-transparent",
+    winnerIconBg: "bg-[#c0c5ce]",
+    runnerUpCardClass: "border-[#1a2540]/30 bg-gradient-to-br from-[#1a2540]/8 to-transparent",
+    cutLineClass: "text-[#c0c5ce]",
+    cutBadgeClass: "bg-white/8 text-[#c0c5ce] border-white/20",
+    statsAccent: "text-[#1a2540] dark:text-[#8b95a8]",
+    potCardClass: "border-white/25 bg-gradient-to-r from-white/8 via-[#1a2540]/5 to-transparent",
+    liveBadgeClass: "bg-[#c44545] text-white",
+    positionFirst: "bg-[#c0c5ce] text-[#0a1428]",
+    tierHeaderClass: "bg-[#0a1428]/5 dark:bg-[#0a1428]/20 border-white/15",
+    borderAccent: "border-white/20",
+    winnerEmoji: "🏛️",
+    pattern: "usopen-pattern",
   },
   "the-open": {
     name: "The Open Championship",
-    headerBg: "from-[#7c1a1a] via-[#9c2a2a] to-[#bc3a3a]",
-    headerText: "text-[#d4a843]",
-    accentColor: "#d4a843",
-    badgeClass: "bg-[#d4a843]/20 text-[#d4a843] border-[#d4a843]/40",
-    winnerCardClass: "border-[#d4a843]/40 bg-gradient-to-br from-[#7c1a1a]/10 to-transparent",
+    shortName: "The Open",
+    headerOverlay: "from-[#4a0d0d] via-[#7c1a1a]/80 to-transparent",
+    headerGradient: "from-[#4a0d0d] via-[#7c1a1a] to-[#9c2a2a]",
+    headerText: "text-white",
+    headerSubtext: "text-[#d4a843]",
+    accentHex: "#d4a843",
+    accentHexLight: "#e8c558",
+    badgeClass: "bg-[#d4a843]/20 text-[#d4a843] border-[#d4a843]/50",
+    tableHeaderBg: "bg-[#4a0d0d]",
+    tableHeaderText: "text-[#d4a843]",
+    tableHeaderTextSecondary: "text-white/70",
+    winnerCardClass: "border-[#d4a843]/50 bg-gradient-to-br from-[#d4a843]/15 via-[#7c1a1a]/5 to-transparent",
+    winnerIconBg: "bg-[#d4a843]",
+    runnerUpCardClass: "border-[#7c1a1a]/30 bg-gradient-to-br from-[#7c1a1a]/8 to-transparent",
     cutLineClass: "text-[#d4a843]",
+    cutBadgeClass: "bg-[#d4a843]/10 text-[#d4a843] border-[#d4a843]/30",
+    statsAccent: "text-[#7c1a1a] dark:text-[#d45]",
+    potCardClass: "border-[#d4a843]/40 bg-gradient-to-r from-[#d4a843]/15 via-[#7c1a1a]/5 to-transparent",
+    liveBadgeClass: "bg-[#c44545] text-white",
+    positionFirst: "bg-[#d4a843] text-[#1a1a1a]",
+    tierHeaderClass: "bg-[#4a0d0d]/5 dark:bg-[#4a0d0d]/20 border-[#d4a843]/20",
+    borderAccent: "border-[#d4a843]/30",
+    winnerEmoji: "🏆",
+    pattern: "open-pattern",
   },
 };
 
-export function majorTheme(tournamentId: string) {
-  return MAJOR_THEMES[tournamentId] ?? null;
+// Match by base slug — handles year-prefixed IDs like "2027-masters"
+const MAJOR_SLUG_PATTERNS: { pattern: RegExp; key: string }[] = [
+  { pattern: /(^|-)masters$/, key: "masters" },
+  { pattern: /(^|-)pga-championship$/, key: "pga-championship" },
+  { pattern: /(^|-)us-open$/, key: "us-open" },
+  { pattern: /(^|-)the-open$/, key: "the-open" },
+];
+
+export function majorTheme(tournamentId: string): MajorTheme | null {
+  // Direct match
+  if (MAJOR_THEMES[tournamentId]) return MAJOR_THEMES[tournamentId];
+  // Pattern match (for 2027-masters, etc.)
+  for (const { pattern, key } of MAJOR_SLUG_PATTERNS) {
+    if (pattern.test(tournamentId)) return MAJOR_THEMES[key];
+  }
+  return null;
 }
 
 export function courseImage(tournamentId: string, courseName?: string | null): string {
