@@ -9,6 +9,7 @@ import SignInButton from "@/components/SignInButton";
 import PushRegistration from "@/components/PushRegistration";
 import { AuthProvider } from "@/components/AuthProvider";
 import NavLinks from "@/components/NavLinks";
+import MobileMenu from "@/components/MobileMenu";
 import { GolfFlagIcon } from "@/components/icons";
 
 const inter = Inter({
@@ -88,6 +89,7 @@ function Navbar() {
           <NotificationBell />
           <ThemeToggle />
           <SignInButton />
+          <MobileMenu />
         </div>
       </div>
     </header>
