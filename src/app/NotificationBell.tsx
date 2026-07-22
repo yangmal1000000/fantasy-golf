@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChartBarIcon, GolfFlagIcon, FinishFlagIcon, ClockIcon, ChatIcon, TrophyIcon, InfoIcon, BellIcon } from "@/components/icons";
+import { ChartBarIcon, GolfFlagIcon, FinishFlagIcon, ClockIcon, ChatIcon, TrophyIcon, InfoIcon, BellIcon, SwapIcon } from "@/components/icons";
 
 interface Notification {
   id: string;
@@ -20,6 +20,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   league_message: <ChatIcon className="h-4 w-4" />,
   achievement: <TrophyIcon className="h-4 w-4" />,
   deadline: <ClockIcon className="h-4 w-4" />,
+  auto_sub: <SwapIcon className="h-4 w-4" />,
   info: <InfoIcon className="h-4 w-4" />,
 };
 

@@ -1,4 +1,6 @@
 import { prisma } from "./prisma";
+import { sendPushToUser } from "./push";
+import { genId } from "./db-ensure";
 
 /**
  * Auto-Sub Processor
@@ -16,6 +18,7 @@ import { prisma } from "./prisma";
  *  3. If no replacement is available, the slot is left empty (team plays with 4).
  *  4. Each sub is logged in TeamSubLog for audit/transparency.
  *  5. After all subs, team scores are NOT recalculated here (the caller handles that).
+ *  6. Affected users receive an in-app + push notification about the substitution.
  */
 
 export interface AutoSubResult {
@@ -202,6 +205,63 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
       newPlayerName: replacement.player.name,
       tier,
     });
+
+    // Send notification to the affected user
+    const userId = selection.team.userId;
+    const notifTitle = `🔄 Auto-sub: ${wdPlayer.name} → ${replacement.player.name}`;
+    const notifBody = `${tournament.name}: ${wdPlayer.name} withdrew (Tier ${tier}). Replaced with ${replacement.player.name} (rank ${(replacement.player.dataGolfRank ?? "—").toString()}).`;
+
+    try {
+      await prisma.notification.create({
+        data: {
+          id: genId(),
+          userId,
+          title: notifTitle,
+          body: notifBody,
+          type: "auto_sub",
+        },
+      });
+      await sendPushToUser(userId, {
+        title: notifTitle,
+        body: notifBody,
+        url: `/tournaments/${tournamentId}/teams/${selection.team.id}`,
+        tag: `auto-sub-${tournamentId}`,
+      });
+    } catch {
+      // Notification failures should never block the sub process
+    }
+  }
+
+  // Send notifications for unresolved subs (no replacement found)
+  for (const u of unresolved) {
+    const team = await prisma.team.findUnique({
+      where: { id: u.teamId },
+      select: { userId: true },
+    });
+    if (!team) continue;
+
+    const notifTitle = `⚠️ No sub available for ${u.wdPlayerName}`;
+    const notifBody = `${tournament.name}: ${u.wdPlayerName} withdrew (Tier ${u.tier}) but no replacement player was available. Your team will play with 4 players.`;
+
+    try {
+      await prisma.notification.create({
+        data: {
+          id: genId(),
+          userId: team.userId,
+          title: notifTitle,
+          body: notifBody,
+          type: "auto_sub",
+        },
+      });
+      await sendPushToUser(team.userId, {
+        title: notifTitle,
+        body: notifBody,
+        url: `/tournaments/${tournamentId}/teams/${u.teamId}`,
+        tag: `auto-sub-${tournamentId}`,
+      });
+    } catch {
+      // ignore
+    }
   }
 
   return {

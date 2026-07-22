@@ -640,6 +640,15 @@ export function RocketIcon(props: IconProps) {
   );
 }
 
+export function SwapIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h11l-3-3M7 7l3 3" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 17H6l3 3M17 17l-3-3" />
+    </svg>
+  );
+}
+
 /**
  * ICON_MAP — String name → icon component lookup.
  * Used by config-driven rendering (TIER_CONFIG, CATEGORY_CONFIG, etc.)
@@ -710,6 +719,7 @@ export const ICON_MAP: Record<string, ComponentType<IconProps>> = {
   green_heart: GreenHeartIcon,
   baby: BabyIcon,
   rocket: RocketIcon,
+  swap: SwapIcon,
 };
 
 /** Helper: render an icon by name from the ICON_MAP */
