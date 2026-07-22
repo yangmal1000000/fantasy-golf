@@ -82,6 +82,14 @@ export default async function LeaderboardPage({
                         {team.name}
                       </Link>
                       <p className="text-xs text-zinc-500">{team.user?.name ?? team.user?.email ?? "—"}</p>
+                      {/* Player chips */}
+                      <div className="mt-1 flex gap-1">
+                        {team.selections.map((sel: any) => (
+                          <span key={sel.id} className="inline-flex items-center gap-0.5 rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 dark:text-zinc-400">
+                            {sel.tournamentPlayer?.tier?.replace("_", " ").replace("PLUS", "+")} · {sel.tournamentPlayer?.player?.name?.split(" ").slice(-1)[0]}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-3 py-2.5 text-right font-bold tabular text-[#0a3d2a] dark:text-green-400">{team.totalScore}</td>
                     <td className="px-3 py-2.5 text-right tabular text-zinc-600 dark:text-zinc-400">
