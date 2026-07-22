@@ -9,6 +9,7 @@ import {
   moveTargetPoint,
   normaliseTargetPoint,
   scoreTargetEntry,
+  targetDistance,
   TARGET_SCENARIOS,
 } from "./target-challenge";
 
@@ -35,6 +36,11 @@ test("scoreTargetEntry returns zero for an exact match", () => {
 
   assert.equal(score.totalError, 0);
   assert.deepEqual(score.scenarioErrors, [0, 0, 0]);
+});
+
+test("target distance follows the rectangular 1000 by 650 map geometry", () => {
+  assert.equal(targetDistance({ x: 0, y: 0 }, { x: 100_000, y: 0 }), 1_000);
+  assert.equal(targetDistance({ x: 0, y: 0 }, { x: 0, y: 100_000 }), 650);
 });
 
 test("compareTargetScores applies the published scenario 3 tie-break first", () => {
