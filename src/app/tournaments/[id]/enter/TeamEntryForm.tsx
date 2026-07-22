@@ -118,6 +118,46 @@ export default function TeamEntryForm({
     setMissingSlots((prev) => prev.filter((s) => s.tier !== tier));
   }
 
+  const [submittedTeamId, setSubmittedTeamId] = useState<string | null>(null);
+  const [saveTemplateState, setSaveTemplateState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+
+  // Build player data for template saving
+  const submittedPlayers = TIER_ORDER.filter((t) => t !== "UNRANKED").map(
+    (tier) => {
+      const tpId = selections[tier];
+      const tierPlayers = playersByTier[tier] || [];
+      const player = tierPlayers.find((p) => p.tournamentPlayerId === tpId);
+      return {
+        playerId: player?.playerId ?? "",
+        tier,
+      };
+    },
+  ).filter((p) => p.playerId);
+
+  async function handleSaveTemplate() {
+    setSaveTemplateState("saving");
+    try {
+      const res = await fetch("/api/saved-teams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: teamName.trim(),
+          players: submittedPlayers,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save");
+      }
+      setSaveTemplateState("saved");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to save template");
+      setSaveTemplateState("idle");
+    }
+  }
+
   async function handleSubmit() {
     setError(null);
 
@@ -150,10 +190,8 @@ export default function TeamEntryForm({
       }
 
       const data = await res.json();
+      setSubmittedTeamId(data.teamId);
       setShowConfetti(true);
-      setTimeout(() => {
-        router.push(`/tournaments/${tournamentId}/teams/${data.teamId}`);
-      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -167,6 +205,58 @@ export default function TeamEntryForm({
     <div className="pb-24 sm:pb-0">
       {/* Confetti burst on success */}
       {showConfetti && <Confetti />}
+
+      {/* Success screen with save-as-template prompt */}
+      {showConfetti && submittedTeamId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="mx-auto max-w-md rounded-2xl bg-white dark:bg-zinc-900 p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+              <span className="text-3xl">✅</span>
+            </div>
+            <h2 className="text-xl font-bold text-[#0a3d2a] dark:text-green-400">
+              Team Submitted!
+            </h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Good luck out there!
+            </p>
+
+            {/* Save as template prompt */}
+            <div className="mt-5 rounded-xl border border-[#c8a951]/30 bg-[#c8a951]/5 p-4 text-left">
+              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                Save this team as a template?
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                Reuse these picks for future tournaments in one click.
+              </p>
+              {saveTemplateState === "saved" ? (
+                <p className="mt-3 text-center text-sm font-semibold text-green-600">
+                  ✓ Saved as template!
+                </p>
+              ) : (
+                <button
+                  onClick={handleSaveTemplate}
+                  disabled={saveTemplateState === "saving"}
+                  className="mt-3 w-full rounded-xl bg-[#c8a951] py-2.5 text-sm font-bold text-[#1a1a1a] transition hover:bg-[#d4b76a] disabled:opacity-50"
+                >
+                  {saveTemplateState === "saving"
+                    ? "Saving..."
+                    : "⭐ Save as Template"}
+                </button>
+              )}
+            </div>
+
+            {/* Continue button */}
+            <button
+              onClick={() =>
+                router.push(`/tournaments/${tournamentId}/teams/${submittedTeamId}`)
+              }
+              className="mt-4 w-full rounded-xl bg-[#0a3d2a] py-2.5 text-sm font-bold text-white transition hover:bg-[#1a5c3e]"
+            >
+              View My Team →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mode toggle: Pick Fresh vs Use Saved Team */}
       {hasSavedTeams && (

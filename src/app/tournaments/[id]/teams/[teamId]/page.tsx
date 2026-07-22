@@ -18,7 +18,7 @@ export default async function TeamDetailPage({
 }) {
   const { id: tournamentId, teamId } = await params;
 
-  const [tournament, team] = await Promise.all([
+  const [tournament, team, subLogs] = await Promise.all([
     prisma.tournament.findUnique({ where: { id: tournamentId } }),
     prisma.team.findUnique({
       where: { id: teamId },
@@ -33,7 +33,25 @@ export default async function TeamDetailPage({
         },
       },
     }),
+    prisma.teamSubLog.findMany({
+      where: { teamId },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
+
+  // Fetch player names for sub logs separately (no schema relations)
+  const subLogPlayerIds = new Set<string>();
+  for (const log of subLogs) {
+    subLogPlayerIds.add(log.oldPlayerId);
+    subLogPlayerIds.add(log.newPlayerId);
+  }
+  const subLogPlayers = subLogPlayerIds.size > 0
+    ? await prisma.player.findMany({
+        where: { id: { in: Array.from(subLogPlayerIds) } },
+        select: { id: true, name: true, country: true },
+      })
+    : [];
+  const subLogPlayerMap = new Map(subLogPlayers.map((p) => [p.id, p]));
 
   if (!tournament || !team) notFound();
 
@@ -132,6 +150,49 @@ export default async function TeamDetailPage({
           position={scoreResult?.position}
         />
       </div>
+
+      {/* Auto-Sub Log */}
+      {subLogs.length > 0 && (
+        <div className="mt-4 sm:mt-6">
+          <div className="rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🔄</span>
+              <h2 className="text-sm font-bold text-blue-800 dark:text-blue-400">
+                Auto-Substitutions
+              </h2>
+            </div>
+            <p className="mt-1 text-xs text-blue-600 dark:text-blue-500">
+              These players were automatically swapped after a withdrawal.
+            </p>
+            <div className="mt-3 space-y-2">
+              {subLogs.map((log) => {
+                const config = TIER_CONFIG[log.tier];
+                const oldPlayer = subLogPlayerMap.get(log.oldPlayerId);
+                const newPlayer = subLogPlayerMap.get(log.newPlayerId);
+                return (
+                  <div
+                    key={log.id}
+                    className="flex items-center gap-2 rounded-lg bg-white/70 dark:bg-zinc-800/50 px-3 py-2 text-sm"
+                  >
+                    <span
+                      className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ${config?.badgeClass ?? ""}`}
+                    >
+                      {config?.short ?? log.tier}
+                    </span>
+                    <span className="text-zinc-500 line-through dark:text-zinc-500">
+                      {oldPlayer?.name ?? "Unknown"}
+                    </span>
+                    <span className="text-zinc-400">→</span>
+                    <span className="font-semibold text-[#0a3d2a] dark:text-green-400">
+                      {newPlayer?.name ?? "Unknown"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Players */}
       <div className="mt-6 space-y-3 sm:space-y-4">
