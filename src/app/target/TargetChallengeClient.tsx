@@ -205,7 +205,7 @@ export default function TargetChallengeClient() {
             </div>
 
             <div className="grid gap-0 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,.8fr)]">
-              <div className="bg-[#071f16] p-3 sm:p-5">
+              <div className="self-start bg-[#071f16] p-3 sm:p-5">
                 <CourseMap scenario={scenario} point={currentPoint} onChange={(point) => updatePoint(currentScenario, point)} />
               </div>
               <div className="p-5 sm:p-7">
