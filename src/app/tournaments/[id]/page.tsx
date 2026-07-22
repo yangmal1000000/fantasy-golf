@@ -184,26 +184,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </div>
       </div>
 
-      {/* Cut line info for in-progress / completed */}
-      {hasScores && (isCompleted || isLive) && (() => {
-        const madeCutCount = [...scoreMap.values()].filter(s => s.madeCut).length;
-        const missedCutCount = [...scoreMap.values()].filter(s => s.roundsPlayed > 0 && !s.madeCut).length;
-        if (madeCutCount === 0 && missedCutCount === 0) return null;
-        return (
-          <div className="mt-2 flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2">
-            <BoltIcon className="h-4 w-4 text-[#0a3d2a] dark:text-green-400" />
-            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-              Made the Cut: <span className="text-[#0a3d2a] dark:text-green-400">{madeCutCount}</span> {madeCutCount === 1 ? "player" : "players"}
-            </span>
-            {missedCutCount > 0 && (
-              <span className="text-xs text-zinc-400">
-                · Missed: {missedCutCount}
-              </span>
-            )}
-          </div>
-        );
-      })()}
-
       {/* Prize pool + countdown */}
       {potValue > 0 && (
         <div className={`mt-2 flex items-center justify-between rounded-lg border p-3 ${theme ? theme.potCardClass : "border-[#c8a951]/30 bg-gradient-to-r from-[#c8a951]/10 to-transparent"}`}>
@@ -222,53 +202,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           )}
         </div>
       )}
-
-      {/* Course Profile */}
-      <div className="mt-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <FlagIcon className="h-4 w-4 text-[#0a3d2a] dark:text-green-400" />
-          <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500">Course Profile</h2>
-        </div>
-        {tournament.course ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div>
-              <p className="text-[10px] uppercase text-zinc-400">Course</p>
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                <MapPinIcon className="h-3.5 w-3.5 text-zinc-400" />
-                {tournament.course}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase text-zinc-400">Par</p>
-              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.par}</p>
-            </div>
-            {tournament.yardage && (
-              <div>
-                <p className="text-[10px] uppercase text-zinc-400">Yardage</p>
-                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.yardage.toLocaleString()} yds</p>
-              </div>
-            )}
-            {tournament.architect && (
-              <div>
-                <p className="text-[10px] uppercase text-zinc-400">Architect</p>
-                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.architect}</p>
-              </div>
-            )}
-            {tournament.courseLocation && (
-              <div>
-                <p className="text-[10px] uppercase text-zinc-400">Location</p>
-                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.courseLocation}</p>
-              </div>
-            )}
-            <div>
-              <p className="text-[10px] uppercase text-zinc-400">Tour</p>
-              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 uppercase">{tournament.tour}</p>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-zinc-400">Course details TBA</p>
-        )}
-      </div>
 
       {/* Action buttons */}
       <div className={`mt-4 grid grid-cols-2 gap-2 ${tournament._count.teams > 0 ? "sm:grid-cols-4" : "sm:grid-cols-2"} `}>
@@ -314,93 +247,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </Link>
       )}
 
-      {/* Winner card for completed tournaments */}
-      {isCompleted && winnerEntry && (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {/* Winner */}
-          <div className={`flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm ${winnerCardClass}`}>
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${theme ? theme.winnerIconBg : "bg-[#c8a951]"} text-2xl shadow-md`}>
-              {theme ? theme.winnerEmoji : "🏆"}
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[#c8a951]">Winner</p>
-              <p className="truncate text-base font-bold text-zinc-800 dark:text-zinc-100">
-                {playerNameMap.get(winnerEntry[0]) ?? "Unknown"}
-              </p>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
-                  {winnerEntry[1].total}
-                </span>
-                <span className={`font-semibold ${toParClass(winnerEntry[1].toPar)}`}>
-                  ({toParDisplay(winnerEntry[1].toPar)})
-                </span>
-                {playerCountryMap.get(winnerEntry[0]) && (
-                  <span className="text-xs text-zinc-400">{playerCountryMap.get(winnerEntry[0])}</span>
-                )}
-              </div>
-            </div>
-          </div>
-          {/* Runner-up */}
-          {runnerUpEntry && (
-            <div className="flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 text-xl">
-                🥈
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">Runner-up</p>
-                <p className="truncate text-base font-bold text-zinc-800 dark:text-zinc-100">
-                  {playerNameMap.get(runnerUpEntry[0]) ?? "Unknown"}
-                </p>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-bold tabular text-zinc-700 dark:text-zinc-300">
-                    {runnerUpEntry[1].total}
-                  </span>
-                  <span className={`font-semibold ${toParClass(runnerUpEntry[1].toPar)}`}>
-                    ({toParDisplay(runnerUpEntry[1].toPar)})
-                  </span>
-                  {playerCountryMap.get(runnerUpEntry[0]) && (
-                    <span className="text-xs text-zinc-400">{playerCountryMap.get(runnerUpEntry[0])}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Cut line info */}
-      {showCutInfo && (
-        <div className={`mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border p-3 text-sm shadow-sm ${theme ? `${theme.cutBadgeClass}` : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"}`}>
-          <div className="flex items-center gap-2">
-            <span className="text-base">✂️</span>
-            <span className="font-bold uppercase text-xs tracking-wide text-zinc-500">Cut Line</span>
-          </div>
-          {tournament.cutLine != null ? (
-            <span className={`font-bold tabular ${theme ? theme.cutLineClass : "text-[#0a3d2a] dark:text-green-400"}`}>
-              {tournament.cutLine > tournament.par * 2 ? "+" : ""}{tournament.cutLine - tournament.par * 2 === 0 ? "E" : tournament.cutLine - tournament.par * 2}
-            </span>
-          ) : cutScore != null ? (
-            <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
-              {cutScore - tournament.par * 2 === 0 ? "E" : `${cutScore - tournament.par * 2 > 0 ? "+" : ""}${cutScore - tournament.par * 2}`}
-              <span className="ml-1 text-xs font-normal text-zinc-400">(est. top 65)</span>
-            </span>
-          ) : (
-            <span className="text-zinc-400">Not yet determined</span>
-          )}
-          <span className="text-zinc-500 dark:text-zinc-400">
-            Made the cut: <strong className="text-[#0a3d2a] dark:text-green-400">{madeCutCount}</strong> players
-          </span>
-          {missedCutCount > 0 && (
-            <span className="text-zinc-500 dark:text-zinc-400">
-              Missed: <strong className="text-red-500">{missedCutCount}</strong>
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* ===== Mini Leaderboard (Top 5 fantasy teams) ===== */}
+      {/* ===== Mini Leaderboard (Top 5 fantasy teams) — HIGH PRIORITY ===== */}
       {hasFantasyTeams && (
-        <section className="mt-6">
+        <section className="mt-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className={`flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${theme ? theme.cutLineClass : "text-zinc-500"}`}>
               <TrophyIcon className="h-3.5 w-3.5" />
@@ -482,6 +331,142 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           </div>
         </section>
       )}
+
+      {/* Winner card for completed tournaments */}
+      {isCompleted && winnerEntry && (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {/* Winner */}
+          <div className={`flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm ${winnerCardClass}`}>
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${theme ? theme.winnerIconBg : "bg-[#c8a951]"} text-2xl shadow-md`}>
+              {theme ? theme.winnerEmoji : "🏆"}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#c8a951]">Winner</p>
+              <p className="truncate text-base font-bold text-zinc-800 dark:text-zinc-100">
+                {playerNameMap.get(winnerEntry[0]) ?? "Unknown"}
+              </p>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
+                  {winnerEntry[1].total}
+                </span>
+                <span className={`font-semibold ${toParClass(winnerEntry[1].toPar)}`}>
+                  ({toParDisplay(winnerEntry[1].toPar)})
+                </span>
+                {playerCountryMap.get(winnerEntry[0]) && (
+                  <span className="text-xs text-zinc-400">{playerCountryMap.get(winnerEntry[0])}</span>
+                )}
+              </div>
+            </div>
+          </div>
+          {/* Runner-up */}
+          {runnerUpEntry && (
+            <div className="flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 text-xl">
+                🥈
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">Runner-up</p>
+                <p className="truncate text-base font-bold text-zinc-800 dark:text-zinc-100">
+                  {playerNameMap.get(runnerUpEntry[0]) ?? "Unknown"}
+                </p>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-bold tabular text-zinc-700 dark:text-zinc-300">
+                    {runnerUpEntry[1].total}
+                  </span>
+                  <span className={`font-semibold ${toParClass(runnerUpEntry[1].toPar)}`}>
+                    ({toParDisplay(runnerUpEntry[1].toPar)})
+                  </span>
+                  {playerCountryMap.get(runnerUpEntry[0]) && (
+                    <span className="text-xs text-zinc-400">{playerCountryMap.get(runnerUpEntry[0])}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===== Merged Cut Line info ===== */}
+      {showCutInfo && (() => {
+        const mergedMadeCut = [...scoreMap.values()].filter(s => s.madeCut).length;
+        const mergedMissedCut = [...scoreMap.values()].filter(s => s.roundsPlayed > 0 && !s.madeCut).length;
+        if (mergedMadeCut === 0 && mergedMissedCut === 0) return null;
+        return (
+          <div className={`mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border p-3 text-sm shadow-sm ${theme ? `${theme.cutBadgeClass}` : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"}`}>
+            <div className="flex items-center gap-2">
+              <BoltIcon className="h-4 w-4 text-[#0a3d2a] dark:text-green-400" />
+              <span className="font-bold uppercase text-xs tracking-wide text-zinc-500">Cut Line</span>
+            </div>
+            {tournament.cutLine != null ? (
+              <span className={`font-bold tabular ${theme ? theme.cutLineClass : "text-[#0a3d2a] dark:text-green-400"}`}>
+                {tournament.cutLine > tournament.par * 2 ? "+" : ""}{tournament.cutLine - tournament.par * 2 === 0 ? "E" : tournament.cutLine - tournament.par * 2}
+              </span>
+            ) : cutScore != null ? (
+              <span className="font-bold tabular text-[#0a3d2a] dark:text-green-400">
+                {cutScore - tournament.par * 2 === 0 ? "E" : `${cutScore - tournament.par * 2 > 0 ? "+" : ""}${cutScore - tournament.par * 2}`}
+                <span className="ml-1 text-xs font-normal text-zinc-400">(est. top 65)</span>
+              </span>
+            ) : (
+              <span className="text-zinc-400">Not yet determined</span>
+            )}
+            <span className="text-zinc-500 dark:text-zinc-400">
+              Made the cut: <strong className="text-[#0a3d2a] dark:text-green-400">{mergedMadeCut}</strong> {mergedMadeCut === 1 ? "player" : "players"}
+            </span>
+            {mergedMissedCut > 0 && (
+              <span className="text-zinc-500 dark:text-zinc-400">
+                Missed: <strong className="text-red-500">{mergedMissedCut}</strong>
+              </span>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Course Profile (reference — lower priority) */}
+      <div className="mt-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <FlagIcon className="h-4 w-4 text-[#0a3d2a] dark:text-green-400" />
+          <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500">Course Profile</h2>
+        </div>
+        {tournament.course ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Course</p>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                <MapPinIcon className="h-3.5 w-3.5 text-zinc-400" />
+                {tournament.course}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Par</p>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.par}</p>
+            </div>
+            {tournament.yardage && (
+              <div>
+                <p className="text-[10px] uppercase text-zinc-400">Yardage</p>
+                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.yardage.toLocaleString()} yds</p>
+              </div>
+            )}
+            {tournament.architect && (
+              <div>
+                <p className="text-[10px] uppercase text-zinc-400">Architect</p>
+                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.architect}</p>
+              </div>
+            )}
+            {tournament.courseLocation && (
+              <div>
+                <p className="text-[10px] uppercase text-zinc-400">Location</p>
+                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tournament.courseLocation}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-[10px] uppercase text-zinc-400">Tour</p>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 uppercase">{tournament.tour}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-400">Course details TBA</p>
+        )}
+      </div>
 
       {/* ===== Skeuomorphic Major Scoreboard (replaces generic field for majors with scores) ===== */}
       {mk && hasScores ? (
