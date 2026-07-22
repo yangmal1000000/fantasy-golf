@@ -1,5 +1,7 @@
 export const TARGET_COORDINATE_MAX = 100_000;
 export const TARGET_ATTEMPT_SECONDS = 20 * 60;
+export const TARGET_MAP_WIDTH = 1_000;
+export const TARGET_MAP_HEIGHT = 650;
 
 // Ground-contact coordinate in the 1000 × 650 course-map viewBox. Keep the
 // full anchor comfortably inside the front-left putting surface rather than
@@ -174,7 +176,72 @@ export function moveTargetPoint(
 }
 
 export function targetDistance(a: TargetPoint, b: TargetPoint): number {
-  return Math.hypot(a.x - b.x, a.y - b.y);
+  const aMap = targetPointToMapSpace(a);
+  const bMap = targetPointToMapSpace(b);
+  return Math.hypot(aMap.x - bMap.x, aMap.y - bMap.y);
+}
+
+export function targetPointToMapSpace(point: TargetPoint): TargetPoint {
+  return {
+    x: (clampTargetCoordinate(point.x) / TARGET_COORDINATE_MAX) * TARGET_MAP_WIDTH,
+    y: (clampTargetCoordinate(point.y) / TARGET_COORDINATE_MAX) * TARGET_MAP_HEIGHT,
+  };
+}
+
+export function mapSpaceToTargetPoint(point: TargetPoint): TargetPoint {
+  return {
+    x: clampTargetCoordinate((point.x / TARGET_MAP_WIDTH) * TARGET_COORDINATE_MAX),
+    y: clampTargetCoordinate((point.y / TARGET_MAP_HEIGHT) * TARGET_COORDINATE_MAX),
+  };
+}
+
+/**
+ * Deterministic Weiszfeld calculation in the real 1000 × 650 map geometry.
+ * Inputs are sorted before iteration so database ordering cannot affect the
+ * rounded official coordinate.
+ */
+export function geometricMedianTarget(points: readonly TargetPoint[]): TargetPoint {
+  if (points.length === 0) throw new Error("At least one target point is required");
+  if (points.length === 1) return {
+    x: clampTargetCoordinate(points[0].x),
+    y: clampTargetCoordinate(points[0].y),
+  };
+
+  const mapPoints = points
+    .map(targetPointToMapSpace)
+    .sort((a, b) => a.x - b.x || a.y - b.y);
+
+  let current = {
+    x: mapPoints.reduce((sum, point) => sum + point.x, 0) / mapPoints.length,
+    y: mapPoints.reduce((sum, point) => sum + point.y, 0) / mapPoints.length,
+  };
+
+  for (let iteration = 0; iteration < 1_000; iteration += 1) {
+    const exact = mapPoints.find(
+      (point) => Math.hypot(point.x - current.x, point.y - current.y) < 1e-10,
+    );
+    if (exact) return mapSpaceToTargetPoint(exact);
+
+    let weightTotal = 0;
+    let weightedX = 0;
+    let weightedY = 0;
+
+    for (const point of mapPoints) {
+      const distance = Math.hypot(point.x - current.x, point.y - current.y);
+      const weight = 1 / Math.max(distance, 1e-10);
+      weightTotal += weight;
+      weightedX += point.x * weight;
+      weightedY += point.y * weight;
+    }
+
+    const next = { x: weightedX / weightTotal, y: weightedY / weightTotal };
+    if (Math.hypot(next.x - current.x, next.y - current.y) < 1e-8) {
+      return mapSpaceToTargetPoint(next);
+    }
+    current = next;
+  }
+
+  return mapSpaceToTargetPoint(current);
 }
 
 export function scoreTargetEntry(
@@ -188,7 +255,7 @@ export function scoreTargetEntry(
     throw new Error(`Expected ${TARGET_SCENARIOS.length} official targets`);
   }
 
-  const diagonal = Math.SQRT2 * TARGET_COORDINATE_MAX;
+  const diagonal = Math.hypot(TARGET_MAP_WIDTH, TARGET_MAP_HEIGHT);
   const scenarioErrors = entry.points.map(
     (point, index) => targetDistance(point, officialTargets[index]) / diagonal,
   );

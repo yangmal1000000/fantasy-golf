@@ -5,6 +5,8 @@ import type { KeyboardEvent, PointerEvent } from "react";
 import {
   APPROACH_FLAG_GROUND_VIEWBOX,
   TARGET_COORDINATE_MAX,
+  TARGET_MAP_HEIGHT,
+  TARGET_MAP_WIDTH,
   type TargetPoint,
   type TargetScenario,
   moveTargetPoint,
@@ -17,10 +19,12 @@ interface CourseMapProps {
   onChange?: (point: TargetPoint | null) => void;
   compact?: boolean;
   edgeToEdgeOnMobile?: boolean;
+  referencePoints?: Array<{
+    point: TargetPoint;
+    label: string;
+    color: string;
+  }>;
 }
-
-const VIEWBOX_WIDTH = 1_000;
-const VIEWBOX_HEIGHT = 650;
 
 const COURSE_IMAGES: Record<TargetScenario["mapKind"], string> = {
   practice: "/images/target-challenge/hawthorn-vale-tee.png",
@@ -37,8 +41,8 @@ const BALL_POSITIONS: Partial<Record<TargetScenario["mapKind"], TargetPoint>> = 
 
 function pointToViewBox(point: TargetPoint) {
   return {
-    x: (point.x / TARGET_COORDINATE_MAX) * VIEWBOX_WIDTH,
-    y: (point.y / TARGET_COORDINATE_MAX) * VIEWBOX_HEIGHT,
+    x: (point.x / TARGET_COORDINATE_MAX) * TARGET_MAP_WIDTH,
+    y: (point.y / TARGET_COORDINATE_MAX) * TARGET_MAP_HEIGHT,
   };
 }
 
@@ -48,6 +52,7 @@ export default function CourseMap({
   onChange,
   compact = false,
   edgeToEdgeOnMobile = false,
+  referencePoints = [],
 }: CourseMapProps) {
   const interactive = Boolean(onChange);
 
@@ -113,7 +118,7 @@ export default function CourseMap({
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061b13]/20 via-transparent to-[#061b13]/10" />
         <svg
-          viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
+          viewBox={`0 0 ${TARGET_MAP_WIDTH} ${TARGET_MAP_HEIGHT}`}
           className="relative z-10 h-full w-full select-none"
           aria-hidden="true"
           preserveAspectRatio="none"
@@ -156,6 +161,28 @@ export default function CourseMap({
           </g>
 
           <CourseGuides scenario={scenario} />
+
+          {referencePoints.map((reference) => {
+            const position = pointToViewBox(reference.point);
+            return (
+              <g
+                key={`${reference.label}-${reference.point.x}-${reference.point.y}`}
+                transform={`translate(${position.x} ${position.y})`}
+                filter={`url(#${prefix}-shadow)`}
+              >
+                <circle r="22" fill={reference.color} stroke="#fff" strokeWidth="5" />
+                <text
+                  y="7"
+                  textAnchor="middle"
+                  fill="#fff"
+                  fontSize="20"
+                  fontWeight="900"
+                >
+                  {reference.label}
+                </text>
+              </g>
+            );
+          })}
 
           {marker ? (
             <g transform={`translate(${marker.x} ${marker.y})`} filter={`url(#${prefix}-shadow)`}>

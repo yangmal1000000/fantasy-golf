@@ -267,3 +267,56 @@ model TeamSubLog {
 
   team          Team     @relation(references: [id], fields: [teamId])
 }
+
+// ===== Target Challenge private judging pilot =====
+// These records are deliberately separate from customer entries and payments.
+
+model TargetJudgingRound {
+  id                  String                  @id @default(cuid())
+  slug                String                  @unique
+  name                String
+  scenarioVersion     String
+  scenarioHash        String
+  status              String                  @default("DRAFT")
+  createdByEmail      String
+  officialTargets     Json?
+  officialTargetsHash String?
+  calculatedAt        DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  assignments         TargetJudgeAssignment[]
+  auditEvents         TargetJudgeAudit[]
+}
+
+model TargetJudgeAssignment {
+  id                     String              @id @default(cuid())
+  roundId                String
+  email                  String
+  displayName            String
+  credential             String
+  seat                    Int
+  declarationConfirmedAt DateTime?
+  initialSubmission      Json?
+  initialLockedAt        DateTime?
+  finalSubmission        Json?
+  finalLockedAt          DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  round                  TargetJudgingRound  @relation(references: [id], fields: [roundId], onDelete: Cascade)
+
+  @@unique([roundId, email])
+  @@unique([roundId, seat])
+  @@index([email])
+}
+
+model TargetJudgeAudit {
+  id         String             @id @default(cuid())
+  roundId    String
+  actorEmail String
+  action     String
+  payload    Json?
+  createdAt  DateTime           @default(now())
+  round      TargetJudgingRound @relation(references: [id], fields: [roundId], onDelete: Cascade)
+
+  @@index([roundId, createdAt])
+}
