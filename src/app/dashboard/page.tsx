@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { calculateTeamScore } from "@/lib/scoring";
+import { calculateUserWinnings } from "@/lib/winnings";
 import { formatGBP, STATUS_CONFIG } from "@/lib/ui";
 import TierBadge from "@/components/TierBadge";
 import PlayerAvatar from "@/components/PlayerAvatar";
@@ -45,7 +46,7 @@ export default async function DashboardPage() {
   }
 
   // Fetch everything in parallel
-  const [teams, leagueMembers, earnedAchievements, savedTeamCount] = await Promise.all([
+  const [teams, leagueMembers, earnedAchievements, savedTeamCount, winnings] = await Promise.all([
     prisma.team.findMany({
       where: { userId: user.id },
       include: {
@@ -69,6 +70,7 @@ export default async function DashboardPage() {
       user.id
     ).catch(() => []),
     prisma.savedTeam.count({ where: { userId: user.id } }),
+    calculateUserWinnings(user.id),
   ]);
 
   // Calculate scores for completed/live teams
@@ -89,7 +91,8 @@ export default async function DashboardPage() {
   const upcomingTeams = teamData.filter((t) => t.team.tournament.status === "entries_open" || t.team.tournament.status === "upcoming");
 
   const totalSpent = teams.reduce((sum, t) => sum + (t.tournament.entryFee ?? 0), 0);
-  const totalWon = 0; // TODO: calculate from payouts
+  const totalWon = winnings.totalWon;
+  const netProfit = winnings.netProfit;
 
   // Best position
   const positions = completedTeams
@@ -195,10 +198,10 @@ export default async function DashboardPage() {
         />
         <StatCard
           icon={<PoundIcon className="h-4 w-4" />}
-          label="Total Spent"
-          value={formatGBP(totalSpent)}
-          sub={`${leagueMembers.length} leagues`}
-          accent="text-[#c8a951]"
+          label="Net P/L"
+          value={netProfit === 0 ? formatGBP(0) : `${netProfit < 0 ? "-" : "+"}${formatGBP(Math.abs(netProfit))}`}
+          sub={`${formatGBP(totalWon)} won`}
+          accent={netProfit > 0 ? "text-green-600" : netProfit < 0 ? "text-red-500" : "text-[#c8a951]"}
         />
         <StatCard
           icon={<StarIcon className="h-4 w-4" />}

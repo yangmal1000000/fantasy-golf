@@ -1,10 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+const ALL_LINKS = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/tournaments", label: "Tournaments" },
+  { href: "/my-teams", label: "My Teams" },
+  { href: "/players", label: "Players" },
+  { href: "/stats", label: "Stats" },
+  { href: "/leagues", label: "Leagues" },
+  { href: "/power-rankings", label: "Power Rankings" },
+  { href: "/how-to-play", label: "How to Play" },
+];
+
 export default function Navbar() {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 bg-[#0a3d2a] text-white shadow-lg safe-area-top">
@@ -19,22 +32,79 @@ export default function Navbar() {
           <span className="hidden xs:inline sm:inline">Fantasy Golf</span>
         </Link>
 
+        {/* Desktop nav */}
         <nav className="hidden items-center gap-0.5 sm:flex">
-          <NavLink href="/dashboard" label="Dashboard" active={pathname.startsWith("/dashboard")} />
-          <NavLink href="/tournaments" label="Tournaments" active={pathname.startsWith("/tournaments")} />
-          <NavLink href="/players" label="Players" active={pathname.startsWith("/players")} />
-          <NavLink href="/my-teams" label="My Teams" active={pathname.startsWith("/my-teams")} />
-          <NavLink href="/leagues" label="Leagues" active={pathname.startsWith("/leagues")} />
-          <NavLink href="/power-rankings" label="Power Rankings" hideOnMd active={pathname.includes("/power-rankings")} />
-          <NavLink href="/how-to-play" label="How to Play" hideOnMd active={pathname === "/how-to-play"} />
+          {ALL_LINKS.map((l) => (
+            <NavLink
+              key={l.href}
+              href={l.href}
+              label={l.label}
+              active={pathname.startsWith(l.href)}
+              hideOnMd={l.href === "/power-rankings" || l.href === "/how-to-play"}
+            />
+          ))}
         </nav>
 
         <div className="flex items-center gap-1 sm:gap-2">
           <NotificationBellSlot />
           <ThemeToggleSlot />
           <SignInSlot />
+
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="sm:hidden rounded-md p-1.5 text-white/80 hover:text-white hover:bg-white/10 transition"
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? (
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 top-0 z-40 bg-black/30 sm:hidden"
+            onClick={() => setMenuOpen(false)}
+          />
+          {/* Menu panel */}
+          <div className="sm:hidden absolute left-0 right-0 top-full z-50 border-t border-white/10 bg-[#0a3d2a] shadow-xl">
+            <nav className="mx-auto max-w-5xl px-3 py-2">
+              {ALL_LINKS.map((l) => {
+                const active = pathname.startsWith(l.href);
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setMenuOpen(false)}
+                    className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                      active
+                        ? "bg-white/10 text-white"
+                        : "text-white/70 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {l.label}
+                    {active && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#c8a951]" />
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </>
+      )}
     </header>
   );
 }

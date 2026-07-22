@@ -3,7 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { calculateTeamScore } from "@/lib/scoring";
-import { TIER_CONFIG, TIER_ORDER, formatDateRange } from "@/lib/ui";
+import { calculateUserWinnings } from "@/lib/winnings";
+import { TIER_CONFIG, TIER_ORDER, formatDateRange, formatGBP } from "@/lib/ui";
 import { toParDisplay, toParClass } from "@/lib/score-colors";
 import TierBadge from "@/components/TierBadge";
 import PlayerAvatar from "@/components/PlayerAvatar";
@@ -15,6 +16,7 @@ import {
   ChartBarIcon,
   CrownIcon,
   MedalIcon,
+  PoundIcon,
   TargetIcon,
   TrendingUpIcon,
   TrendingDownIcon,
@@ -81,20 +83,23 @@ export default async function StatsPage() {
   }
 
   // Fetch all user teams with tournament info
-  const teams = await prisma.team.findMany({
-    where: { userId: user.id },
-    include: {
-      tournament: { select: { id: true, name: true, course: true, startDate: true, endDate: true, par: true, status: true, category: true } },
-      selections: {
-        include: {
-          tournamentPlayer: {
-            include: { player: { select: { id: true, name: true, country: true, photoUrl: true } } },
+  const [teams, winnings] = await Promise.all([
+    prisma.team.findMany({
+      where: { userId: user.id },
+      include: {
+        tournament: { select: { id: true, name: true, course: true, startDate: true, endDate: true, par: true, status: true, category: true } },
+        selections: {
+          include: {
+            tournamentPlayer: {
+              include: { player: { select: { id: true, name: true, country: true, photoUrl: true } } },
+            },
           },
         },
       },
-    },
-    orderBy: { tournament: { startDate: "asc" } },
-  });
+      orderBy: { tournament: { startDate: "asc" } },
+    }),
+    calculateUserWinnings(user.id),
+  ]);
 
   // Calculate scores for each team
   const teamScores = await Promise.all(
@@ -285,7 +290,7 @@ export default async function StatsPage() {
       </div>
 
       {/* ===== Summary Stat Cards ===== */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
         <SummaryCard
           icon={<TicketIcon className="h-4 w-4" />}
           label="Events"
@@ -313,6 +318,13 @@ export default async function StatsPage() {
           value={`${winRate}%`}
           sub={`${podiumRate}% podium`}
           accent="text-[#c8a951]"
+        />
+        <SummaryCard
+          icon={<PoundIcon className="h-4 w-4" />}
+          label="Net P/L"
+          value={winnings.netProfit === 0 ? formatGBP(0) : `${winnings.netProfit < 0 ? "-" : "+"}${formatGBP(Math.abs(winnings.netProfit))}`}
+          sub={`${formatGBP(winnings.totalWon)} won`}
+          accent={winnings.netProfit > 0 ? "text-green-600" : winnings.netProfit < 0 ? "text-red-500" : "text-[#0a3d2a] dark:text-green-400"}
         />
       </div>
 
