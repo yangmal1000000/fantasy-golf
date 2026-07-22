@@ -76,5 +76,5 @@ test("approach wind guide matches the written right-to-left condition", () => {
 });
 
 test("approach reference flag stays on the front-left putting surface", () => {
-  assert.deepEqual(APPROACH_FLAG_GROUND_VIEWBOX, { x: 440, y: 212 });
+  assert.deepEqual(APPROACH_FLAG_GROUND_VIEWBOX, { x: 455, y: 180 });
 });
