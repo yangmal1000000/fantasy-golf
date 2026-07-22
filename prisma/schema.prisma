@@ -17,6 +17,7 @@ model User {
   teams     Team[]
   leagues   LeagueMember[]
   notifications Notification[]
+  savedTeams SavedTeam[]
 }
 
 model League {
@@ -119,6 +120,7 @@ model Player {
   createdAt      DateTime            @default(now())
   tournaments    TournamentPlayer[]
   scores         Score[]
+  savedTeamSlots SavedTeamPlayer[]
 }
 
 model FeedStatus {
@@ -167,6 +169,7 @@ model Team {
   user         User       @relation(references: [id], fields: [userId])
   tournament   Tournament @relation(references: [id], fields: [tournamentId])
   selections   TeamSelection[]
+  subLogs      TeamSubLog[]
 }
 
 model TeamSelection {
@@ -217,4 +220,50 @@ model TournamentSidePot {
   active       Boolean  @default(true)
 
   tournament   Tournament @relation(references: [id], fields: [tournamentId])
+}
+
+// ===== Saved Team Templates =====
+// Stores reusable team templates (5 players, one per tier)
+// Not tied to any tournament — applied when entering events
+
+model SavedTeam {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   @default("My Squad")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(references: [id], fields: [userId])
+  players   SavedTeamPlayer[]
+
+  @@index([userId])
+}
+
+model SavedTeamPlayer {
+  id           String @id @default(cuid())
+  savedTeamId  String
+  playerId     String
+  tier         String   // T1_10, T11_20, T21_30, T31_50, T51_PLUS
+
+  savedTeam    SavedTeam @relation(references: [id], fields: [savedTeamId], onDelete: Cascade)
+  player       Player    @relation(references: [id], fields: [playerId])
+
+  @@unique([savedTeamId, playerId])
+  @@index([savedTeamId])
+}
+
+// ===== Auto-Sub Log =====
+// Tracks automatic player replacements when a WD is detected
+
+model TeamSubLog {
+  id            String   @id @default(cuid())
+  teamId        String
+  oldPlayerId   String
+  newPlayerId   String
+  tier          String
+  reason        String   // "pre_round_wd", "no_show", "dns"
+  createdAt     DateTime @default(now())
+
+  team          Team     @relation(references: [id], fields: [teamId])
 }
