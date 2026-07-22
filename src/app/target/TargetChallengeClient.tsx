@@ -63,7 +63,7 @@ export default function TargetChallengeClient() {
     return "Interactive prototype";
   }, [currentScenario, stage]);
 
-  function updatePoint(index: number, point: TargetPoint) {
+  function updatePoint(index: number, point: TargetPoint | null) {
     setPoints((current) => current.map((existing, pointIndex) => (pointIndex === index ? point : existing)));
   }
 
@@ -286,7 +286,7 @@ function IntroStage({
   onContinue,
 }: {
   practicePoint: TargetPoint | null;
-  setPracticePoint: (point: TargetPoint) => void;
+  setPracticePoint: (point: TargetPoint | null) => void;
   onContinue: () => void;
 }) {
   return (

@@ -13,7 +13,7 @@ import {
 interface CourseMapProps {
   scenario: TargetScenario;
   point: TargetPoint | null;
-  onChange?: (point: TargetPoint) => void;
+  onChange?: (point: TargetPoint | null) => void;
   compact?: boolean;
 }
 
@@ -25,6 +25,12 @@ const COURSE_IMAGES: Record<TargetScenario["mapKind"], string> = {
   tee: "/images/target-challenge/hawthorn-vale-tee.png",
   approach: "/images/target-challenge/hawthorn-vale-approach.png",
   layup: "/images/target-challenge/hawthorn-vale-layup.png",
+};
+
+const BALL_POSITIONS: Partial<Record<TargetScenario["mapKind"], TargetPoint>> = {
+  tee: { x: 48_000, y: 93_000 },
+  approach: { x: 49_000, y: 93_000 },
+  layup: { x: 47_000, y: 94_000 },
 };
 
 function pointToViewBox(point: TargetPoint) {
@@ -122,22 +128,28 @@ export default function CourseMap({ scenario, point, onChange, compact = false }
           </defs>
 
           <g transform="translate(825 50)">
-            <rect x="-18" y="-22" width="150" height="62" rx="18" fill="rgba(8,28,20,.78)" />
-            <path d="M10 12 H92 M78 -2 L96 12 L78 26" fill="none" stroke="#f4df9d" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-            <text x="48" y="-3" textAnchor="middle" fill="#fff6d9" fontSize="17" fontWeight="700">WIND</text>
+            <rect x="-18" y="-22" width="150" height="90" rx="18" fill="rgba(8,28,20,.78)" />
+            <path
+              d="M18 34 H82 M68 22 L86 34 L68 46"
+              fill="none"
+              stroke="#f4df9d"
+              strokeWidth="7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              transform={`rotate(${scenario.windArrowDegrees} 52 34)`}
+            />
+            <text x="48" y="1" textAnchor="middle" fill="#fff6d9" fontSize="20" fontWeight="700">
+              {scenario.windLabel}
+            </text>
           </g>
+
+          <CourseGuides scenario={scenario} />
 
           {marker ? (
             <g transform={`translate(${marker.x} ${marker.y})`} filter={`url(#${prefix}-shadow)`}>
               <path d="M0 26 C-20 2 -29 -11 -29 -29 A29 29 0 1 1 29 -29 C29 -11 20 2 0 26Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="6" />
               <circle cy="-29" r="10" fill="#0a3d2a" />
               <path d="M-38 33 H38 M0 21 V42" stroke="#fff7dd" strokeWidth="4" strokeLinecap="round" opacity=".85" />
-            </g>
-          ) : interactive ? (
-            <g transform="translate(500 325)" opacity=".9">
-              <circle r="54" fill="rgba(7,29,20,.72)" stroke="#f4df9d" strokeWidth="3" strokeDasharray="9 9" />
-              <path d="M-22 0 H22 M0 -22 V22" stroke="#f4df9d" strokeWidth="4" strokeLinecap="round" />
-              <text y="82" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="700">PLACE YOUR TARGET</text>
             </g>
           ) : null}
         </svg>
@@ -159,7 +171,7 @@ export default function CourseMap({ scenario, point, onChange, compact = false }
             <NudgeButton label="Move target up" glyph="↑" onClick={() => onChange(moveTargetPoint(point, 0, -250))} />
             <span />
             <NudgeButton label="Move target left" glyph="←" onClick={() => onChange(moveTargetPoint(point, -250, 0))} />
-            <NudgeButton label="Reset target" glyph="×" onClick={() => onChange({ x: 50_000, y: 50_000 })} />
+            <NudgeButton label="Clear target" glyph="×" onClick={() => onChange(null)} />
             <NudgeButton label="Move target right" glyph="→" onClick={() => onChange(moveTargetPoint(point, 250, 0))} />
             <span />
             <NudgeButton label="Move target down" glyph="↓" onClick={() => onChange(moveTargetPoint(point, 0, 250))} />
@@ -170,6 +182,63 @@ export default function CourseMap({ scenario, point, onChange, compact = false }
     </div>
   );
 }
+
+function CourseGuides({ scenario }: { scenario: TargetScenario }) {
+  const ball = BALL_POSITIONS[scenario.mapKind];
+  const ballPosition = ball ? pointToViewBox(ball) : null;
+
+  return (
+    <g pointerEvents="none">
+      {ballPosition ? (
+        <g transform={`translate(${ballPosition.x} ${ballPosition.y})`}>
+          <circle r="14" fill="#ffffff" stroke="#071d14" strokeWidth="5" />
+          <path d="M0 -18 V-58" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" />
+          <rect x="-55" y="-95" width="110" height="34" rx="17" fill="rgba(7,29,20,.86)" />
+          <text y="-71" textAnchor="middle" fill="#fff" fontSize="19" fontWeight="800">YOUR BALL</text>
+        </g>
+      ) : null}
+
+      {scenario.mapKind === "approach" ? (
+        <g>
+          <g transform="translate(395 187)">
+            <path d="M0 42 V-28" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
+            <path d="M3 -27 L56 -11 L3 7Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="3" />
+            <circle cy="42" r="10" fill="none" stroke="#fff" strokeWidth="4" />
+          </g>
+          <rect x="296" y="90" width="190" height="40" rx="20" fill="rgba(7,29,20,.84)" />
+          <text x="391" y="117" textAnchor="middle" fill="#fff" fontSize="21" fontWeight="800">FRONT-LEFT PIN</text>
+        </g>
+      ) : null}
+
+      {scenario.mapKind === "layup" ? (
+        <g>
+          <path
+            d="M-15 293 C165 298 288 324 420 365 C595 419 760 484 1015 594"
+            fill="none"
+            stroke="#fff7dd"
+            strokeWidth="5"
+            strokeDasharray="13 10"
+            opacity=".9"
+          />
+          <rect x="170" y="309" width="244" height="40" rx="20" fill="rgba(7,29,20,.86)" />
+          <text x="292" y="336" textAnchor="middle" fill="#fff" fontSize="19" fontWeight="800">CREEK · 137 YD CENTRE</text>
+
+          <g transform="translate(487 78)">
+            <path d="M0 34 V-20" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
+            <path d="M3 -19 L42 -7 L3 7Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="3" />
+          </g>
+
+          <path d="M273 263 Q470 211 677 263" fill="none" stroke="#f4df9d" strokeWidth="4" strokeDasharray="9 9" opacity=".9" />
+          <rect x="485" y="218" width="182" height="40" rx="20" fill="rgba(7,29,20,.86)" />
+          <text x="576" y="245" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="800">174 YD CARRY ARC</text>
+          <rect x="475" y="109" width="207" height="40" rx="20" fill="rgba(7,29,20,.86)" />
+          <text x="579" y="136" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="800">≈102 YDS REMAINING</text>
+        </g>
+      ) : null}
+    </g>
+  );
+}
+
 function NudgeButton({ label, glyph, onClick }: { label: string; glyph: string; onClick: () => void }) {
   return (
     <button
