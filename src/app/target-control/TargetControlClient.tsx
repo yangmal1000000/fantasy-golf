@@ -256,7 +256,7 @@ export default function TargetControlClient() {
 
         <div className="flex justify-center gap-5 text-sm font-bold">
           <Link href="/target" className="text-[#0a3d2a] underline-offset-4 hover:underline dark:text-green-400">Target preview</Link>
-          <Link href="/target-judge" className="text-[#0a3d2a] underline-offset-4 hover:underline dark:text-green-400">Judge portal (assigned judges only)</Link>
+          <Link href="/target-judge" className="text-[#0a3d2a] underline-offset-4 hover:underline dark:text-green-400">Judge sandbox / portal</Link>
         </div>
       </main>
     </div>
