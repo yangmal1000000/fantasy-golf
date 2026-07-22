@@ -412,7 +412,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* ===== Quick Actions ===== */}
-      <section className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <section className="mt-6 grid grid-cols-3 gap-2 sm:grid-cols-5">
         <Link
           href="/tournaments"
           className="flex flex-col items-center gap-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 transition hover:border-zinc-300 dark:hover:border-zinc-700"
@@ -440,6 +440,13 @@ export default async function DashboardPage() {
         >
           <TargetIcon className="h-5 w-5 text-purple-500" />
           <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">Badges</span>
+        </Link>
+        <Link
+          href="/stats"
+          className="flex flex-col items-center gap-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 transition hover:border-zinc-300 dark:hover:border-zinc-700"
+        >
+          <ChartBarIcon className="h-5 w-5 text-[#0a3d2a] dark:text-green-400" />
+          <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">Stats</span>
         </Link>
       </section>
     </div>

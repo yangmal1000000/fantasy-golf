@@ -11,6 +11,7 @@ export default function NavLinks() {
     { href: "/tournaments", label: "Tournaments", active: pathname.startsWith("/tournaments") },
     { href: "/players", label: "Players", active: pathname.startsWith("/players") },
     { href: "/my-teams", label: "My Teams", active: pathname.startsWith("/my-teams") },
+    { href: "/stats", label: "Stats", active: pathname.startsWith("/stats") },
     { href: "/leagues", label: "Leagues", active: pathname.startsWith("/leagues") },
     { href: "/power-rankings", label: "Power Rankings", hideOnMd: true, active: pathname.includes("/power-rankings") },
     { href: "/how-to-play", label: "How to Play", hideOnMd: true, active: pathname === "/how-to-play" },
