@@ -16,6 +16,7 @@ interface CourseMapProps {
   point: TargetPoint | null;
   onChange?: (point: TargetPoint | null) => void;
   compact?: boolean;
+  edgeToEdgeOnMobile?: boolean;
 }
 
 const VIEWBOX_WIDTH = 1_000;
@@ -41,7 +42,13 @@ function pointToViewBox(point: TargetPoint) {
   };
 }
 
-export default function CourseMap({ scenario, point, onChange, compact = false }: CourseMapProps) {
+export default function CourseMap({
+  scenario,
+  point,
+  onChange,
+  compact = false,
+  edgeToEdgeOnMobile = false,
+}: CourseMapProps) {
   const interactive = Boolean(onChange);
 
   function placePoint(event: PointerEvent<HTMLDivElement>) {
@@ -78,8 +85,12 @@ export default function CourseMap({ scenario, point, onChange, compact = false }
   return (
     <div>
       <div
-        className={`relative overflow-hidden rounded-2xl border border-white/10 bg-[#123c2b] shadow-inner ${
+        className={`relative overflow-hidden border border-white/10 bg-[#123c2b] shadow-inner ${
           interactive ? "cursor-crosshair touch-manipulation" : ""
+        } ${
+          edgeToEdgeOnMobile
+            ? "rounded-none border-x-0 sm:rounded-2xl sm:border-x"
+            : "rounded-2xl"
         } aspect-[3/2]`}
         onPointerDown={placePoint}
         onKeyDown={handleKeyDown}
@@ -163,7 +174,11 @@ export default function CourseMap({ scenario, point, onChange, compact = false }
       </div>
 
       {interactive && point && onChange && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div
+          className={`mt-3 flex flex-wrap items-center justify-between gap-3 ${
+            edgeToEdgeOnMobile ? "px-4 sm:px-0" : ""
+          }`}
+        >
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Fine tune with the arrows or your keyboard. Hold Shift for larger steps.
           </p>

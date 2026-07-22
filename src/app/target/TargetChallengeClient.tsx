@@ -174,7 +174,7 @@ export default function TargetChallengeClient() {
         )}
 
         {stage === "playing" && (
-          <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl shadow-[#0a3d2a]/5 dark:border-zinc-800 dark:bg-zinc-900">
+          <section className="-mx-4 overflow-hidden rounded-none border-y border-zinc-200 bg-white shadow-xl shadow-[#0a3d2a]/5 dark:border-zinc-800 dark:bg-zinc-900 sm:mx-0 sm:rounded-3xl sm:border-x">
             <div className="border-b border-zinc-100 px-4 py-4 dark:border-zinc-800 sm:px-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex gap-2">
@@ -205,8 +205,13 @@ export default function TargetChallengeClient() {
             </div>
 
             <div className="grid gap-0 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,.8fr)]">
-              <div className="self-start bg-[#071f16] p-3 sm:p-5">
-                <CourseMap scenario={scenario} point={currentPoint} onChange={(point) => updatePoint(currentScenario, point)} />
+              <div className="self-start bg-[#071f16] p-0 sm:p-5">
+                <CourseMap
+                  scenario={scenario}
+                  point={currentPoint}
+                  onChange={(point) => updatePoint(currentScenario, point)}
+                  edgeToEdgeOnMobile
+                />
               </div>
               <div className="p-5 sm:p-7">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">{scenario.eyebrow}</p>
@@ -291,15 +296,20 @@ function IntroStage({
 }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,.75fr)]">
-      <section className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-lg shadow-[#0a3d2a]/5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
-        <div className="mb-4 flex items-start justify-between gap-4">
+      <section className="-mx-4 overflow-hidden rounded-none border-y border-zinc-200 bg-white p-0 shadow-lg shadow-[#0a3d2a]/5 dark:border-zinc-800 dark:bg-zinc-900 sm:mx-0 sm:rounded-3xl sm:border-x sm:p-6">
+        <div className="mb-4 flex items-start justify-between gap-4 px-4 pt-4 sm:px-0 sm:pt-0">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Free practice</p>
             <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Learn the marker</h2>
           </div>
           <span className="rounded-full bg-[#e8f2eb] px-3 py-1 text-xs font-bold text-[#0a3d2a] dark:bg-green-950/40 dark:text-green-300">Not scored</span>
         </div>
-        <CourseMap scenario={PRACTICE_SCENARIO} point={practicePoint} onChange={setPracticePoint} />
+        <CourseMap
+          scenario={PRACTICE_SCENARIO}
+          point={practicePoint}
+          onChange={setPracticePoint}
+          edgeToEdgeOnMobile
+        />
       </section>
 
       <aside className="rounded-3xl bg-[#0a3d2a] p-6 text-white shadow-xl sm:p-8">
@@ -414,8 +424,8 @@ function ReviewStage({
   onSubmit: () => void;
 }) {
   return (
-    <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
-      <div className="flex flex-col gap-3 border-b border-zinc-100 pb-6 dark:border-zinc-800 sm:flex-row sm:items-end sm:justify-between">
+    <section className="-mx-4 overflow-hidden rounded-none border-y border-zinc-200 bg-white p-0 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 sm:mx-0 sm:rounded-3xl sm:border-x sm:p-8">
+      <div className="flex flex-col gap-3 border-b border-zinc-100 px-4 pb-6 pt-6 dark:border-zinc-800 sm:flex-row sm:items-end sm:justify-between sm:px-0 sm:pt-0">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Final review</p>
           <h2 className="mt-2 text-3xl font-black text-zinc-900 dark:text-white">Lock your three targets</h2>
@@ -428,8 +438,8 @@ function ReviewStage({
         {TARGET_SCENARIOS.map((scenario, index) => {
           const point = points[index];
           return (
-            <article key={scenario.id} className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700">
-              <CourseMap scenario={scenario} point={point} compact />
+            <article key={scenario.id} className="overflow-hidden rounded-none border-y border-zinc-200 dark:border-zinc-700 sm:rounded-2xl sm:border-x">
+              <CourseMap scenario={scenario} point={point} compact edgeToEdgeOnMobile />
               <div className="p-4">
                 <p className="text-xs font-black uppercase tracking-wide text-[#9b7b25] dark:text-[#d7bc6a]">Decision {index + 1}</p>
                 <h3 className="mt-1 font-black text-zinc-900 dark:text-white">{scenario.title}</h3>
@@ -443,11 +453,11 @@ function ReviewStage({
         })}
       </div>
 
-      <div className="mt-7 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
+      <div className="mx-4 mt-7 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200 sm:mx-0">
         <strong>Prototype confirmation:</strong> submitting locks these browser-session coordinates for the demonstration only. It does not create a paid or prize-eligible entry.
       </div>
 
-      <div className="mt-6 flex justify-end">
+      <div className="mx-4 mb-6 mt-6 flex justify-end sm:mx-0 sm:mb-0">
         <button type="button" onClick={onSubmit} className="rounded-xl bg-[#0a3d2a] px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-[#0a3d2a]/15 transition hover:bg-[#15543b]">Submit and lock prototype entry</button>
       </div>
     </section>
