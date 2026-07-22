@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { recalculateTeamScores } from "@/lib/team-scores";
+import { processAutoSubs } from "@/lib/auto-sub";
 
 /**
  * POST /api/sync/results
@@ -206,6 +207,13 @@ export async function POST(request: NextRequest) {
 
   // Recalculate team scores for all synced tournaments
   for (const tournament of tournaments) {
+    // Process auto-subs BEFORE recalculating scores so teams have valid players
+    const subResult = await processAutoSubs(tournament.id);
+    if (subResult.subsProcessed > 0) {
+      results.push(
+        `${tournament.name}: ${subResult.subsProcessed} auto-subs processed`,
+      );
+    }
     await recalculateTeamScores(tournament.id);
   }
 
