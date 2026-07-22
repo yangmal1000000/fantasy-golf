@@ -30,6 +30,11 @@ const NAV_ITEMS = [
     icon: "⚙️",
   },
   {
+    label: "Auto-Subs",
+    href: "/admin/auto-subs",
+    icon: "🔄",
+  },
+  {
     label: "Data Feeds",
     href: "/admin/data",
     icon: "📡",
