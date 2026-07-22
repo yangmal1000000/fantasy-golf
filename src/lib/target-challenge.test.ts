@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  APPROACH_FLAG_GROUND_VIEWBOX,
   TARGET_COORDINATE_MAX,
   clampTargetCoordinate,
   compareTargetScores,
@@ -72,4 +73,8 @@ test("approach wind guide matches the written right-to-left condition", () => {
 
   assert.match(approach.conditions.join(" "), /right-to-left/i);
   assert.equal(approach.windArrowDegrees, 180);
+});
+
+test("approach reference flag stays on the front-left putting surface", () => {
+  assert.deepEqual(APPROACH_FLAG_GROUND_VIEWBOX, { x: 440, y: 212 });
 });

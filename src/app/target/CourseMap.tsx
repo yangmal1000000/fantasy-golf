@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { KeyboardEvent, PointerEvent } from "react";
 import {
+  APPROACH_FLAG_GROUND_VIEWBOX,
   TARGET_COORDINATE_MAX,
   type TargetPoint,
   type TargetScenario,
@@ -200,13 +201,13 @@ function CourseGuides({ scenario }: { scenario: TargetScenario }) {
 
       {scenario.mapKind === "approach" ? (
         <g>
-          <g transform="translate(395 187)">
-            <path d="M0 42 V-28" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-            <path d="M3 -27 L56 -11 L3 7Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="3" />
-            <circle cy="42" r="10" fill="none" stroke="#fff" strokeWidth="4" />
+          <g transform={`translate(${APPROACH_FLAG_GROUND_VIEWBOX.x} ${APPROACH_FLAG_GROUND_VIEWBOX.y})`}>
+            <path d="M0 0 V-70" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
+            <path d="M3 -69 L56 -53 L3 -35Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="3" />
+            <circle r="10" fill="none" stroke="#fff" strokeWidth="4" />
           </g>
-          <rect x="296" y="90" width="190" height="40" rx="20" fill="rgba(7,29,20,.84)" />
-          <text x="391" y="117" textAnchor="middle" fill="#fff" fontSize="21" fontWeight="800">FRONT-LEFT PIN</text>
+          <rect x="340" y="82" width="200" height="40" rx="20" fill="rgba(7,29,20,.84)" />
+          <text x="440" y="109" textAnchor="middle" fill="#fff" fontSize="21" fontWeight="800">FRONT-LEFT PIN</text>
         </g>
       ) : null}
 
