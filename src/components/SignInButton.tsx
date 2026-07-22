@@ -3,22 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import { GolferIcon, TargetIcon, TrophyIcon } from "@/components/icons";
+import { GolferIcon, TrophyIcon } from "@/components/icons";
 
 export default function SignInButton() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [targetPreviewAccess, setTargetPreviewAccess] = useState<{
-    userId: string;
-    allowed: boolean;
-  } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const authenticatedUserId = user?.id;
-  const targetPreviewAllowed = Boolean(
-    targetPreviewAccess &&
-      targetPreviewAccess.userId === authenticatedUserId &&
-      targetPreviewAccess.allowed,
-  );
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -29,40 +19,6 @@ export default function SignInButton() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    if (!authenticatedUserId) return;
-
-    const controller = new AbortController();
-    const checkedUserId = authenticatedUserId;
-
-    async function checkTargetPreviewAccess() {
-      try {
-        const response = await fetch("/api/target-preview/access", {
-          cache: "no-store",
-          credentials: "same-origin",
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          setTargetPreviewAccess({ userId: checkedUserId, allowed: false });
-          return;
-        }
-
-        const result = (await response.json()) as { allowed?: boolean };
-        setTargetPreviewAccess({
-          userId: checkedUserId,
-          allowed: result.allowed === true,
-        });
-      } catch (error) {
-        if ((error as Error).name !== "AbortError") {
-          setTargetPreviewAccess({ userId: checkedUserId, allowed: false });
-        }
-      }
-    }
-
-    void checkTargetPreviewAccess();
-    return () => controller.abort();
-  }, [authenticatedUserId]);
 
   // Loading skeleton — prevents hydration flash
   if (loading) {
@@ -146,15 +102,6 @@ export default function SignInButton() {
           >
             <TrophyIcon className="h-4 w-4" /> Leagues
           </Link>
-          {targetPreviewAllowed && (
-            <Link
-              href="/target"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800 sm:hidden"
-            >
-              <TargetIcon className="h-4 w-4" /> Target Challenge
-            </Link>
-          )}
           <button
             onClick={() => {
               signOut();
