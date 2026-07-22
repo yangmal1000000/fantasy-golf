@@ -8,6 +8,7 @@ import {
   moveTargetPoint,
   normaliseTargetPoint,
   scoreTargetEntry,
+  TARGET_SCENARIOS,
 } from "./target-challenge";
 
 test("normaliseTargetPoint converts ratios to bounded integer coordinates", () => {
@@ -55,4 +56,20 @@ test("formatAttemptTime is stable at boundaries", () => {
   assert.equal(formatAttemptTime(1_200), "20:00");
   assert.equal(formatAttemptTime(61.9), "1:01");
   assert.equal(formatAttemptTime(-1), "0:00");
+});
+
+test("lay-up decision supplies one fixed shot rather than a club choice", () => {
+  const layup = TARGET_SCENARIOS[2];
+  const suppliedText = [...layup.playerFacts, ...layup.conditions, layup.question].join(" ");
+
+  assert.match(suppliedText, /174 yards/);
+  assert.match(suppliedText, /19 yards wide/);
+  assert.doesNotMatch(suppliedText, /hybrid|\d-iron/i);
+});
+
+test("approach wind guide matches the written right-to-left condition", () => {
+  const approach = TARGET_SCENARIOS[1];
+
+  assert.match(approach.conditions.join(" "), /right-to-left/i);
+  assert.equal(approach.windArrowDegrees, 180);
 });

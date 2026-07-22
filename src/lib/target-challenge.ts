@@ -20,6 +20,8 @@ export interface TargetScenario {
   skill: string;
   playerFacts: string[];
   conditions: string[];
+  windLabel: string;
+  windArrowDegrees: number;
   hardest?: boolean;
 }
 
@@ -62,6 +64,8 @@ export const TARGET_SCENARIOS: readonly TargetScenario[] = [
       "Right bunker from 267–292 yards",
       "Out of bounds beyond the far-right rough",
     ],
+    windLabel: "14 MPH",
+    windArrowDegrees: 0,
   },
   {
     id: "hawthorn-11-approach",
@@ -89,6 +93,8 @@ export const TARGET_SCENARIOS: readonly TargetScenario[] = [
       "Back-centre offers the widest safe depth",
       "Receptive green with little release",
     ],
+    windLabel: "11 MPH",
+    windArrowDegrees: 180,
   },
   {
     id: "hawthorn-15-layup",
@@ -100,23 +106,24 @@ export const TARGET_SCENARIOS: readonly TargetScenario[] = [
     summary:
       "Balance advancement, creek risk and the preferred distance for the next shot.",
     question:
-      "Place the landing centre that produces the strongest risk-adjusted lay-up. Your pin implicitly determines the practical club choice.",
+      "Place the centre of the supplied lay-up shot's carry landing pattern to leave the strongest next shot.",
     skill:
-      "Plan two shots ahead using carry, release, dispersion, fairway width and the next-shot distance.",
+      "Choose the safest landing position beyond the creek while preserving a clear angle for the approach.",
     playerFacts: [
+      "Supplied lay-up shot carry centre: 174 yards",
+      "Expected release: 10 yards",
+      "80% dispersion: 19 yards wide × 14 yards deep",
       "Preferred next shot: 92–108 yards",
-      "4-hybrid: 205 carry · 32-yard dispersion",
-      "5-iron: 188 carry · 25-yard dispersion",
-      "7-iron: 166 carry · 19-yard dispersion",
-      "Expected release: 8–14 yards",
     ],
     conditions: [
       "13 mph wind quartering from behind and right",
-      "Creek crosses 73–87 yards short of the green",
-      "Left fairway narrows beyond 194 carry yards",
-      "Right rough partially blocks the approach",
-      "Central fairway is widest at 160–184 carry yards",
+      "Creek carry: 154 yards left · 137 centre · 121 right",
+      "Fairway opens widest beyond the creek centre-left",
+      "Right rough and trees partially block the approach",
+      "The supplied shot leaves about 102 yards after release",
     ],
+    windLabel: "13 MPH",
+    windArrowDegrees: -135,
     hardest: true,
   },
 ] as const;
@@ -134,6 +141,8 @@ export const PRACTICE_SCENARIO: TargetScenario = {
   skill: "This image is never used in a live competition and has no correct answer.",
   playerFacts: ["Practice carry centre: 220 yards", "Practice dispersion: 28 yards wide"],
   conditions: ["Light crosswind", "Soft fairway", "No score is recorded"],
+  windLabel: "LIGHT",
+  windArrowDegrees: 0,
 };
 
 export function clampTargetCoordinate(value: number): number {
