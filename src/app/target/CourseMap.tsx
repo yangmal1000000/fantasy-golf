@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { KeyboardEvent, PointerEvent } from "react";
 import {
   TARGET_COORDINATE_MAX,
@@ -18,6 +19,13 @@ interface CourseMapProps {
 
 const VIEWBOX_WIDTH = 1_000;
 const VIEWBOX_HEIGHT = 650;
+
+const COURSE_IMAGES: Record<TargetScenario["mapKind"], string> = {
+  practice: "/images/target-challenge/hawthorn-vale-tee.png",
+  tee: "/images/target-challenge/hawthorn-vale-tee.png",
+  approach: "/images/target-challenge/hawthorn-vale-approach.png",
+  layup: "/images/target-challenge/hawthorn-vale-layup.png",
+};
 
 function pointToViewBox(point: TargetPoint) {
   return {
@@ -65,7 +73,7 @@ export default function CourseMap({ scenario, point, onChange, compact = false }
       <div
         className={`relative overflow-hidden rounded-2xl border border-white/10 bg-[#123c2b] shadow-inner ${
           interactive ? "cursor-crosshair touch-manipulation" : ""
-        } ${compact ? "aspect-[16/9]" : "aspect-[16/10]"}`}
+        } aspect-[3/2]`}
         onPointerDown={placePoint}
         onKeyDown={handleKeyDown}
         role={interactive ? "application" : undefined}
@@ -76,9 +84,19 @@ export default function CourseMap({ scenario, point, onChange, compact = false }
             : `${scenario.title} submitted target map`
         }
       >
+        <Image
+          src={COURSE_IMAGES[scenario.mapKind]}
+          alt=""
+          fill
+          priority={scenario.mapKind === "practice"}
+          sizes={compact ? "(max-width: 768px) 100vw, 420px" : "(max-width: 1024px) 100vw, 900px"}
+          className="pointer-events-none select-none object-cover"
+          draggable={false}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061b13]/20 via-transparent to-[#061b13]/10" />
         <svg
           viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
-          className="h-full w-full select-none"
+          className="relative z-10 h-full w-full select-none"
           aria-hidden="true"
           preserveAspectRatio="none"
         >
@@ -103,10 +121,6 @@ export default function CourseMap({ scenario, point, onChange, compact = false }
             </filter>
           </defs>
 
-          <rect width="1000" height="650" fill={`url(#${prefix}-rough)`} />
-          <CourseArtwork kind={scenario.mapKind} prefix={prefix} />
-          <rect width="1000" height="650" fill={`url(#${prefix}-grid)`} />
-
           <g transform="translate(825 50)">
             <rect x="-18" y="-22" width="150" height="62" rx="18" fill="rgba(8,28,20,.78)" />
             <path d="M10 12 H92 M78 -2 L96 12 L78 26" fill="none" stroke="#f4df9d" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
@@ -129,7 +143,7 @@ export default function CourseMap({ scenario, point, onChange, compact = false }
         </svg>
 
         {interactive && (
-          <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-[#071d14]/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#f4df9d] backdrop-blur">
+          <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-full bg-[#071d14]/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#f4df9d] backdrop-blur">
             Tap anywhere to place
           </div>
         )}
@@ -166,72 +180,5 @@ function NudgeButton({ label, glyph, onClick }: { label: string; glyph: string; 
     >
       {glyph}
     </button>
-  );
-}
-
-function CourseArtwork({ kind, prefix }: { kind: TargetScenario["mapKind"]; prefix: string }) {
-  if (kind === "approach") {
-    return (
-      <>
-        <path d="M454 650 C448 520 410 418 398 312 C384 190 421 91 500 37 C579 91 616 190 602 312 C590 418 552 520 546 650Z" fill={`url(#${prefix}-fairway)`} />
-        <ellipse cx="500" cy="140" rx="170" ry="105" fill="#b9d878" stroke="#d8ec9b" strokeWidth="8" />
-        <path d="M290 232 C333 162 349 96 375 45 C318 28 247 48 206 96 C185 139 212 205 290 232Z" fill={`url(#${prefix}-water)`} stroke="#6bc1dc" strokeWidth="5" />
-        <path d="M626 210 C692 191 742 220 762 266 C711 288 660 282 614 249Z" fill="#ead9a4" stroke="#fff0bd" strokeWidth="5" />
-        <path d="M449 110 V55 H499" stroke="#fff" strokeWidth="6" />
-        <path d="M499 55 L499 95 L557 75Z" fill="#d7554c" />
-        <circle cx="500" cy="594" r="20" fill="#f5eee0" stroke="#d7c7a2" strokeWidth="5" />
-        <text x="242" y="125" fill="#d8f3ff" fontSize="18" fontWeight="700">WATER</text>
-        <text x="672" y="252" fill="#5a492b" fontSize="17" fontWeight="700">DEEP BUNKER</text>
-        <text x="530" y="131" fill="#24351d" fontSize="17" fontWeight="800">PIN</text>
-        <text x="520" y="620" fill="#fff" fontSize="17" fontWeight="700">181 YDS</text>
-      </>
-    );
-  }
-
-  if (kind === "layup") {
-    return (
-      <>
-        <path d="M420 650 C411 545 302 478 330 369 C350 291 454 285 438 192 C425 118 449 61 500 20 C551 61 575 118 562 192 C546 285 650 291 670 369 C698 478 589 545 580 650Z" fill={`url(#${prefix}-fairway)`} />
-        <ellipse cx="500" cy="68" rx="108" ry="55" fill="#b9d878" stroke="#d8ec9b" strokeWidth="7" />
-        <path d="M90 242 C240 208 388 257 514 230 C672 197 780 217 930 185 L955 250 C785 280 656 251 523 284 C358 326 229 269 65 309Z" fill={`url(#${prefix}-water)`} stroke="#6bc1dc" strokeWidth="5" />
-        <path d="M279 365 C228 328 201 285 204 235 C251 246 293 280 323 335Z" fill="#183c29" opacity=".82" />
-        <path d="M715 391 C780 363 843 386 878 446 C821 474 756 469 704 427Z" fill="#214a33" />
-        <circle cx="500" cy="603" r="21" fill="#f5eee0" stroke="#d7c7a2" strokeWidth="5" />
-        <path d="M500 68 V24 M500 24 L556 42 L500 58Z" fill="#d7554c" stroke="#fff" strokeWidth="3" />
-        <text x="115" y="278" fill="#d8f3ff" fontSize="18" fontWeight="800">CREEK · 73–87 YDS SHORT</text>
-        <text x="236" y="386" fill="#e7f2e9" fontSize="17" fontWeight="700">NARROWS</text>
-        <text x="730" y="435" fill="#e7f2e9" fontSize="17" fontWeight="700">BLOCKED ROUGH</text>
-        <text x="522" y="626" fill="#fff" fontSize="17" fontWeight="700">286 YDS</text>
-      </>
-    );
-  }
-
-  if (kind === "practice") {
-    return (
-      <>
-        <path d="M430 650 C420 520 360 430 382 315 C402 209 450 111 500 29 C550 111 598 209 618 315 C640 430 580 520 570 650Z" fill={`url(#${prefix}-fairway)`} />
-        <ellipse cx="500" cy="84" rx="105" ry="60" fill="#b9d878" stroke="#d8ec9b" strokeWidth="7" />
-        <ellipse cx="373" cy="234" rx="78" ry="36" fill="#ead9a4" stroke="#fff0bd" strokeWidth="5" />
-        <ellipse cx="620" cy="342" rx="76" ry="38" fill="#ead9a4" stroke="#fff0bd" strokeWidth="5" />
-        <circle cx="500" cy="600" r="20" fill="#f5eee0" stroke="#d7c7a2" strokeWidth="5" />
-        <text x="520" y="625" fill="#fff" fontSize="17" fontWeight="700">PRACTICE TEE</text>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <path d="M438 650 C425 557 340 492 348 391 C356 290 431 267 415 177 C401 100 449 54 500 17 C551 54 599 100 585 177 C569 267 644 290 652 391 C660 492 575 557 562 650Z" fill={`url(#${prefix}-fairway)`} />
-      <ellipse cx="500" cy="69" rx="103" ry="52" fill="#b9d878" stroke="#d8ec9b" strokeWidth="7" />
-      <path d="M164 429 C191 344 272 281 365 267 C385 337 366 411 315 468 C247 482 194 469 164 429Z" fill={`url(#${prefix}-water)`} stroke="#6bc1dc" strokeWidth="5" />
-      <path d="M622 309 C682 282 744 301 782 356 C733 394 672 401 614 363Z" fill="#ead9a4" stroke="#fff0bd" strokeWidth="5" />
-      <path d="M801 95 C833 225 817 375 850 544" fill="none" stroke="#ef6d61" strokeWidth="6" strokeDasharray="15 13" />
-      <circle cx="500" cy="603" r="21" fill="#f5eee0" stroke="#d7c7a2" strokeWidth="5" />
-      <path d="M500 69 V24 M500 24 L556 42 L500 58Z" fill="#d7554c" stroke="#fff" strokeWidth="3" />
-      <text x="190" y="408" fill="#d8f3ff" fontSize="18" fontWeight="800">WATER</text>
-      <text x="667" y="354" fill="#5a492b" fontSize="17" fontWeight="800">BUNKER</text>
-      <text x="853" y="326" fill="#ffaaa2" fontSize="17" fontWeight="800" transform="rotate(8 853 326)">OUT OF BOUNDS</text>
-      <text x="522" y="627" fill="#fff" fontSize="17" fontWeight="700">TEE</text>
-    </>
   );
 }
