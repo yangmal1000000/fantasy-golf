@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import CourseMap from "@/app/target/CourseMap";
 import TargetPanelReview from "@/components/TargetPanelReview";
 import {
@@ -20,12 +20,16 @@ type Declaration = {
   noConflict: boolean;
 };
 
-export default function TargetJudgeClient() {
+export default function TargetJudgeClient({ sandbox = false }: { sandbox?: boolean }) {
   const [data, setData] = useState<TargetJudgeContextDto | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!sandbox);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (sandbox) {
+      return;
+    }
+
     let active = true;
     fetch("/api/target-judge", { cache: "no-store" })
       .then(async (response) => {
@@ -45,32 +49,149 @@ export default function TargetJudgeClient() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [sandbox]);
 
   return (
     <div className="min-h-screen bg-[#f6f4ee] pb-20 dark:bg-[#0d0f0e] sm:pb-10">
       <div className="border-b border-[#c8a951]/25 bg-[#071f16] text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5 text-xs">
-          <span className="font-bold uppercase tracking-[0.16em] text-[#e4cc85]">Private Judge Mode</span>
-          <span className="text-right text-white/65">Pilot only · No entrant pins visible</span>
+          <span className="font-bold uppercase tracking-[0.16em] text-[#e4cc85]">
+            {sandbox ? "Development Judge Sandbox" : "Private Judge Mode"}
+          </span>
+          <span className="text-right text-white/65">
+            {sandbox ? "Browser-only · No official records" : "Pilot only · No entrant pins visible"}
+          </span>
         </div>
       </div>
 
       <header className="bg-[#0a3d2a] text-white">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#d7bc6a]">Hawthorn Vale · Blind panel rehearsal</p>
-          <h1 className="mt-2 text-3xl font-black sm:text-4xl">Judge the same three golf decisions</h1>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#d7bc6a]">
+            Hawthorn Vale · {sandbox ? "Coordinator development test" : "Blind panel rehearsal"}
+          </p>
+          <h1 className="mt-2 text-3xl font-black sm:text-4xl">
+            {sandbox ? "Test the complete judge experience" : "Judge the same three golf decisions"}
+          </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/75">
-            Your pins and reasoning are private until every judge has locked the same phase. Locked marks cannot be edited by you or the coordinator.
+            {sandbox
+              ? "Place initial pins, review them, revise final pins and complete a test submission. Nothing here changes the official round or its audit trail."
+              : "Your pins and reasoning are private until every judge has locked the same phase. Locked marks cannot be edited by you or the coordinator."}
           </p>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-7 sm:py-10">
-        {loading ? <StateCard title="Loading private assignment…" /> : null}
-        {error ? <StateCard title="Judge Mode unavailable" detail={error} tone="danger" /> : null}
-        {data ? <JudgeStage data={data} onUpdate={setData} /> : null}
+        {sandbox ? <SandboxJudgeStage /> : null}
+        {!sandbox && loading ? <StateCard title="Loading private assignment…" /> : null}
+        {!sandbox && error ? <StateCard title="Judge Mode unavailable" detail={error} tone="danger" /> : null}
+        {!sandbox && data ? <JudgeStage data={data} onUpdate={setData} /> : null}
       </main>
+    </div>
+  );
+}
+
+function SandboxJudgeStage() {
+  const [stage, setStage] = useState<"initial" | "review" | "final" | "complete">("initial");
+  const [initialSubmission, setInitialSubmission] = useState<TargetJudgeSubmission | null>(null);
+  const [finalSubmission, setFinalSubmission] = useState<TargetJudgeSubmission | null>(null);
+
+  const assignment = useMemo(() => ({
+    id: "development-sandbox",
+    seat: 1,
+    displayName: "Harry — development test",
+    credential: "Coordinator sandbox · not an official panel member",
+    declarationConfirmedAt: null,
+    initialLockedAt: initialSubmission ? new Date(0).toISOString() : null,
+    finalLockedAt: finalSubmission ? new Date(0).toISOString() : null,
+    initialSubmission,
+    finalSubmission,
+  }), [finalSubmission, initialSubmission]);
+
+  function resetSandbox() {
+    setInitialSubmission(null);
+    setFinalSubmission(null);
+    setStage("initial");
+  }
+
+  return (
+    <div className="space-y-7">
+      <StateCard
+        title="Development sandbox"
+        detail="You are testing the judge interface as the coordinator. These pins and rationales stay only in this browser tab and are never written to the official judging database."
+      />
+
+      {stage === "initial" ? (
+        <MarkingForm
+          phase="initial"
+          sandbox
+          onSandboxComplete={(submission) => {
+            setInitialSubmission(submission);
+            setStage("review");
+          }}
+        />
+      ) : null}
+
+      {stage === "review" && initialSubmission ? (
+        <>
+          <StateCard
+            title="Test initial marks locked"
+            detail="This reproduces the judge's private review step. In a real round, other judges remain hidden until all three initial submissions are locked."
+            tone="success"
+          />
+          <TargetPanelReview assignments={[assignment]} phase="initial" />
+          <SandboxActions>
+            <button
+              type="button"
+              onClick={() => setStage("final")}
+              className="rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white hover:bg-[#15543b]"
+            >
+              Continue to final marks
+            </button>
+            <button type="button" onClick={resetSandbox} className="rounded-xl border border-zinc-300 px-5 py-3 text-sm font-black text-zinc-700 dark:border-zinc-700 dark:text-zinc-200">
+              Restart sandbox
+            </button>
+          </SandboxActions>
+        </>
+      ) : null}
+
+      {stage === "final" && initialSubmission ? (
+        <MarkingForm
+          phase="final"
+          seed={initialSubmission}
+          sandbox
+          onSandboxComplete={(submission) => {
+            setFinalSubmission(submission);
+            setStage("complete");
+          }}
+        />
+      ) : null}
+
+      {stage === "complete" && finalSubmission ? (
+        <>
+          <StateCard
+            title="Judge sandbox complete"
+            detail="Your final test marks are shown below. No official target is calculated from one sandbox judge, and no audit event or panel record was created."
+            tone="success"
+          />
+          <TargetPanelReview assignments={[assignment]} phase="final" />
+          <SandboxActions>
+            <button type="button" onClick={resetSandbox} className="rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white hover:bg-[#15543b]">
+              Run another test
+            </button>
+            <Link href="/target-control" className="rounded-xl border border-zinc-300 px-5 py-3 text-sm font-black text-zinc-700 dark:border-zinc-700 dark:text-zinc-200">
+              Back to Target Control
+            </Link>
+          </SandboxActions>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function SandboxActions({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex flex-wrap justify-center gap-3 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      {children}
     </div>
   );
 }
@@ -169,10 +290,14 @@ function MarkingForm({
   phase,
   seed,
   onComplete,
+  sandbox = false,
+  onSandboxComplete,
 }: {
   phase: TargetJudgePhase;
   seed?: TargetJudgeSubmission;
-  onComplete: (data: TargetJudgeContextDto) => void;
+  onComplete?: (data: TargetJudgeContextDto) => void;
+  sandbox?: boolean;
+  onSandboxComplete?: (submission: TargetJudgeSubmission) => void;
 }) {
   const seedByScenario = useMemo(
     () => new Map(seed?.marks.map((mark) => [mark.scenarioId, mark]) ?? []),
@@ -193,7 +318,7 @@ function MarkingForm({
   const [error, setError] = useState<string | null>(null);
 
   const completeMarks = points.every(Boolean) && rationales.every((text) => text.trim().length >= 40);
-  const declarationComplete = phase === "final" || Object.values(declaration).every(Boolean);
+  const declarationComplete = sandbox || phase === "final" || Object.values(declaration).every(Boolean);
 
   function updatePoint(index: number, point: TargetPoint | null) {
     setPoints((current) => current.map((existing, i) => (i === index ? point : existing)));
@@ -206,9 +331,24 @@ function MarkingForm({
   async function lockSubmission() {
     if (!completeMarks || !declarationComplete || busy) return;
     const confirmed = window.confirm(
-      `Lock your ${phase} marks? They cannot be edited after submission.`,
+      sandbox
+        ? `Complete your ${phase} sandbox marks? You can restart the sandbox afterward.`
+        : `Lock your ${phase} marks? They cannot be edited after submission.`,
     );
     if (!confirmed) return;
+
+    const submission: TargetJudgeSubmission = {
+      marks: TARGET_SCENARIOS.map((scenario, index) => ({
+        scenarioId: scenario.id,
+        point: points[index] as TargetPoint,
+        rationale: rationales[index],
+      })),
+    };
+
+    if (sandbox) {
+      onSandboxComplete?.(submission);
+      return;
+    }
 
     setBusy(true);
     setError(null);
@@ -219,18 +359,12 @@ function MarkingForm({
         body: JSON.stringify({
           phase,
           declaration,
-          submission: {
-            marks: TARGET_SCENARIOS.map((scenario, index) => ({
-              scenarioId: scenario.id,
-              point: points[index],
-              rationale: rationales[index],
-            })),
-          },
+          submission,
         }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? "Unable to lock marks");
-      onComplete(body as TargetJudgeContextDto);
+      onComplete?.(body as TargetJudgeContextDto);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to lock marks");
     } finally {
@@ -252,7 +386,13 @@ function MarkingForm({
         </p>
       </div>
 
-      {phase === "initial" ? (
+      {phase === "initial" && sandbox ? (
+        <div className="rounded-3xl border border-blue-200 bg-blue-50 p-5 text-sm leading-6 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-200">
+          Development sandbox: qualification and independence declarations are not requested or recorded here. Real judges must complete them before an official initial submission.
+        </div>
+      ) : null}
+
+      {phase === "initial" && !sandbox ? (
         <div className="rounded-3xl border border-[#c8a951]/35 bg-[#fffaf0] p-5 dark:bg-[#c8a951]/10">
           <h3 className="font-black text-zinc-900 dark:text-white">Required declaration</h3>
           <div className="mt-3 space-y-3">
@@ -306,7 +446,9 @@ function MarkingForm({
       {error ? <p className="rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700 dark:bg-red-950/30 dark:text-red-300">{error}</p> : null}
       <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-7">
         <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          This is irreversible. The server records the exact coordinates, rationales, scenario version and lock time in the private audit trail.
+          {sandbox
+            ? "This test stays in browser memory only. It does not create a judge assignment, database submission, audit event or official target."
+            : "This is irreversible. The server records the exact coordinates, rationales, scenario version and lock time in the private audit trail."}
         </p>
         <button
           type="button"
@@ -314,7 +456,7 @@ function MarkingForm({
           disabled={!completeMarks || !declarationComplete || busy}
           className="mt-5 w-full rounded-xl bg-[#0a3d2a] px-6 py-3.5 text-sm font-black text-white transition hover:bg-[#15543b] disabled:cursor-not-allowed disabled:opacity-35 sm:w-auto"
         >
-          {busy ? "Locking…" : `Lock ${phase} marks`}
+          {busy ? "Locking…" : sandbox ? `Complete ${phase} test` : `Lock ${phase} marks`}
         </button>
       </div>
     </section>
