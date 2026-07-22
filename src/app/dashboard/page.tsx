@@ -45,7 +45,7 @@ export default async function DashboardPage() {
   }
 
   // Fetch everything in parallel
-  const [teams, leagueMembers, earnedAchievements] = await Promise.all([
+  const [teams, leagueMembers, earnedAchievements, savedTeamCount] = await Promise.all([
     prisma.team.findMany({
       where: { userId: user.id },
       include: {
@@ -68,6 +68,7 @@ export default async function DashboardPage() {
       `SELECT type, "earnedAt" FROM "UserAchievement" WHERE "userId" = $1`,
       user.id
     ).catch(() => []),
+    prisma.savedTeam.count({ where: { userId: user.id } }),
   ]);
 
   // Calculate scores for completed/live teams
@@ -154,6 +155,11 @@ export default async function DashboardPage() {
                   {podiums} Podiums
                 </span>
               )}
+              {savedTeamCount > 0 && (
+                <Link href="/my-teams" className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold text-white/80 transition hover:bg-white/20">
+                  📋 {savedTeamCount} {savedTeamCount === 1 ? "Template" : "Templates"}
+                </Link>
+              )}
               {earnedAchievements.length > 0 && (
                 <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold text-white/80">
                   ⭐ {earnedAchievements.length} Badges
@@ -165,7 +171,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ===== Stats Grid ===== */}
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
         <StatCard
           icon={<TicketIcon className="h-4 w-4" />}
           label="Tournaments"
@@ -193,6 +199,13 @@ export default async function DashboardPage() {
           value={formatGBP(totalSpent)}
           sub={`${leagueMembers.length} leagues`}
           accent="text-[#c8a951]"
+        />
+        <StatCard
+          icon={<StarIcon className="h-4 w-4" />}
+          label="Templates"
+          value={savedTeamCount.toString()}
+          sub={savedTeamCount === 5 ? "Max reached" : `${5 - savedTeamCount} slots left`}
+          accent="text-[#0a3d2a] dark:text-green-400"
         />
       </div>
 
