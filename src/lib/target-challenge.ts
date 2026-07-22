@@ -1,9 +1,10 @@
 export const TARGET_COORDINATE_MAX = 100_000;
 export const TARGET_ATTEMPT_SECONDS = 20 * 60;
 
-// Ground-contact coordinate in the 1000 × 650 course-map viewBox. This keeps
-// the Decision 2 reference flag visibly on the front-left putting surface.
-export const APPROACH_FLAG_GROUND_VIEWBOX = { x: 440, y: 212 } as const;
+// Ground-contact coordinate in the 1000 × 650 course-map viewBox. Keep the
+// full anchor comfortably inside the front-left putting surface rather than
+// letting its outline overlap the waterline.
+export const APPROACH_FLAG_GROUND_VIEWBOX = { x: 455, y: 180 } as const;
 
 export type CourseMapKind = "tee" | "approach" | "layup" | "practice";
 
