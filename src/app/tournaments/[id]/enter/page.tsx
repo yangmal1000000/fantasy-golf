@@ -18,15 +18,18 @@ export default async function EnterTeamPage({
 }) {
   const { id } = await params;
 
-  const tournament = await prisma.tournament.findUnique({
-    where: { id },
-    include: {
-      players: {
-        include: { player: true },
-        orderBy: { player: { dataGolfRank: "asc" } },
+  const [tournament, user] = await Promise.all([
+    prisma.tournament.findUnique({
+      where: { id },
+      include: {
+        players: {
+          include: { player: true },
+          orderBy: { player: { dataGolfRank: "asc" } },
+        },
       },
-    },
-  });
+    }),
+    getCurrentUser(),
+  ]);
 
   if (!tournament) notFound();
 
@@ -41,9 +44,6 @@ export default async function EnterTeamPage({
     if (!playersByTier[tp.tier]) playersByTier[tp.tier] = [];
     playersByTier[tp.tier].push(tp);
   }
-
-  // Require authentication to enter teams
-  const user = await getCurrentUser();
 
   if (!user) {
     return (
@@ -61,6 +61,35 @@ export default async function EnterTeamPage({
       </div>
     );
   }
+
+  // Fetch user's saved team templates
+  const savedTeams = await prisma.savedTeam.findMany({
+    where: { userId: user.id },
+    include: {
+      players: {
+        include: {
+          player: {
+            select: { id: true, name: true, country: true },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Serialize saved teams for the client component
+  const savedTeamsPreview = savedTeams.map((st) => ({
+    id: st.id,
+    name: st.name,
+    players: st.players.map((p) => ({
+      playerId: p.playerId,
+      tier: p.tier,
+      player: {
+        id: p.player.id,
+        name: p.player.name,
+      },
+    })),
+  }));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -98,8 +127,9 @@ export default async function EnterTeamPage({
                 dataGolfRank: tp.player.dataGolfRank,
                 tier: tp.tier,
               })),
-            ])
+            ]),
           )}
+          savedTeams={savedTeamsPreview}
         />
       )}
     </div>
