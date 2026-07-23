@@ -1,11 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { calculateLeaderboard, calculateTeamScore } from "@/lib/scoring";
-import { ROCKET_BETA_TOURNAMENT_ID } from "@/lib/rocket-beta";
+import {
+  ROCKET_BETA_TOURNAMENT_ID,
+  getRocketBetaStateForUser,
+} from "@/lib/rocket-beta";
+import { getCurrentUser } from "@/lib/auth";
 import { TIER_CONFIG } from "@/lib/ui";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import TierBadge from "@/components/TierBadge";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import Flag from "@/components/Flag";
@@ -19,7 +24,7 @@ export default async function TeamDetailPage({
 }) {
   const { id: tournamentId, teamId } = await params;
 
-  const [tournament, team, subLogs] = await Promise.all([
+  const [tournament, team, subLogs, user] = await Promise.all([
     prisma.tournament.findUnique({ where: { id: tournamentId } }),
     prisma.team.findUnique({
       where: { id: teamId },
@@ -38,6 +43,7 @@ export default async function TeamDetailPage({
       where: { teamId },
       orderBy: { createdAt: "asc" },
     }),
+    getCurrentUser(),
   ]);
 
   // Fetch player names for sub logs separately (no schema relations)
@@ -56,6 +62,17 @@ export default async function TeamDetailPage({
 
   if (!tournament || !team) notFound();
   const isRocketBeta = tournament.id === ROCKET_BETA_TOURNAMENT_ID;
+  const betaState =
+    isRocketBeta && user?.id === team.userId
+      ? await getRocketBetaStateForUser(user)
+      : null;
+  const canEditRocketTeam =
+    betaState?.passState === "REDEEMED" &&
+    betaState.teamId === team.id &&
+    betaState.campaignStatus === "OPEN" &&
+    betaState.fieldReady &&
+    (!betaState.entryClosesAt ||
+      new Date() < new Date(betaState.entryClosesAt));
 
   // Calculate team score
   let scoreResult: Awaited<ReturnType<typeof calculateTeamScore>> | null = null;
@@ -89,13 +106,21 @@ export default async function TeamDetailPage({
   return (
     <div className="mx-auto max-w-5xl px-3 py-6 sm:px-4 sm:py-8">
       {/* Back link */}
-      <div className="mb-3 sm:mb-4">
+      <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
         <Link
           href={`/tournaments/${tournamentId}/leaderboard`}
           className="text-sm text-zinc-500 hover:text-[#0a3d2a] dark:text-zinc-400 dark:hover:text-green-400"
         >
           ← Leaderboard
         </Link>
+        {canEditRocketTeam ? (
+          <Link
+            href={`/tournaments/${tournamentId}/teams/${team.id}/edit`}
+            className="inline-flex min-h-11 items-center rounded-xl border border-[#0a3d2a] px-4 py-2 text-sm font-black text-[#0a3d2a] transition hover:bg-[#0a3d2a] hover:text-white dark:border-green-500 dark:text-green-400"
+          >
+            Edit team before first tee
+          </Link>
+        ) : null}
       </div>
 
       {/* Team header */}
