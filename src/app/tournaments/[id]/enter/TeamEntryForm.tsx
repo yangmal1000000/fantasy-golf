@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TIER_CONFIG, TIER_ORDER, formatGBP } from "@/lib/ui";
 import { TEAM_ENTRY_TIERS } from "@/lib/team-entry-validation";
@@ -82,6 +82,7 @@ export default function TeamEntryForm({
   const [appliedTeamName, setAppliedTeamName] = useState<string | null>(null);
   const [dryRunReviewOpen, setDryRunReviewOpen] = useState(false);
   const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
+  const teamNameInputRef = useRef<HTMLInputElement>(null);
 
   const selectedCount = Object.keys(selections).length;
   const allTiersFilled = TEAM_ENTRY_TIERS.every((tier) => selections[tier]);
@@ -192,11 +193,29 @@ export default function TeamEntryForm({
 
     if (!teamName.trim()) {
       setError("Please enter a team name");
+      requestAnimationFrame(() => {
+        teamNameInputRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        teamNameInputRef.current?.focus();
+      });
       return;
     }
 
     if (!allTiersFilled) {
       setError("You must pick one player from each tier");
+      const firstMissingTier = TEAM_ENTRY_TIERS.find(
+        (tier) => !selections[tier],
+      );
+      if (firstMissingTier) {
+        setOpenTiers((current) => new Set(current).add(firstMissingTier));
+        requestAnimationFrame(() => {
+          document
+            .getElementById(`team-tier-${firstMissingTier}`)
+            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
       return;
     }
 
@@ -481,8 +500,8 @@ export default function TeamEntryForm({
               {/* Submit button — hidden on mobile */}
               <button
                 onClick={handleSubmit}
-                disabled={!allTiersFilled || submitting || showConfetti}
-                className="hidden rounded-full bg-[#c8a951] px-6 py-2 text-sm font-bold text-[#1a1a1a] shadow transition enabled:hover:bg-[#d4b76a] disabled:cursor-not-allowed disabled:opacity-40 sm:block"
+                disabled={submitting || showConfetti}
+                className="hidden min-h-11 rounded-full bg-[#c8a951] px-6 py-2 text-sm font-bold text-[#1a1a1a] shadow transition enabled:hover:bg-[#d4b76a] disabled:cursor-not-allowed disabled:opacity-40 sm:block"
               >
                 {submitting
                   ? "Submitting..."
@@ -540,6 +559,7 @@ export default function TeamEntryForm({
               Team Name
             </label>
             <input
+              ref={teamNameInputRef}
               type="text"
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
@@ -573,6 +593,7 @@ export default function TeamEntryForm({
               return (
                 <div
                   key={tier}
+                  id={`team-tier-${tier}`}
                   className={`overflow-hidden rounded-xl border sm:border-0 sm:overflow-visible ${
                     needsReplacement
                       ? "border-orange-300 ring-1 ring-orange-200"
@@ -713,9 +734,7 @@ export default function TeamEntryForm({
               </div>
               <button
                 onClick={handleSubmit}
-                disabled={
-                  !allTiersFilled || !teamName.trim() || submitting || showConfetti
-                }
+                disabled={submitting || showConfetti}
                 className="shrink-0 rounded-full bg-[#0a3d2a] px-6 py-3 text-sm font-bold text-white shadow transition enabled:hover:bg-[#0a3d2a] disabled:cursor-not-allowed disabled:opacity-40 touch-target"
               >
                 {submitting
@@ -753,9 +772,7 @@ export default function TeamEntryForm({
               </div>
               <button
                 onClick={handleSubmit}
-                disabled={
-                  !allTiersFilled || !teamName.trim() || submitting || showConfetti
-                }
+                disabled={submitting || showConfetti}
                 className="rounded-full bg-[#0a3d2a] px-8 py-3 text-sm font-bold text-white shadow transition enabled:hover:bg-[#0a3d2a] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {submitting
