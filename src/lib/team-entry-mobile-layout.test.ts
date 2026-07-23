@@ -52,7 +52,7 @@ test("mobile selection starts with one tier and advances after a pick", () => {
   );
   assert.match(
     teamEntrySource,
-    /team-tier-\$\{nextIncompleteTier\}[\s\S]*scrollIntoView\(\{ behavior: "auto"/,
+    /team-tier-\$\{nextIncompleteTier\}[\s\S]*scrollIntoView\(\{ behavior: "auto", block: "start" \}/,
   );
   assert.doesNotMatch(
     teamEntrySource,
