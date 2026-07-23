@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
@@ -13,8 +13,14 @@ import {
   type TargetJudgeRoundDto,
 } from "@/lib/target-judge-core";
 import {
+  targetPilotReference,
+  validateTargetPilotResults,
+  validateTargetPilotSubmission,
+} from "@/lib/target-pilot-core";
+import {
   TargetJudgeAccessError,
   requireTargetJudgeCoordinator,
+  targetPilotEntrySetHash,
   targetScenarioHash,
 } from "@/lib/target-judge-server";
 
@@ -54,6 +60,12 @@ export async function POST(request: NextRequest) {
         break;
       case "save_panel":
         await savePanel(actorEmail, body.panel);
+        break;
+      case "clear_pilot_entries":
+        await clearPilotEntries(actorEmail);
+        break;
+      case "seal_pilot_entries":
+        await sealPilotEntries(actorEmail);
         break;
       case "open_initial":
         await openInitialMarking(actorEmail);
@@ -139,6 +151,23 @@ async function openInitialMarking(actorEmail: string) {
     if (assignments !== 3) {
       throw new TargetControlRequestError("Save exactly three judges before opening judging", 409);
     }
+    if (!round.pilotEntriesSealedAt || !round.pilotEntrySetHash || !round.pilotEntryCount) {
+      throw new TargetControlRequestError("Seal at least one pilot entry before opening judging", 409);
+    }
+    const pilotEntries = await tx.targetPilotEntry.findMany({
+      where: { roundId: round.id },
+      select: { email: true, submissionHash: true },
+    });
+    const currentEntrySetHash = targetPilotEntrySetHash({
+      scenarioHash: round.scenarioHash,
+      entries: pilotEntries,
+    });
+    if (
+      pilotEntries.length !== round.pilotEntryCount ||
+      currentEntrySetHash !== round.pilotEntrySetHash
+    ) {
+      throw new TargetControlRequestError("The sealed pilot entry set failed integrity checks", 409);
+    }
     await tx.targetJudgingRound.update({
       where: { id: round.id },
       data: { status: "INITIAL_MARKING" },
@@ -152,6 +181,65 @@ async function openInitialMarking(actorEmail: string) {
       },
     });
   });
+}
+
+async function clearPilotEntries(actorEmail: string) {
+  await prisma.$transaction(async (tx) => {
+    const round = await requireDraftRound(tx);
+    if (round.pilotEntriesSealedAt) {
+      throw new TargetControlRequestError("Sealed pilot evidence cannot be cleared", 409);
+    }
+    const deleted = await tx.targetPilotEntry.deleteMany({ where: { roundId: round.id } });
+    await tx.targetJudgeAudit.create({
+      data: {
+        roundId: round.id,
+        actorEmail,
+        action: "unsealed_pilot_entries_cleared",
+        payload: { deletedEntries: deleted.count },
+      },
+    });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
+async function sealPilotEntries(actorEmail: string) {
+  await prisma.$transaction(async (tx) => {
+    const round = await requireDraftRound(tx);
+    if (round.pilotEntriesSealedAt) {
+      throw new TargetControlRequestError("Pilot entries are already sealed", 409);
+    }
+    if (round.scenarioHash !== targetScenarioHash()) {
+      throw new TargetControlRequestError("The live scenarios no longer match this round", 409);
+    }
+    const entries = await tx.targetPilotEntry.findMany({
+      where: { roundId: round.id },
+      select: { email: true, submissionHash: true },
+    });
+    if (entries.length === 0) {
+      throw new TargetControlRequestError("Collect at least one pilot entry before sealing", 409);
+    }
+    const entrySetHash = targetPilotEntrySetHash({
+      scenarioHash: round.scenarioHash,
+      entries,
+    });
+    const sealedAt = new Date();
+    const updated = await tx.targetJudgingRound.updateMany({
+      where: { id: round.id, pilotEntriesSealedAt: null, status: "DRAFT" },
+      data: {
+        pilotEntriesSealedAt: sealedAt,
+        pilotEntrySetHash: entrySetHash,
+        pilotEntryCount: entries.length,
+      },
+    });
+    if (updated.count !== 1) throw new TargetControlRequestError("Pilot entries were already sealed", 409);
+    await tx.targetJudgeAudit.create({
+      data: {
+        roundId: round.id,
+        actorEmail,
+        action: "pilot_entry_set_sealed",
+        payload: { entryCount: entries.length, entrySetHash },
+      },
+    });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 
 async function openFinalMarking(actorEmail: string) {
@@ -198,10 +286,11 @@ async function readControlDto(): Promise<TargetJudgeControlDto> {
     where: { slug: TARGET_JUDGE_ROUND_SLUG },
     include: {
       assignments: { orderBy: { seat: "asc" } },
+      pilotEntries: { orderBy: { submittedAt: "asc" } },
       auditEvents: { orderBy: { createdAt: "desc" }, take: 100 },
     },
   });
-  if (!round) return { round: null, assignments: [], auditEvents: [] };
+  if (!round) return { round: null, assignments: [], pilotEntries: [], auditEvents: [] };
   if (!isTargetJudgeStatus(round.status)) throw new Error("Unknown judging status");
   const revealInitial = ["INITIAL_COMPLETE", "FINAL_MARKING", "CALCULATED"].includes(round.status);
   const revealFinal = round.status === "CALCULATED";
@@ -218,6 +307,12 @@ async function readControlDto(): Promise<TargetJudgeControlDto> {
       : null,
     officialTargetsHash: round.officialTargetsHash,
     calculatedAt: round.calculatedAt?.toISOString() ?? null,
+    pilotEntriesSealedAt: round.pilotEntriesSealedAt?.toISOString() ?? null,
+    pilotEntrySetHash: round.pilotEntrySetHash,
+    pilotEntryCount: round.pilotEntryCount,
+    pilotResults: round.pilotResults ? validateTargetPilotResults(round.pilotResults) : null,
+    pilotResultsHash: round.pilotResultsHash,
+    pilotScoredAt: round.pilotScoredAt?.toISOString() ?? null,
     createdAt: round.createdAt.toISOString(),
     updatedAt: round.updatedAt.toISOString(),
   };
@@ -239,6 +334,14 @@ async function readControlDto(): Promise<TargetJudgeControlDto> {
       finalSubmission: revealFinal && assignment.finalSubmission
         ? validateJudgeSubmission(assignment.finalSubmission)
         : null,
+    })),
+    pilotEntries: round.pilotEntries.map((entry) => ({
+      id: entry.id,
+      reference: targetPilotReference(entry.id),
+      email: entry.email,
+      submission: validateTargetPilotSubmission(entry.submission),
+      submissionHash: entry.submissionHash,
+      submittedAt: entry.submittedAt.toISOString(),
     })),
     auditEvents: round.auditEvents.map((event) => ({
       id: event.id,

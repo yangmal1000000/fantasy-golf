@@ -282,10 +282,30 @@ model TargetJudgingRound {
   officialTargets     Json?
   officialTargetsHash String?
   calculatedAt        DateTime?
+  pilotEntriesSealedAt DateTime?
+  pilotEntrySetHash    String?
+  pilotEntryCount      Int?
+  pilotResults         Json?
+  pilotResultsHash     String?
+  pilotScoredAt        DateTime?
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
   assignments         TargetJudgeAssignment[]
   auditEvents         TargetJudgeAudit[]
+  pilotEntries        TargetPilotEntry[]
+}
+
+model TargetPilotEntry {
+  id             String             @id @default(cuid())
+  roundId        String
+  email          String
+  submission     Json
+  submissionHash String
+  submittedAt    DateTime           @default(now())
+  round          TargetJudgingRound @relation(references: [id], fields: [roundId], onDelete: Cascade)
+
+  @@unique([roundId, email])
+  @@index([roundId, submittedAt])
 }
 
 model TargetJudgeAssignment {
