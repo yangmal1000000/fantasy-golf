@@ -4,7 +4,9 @@ import {
   TARGET_V2_PRACTICE,
   TARGET_V2_SCENARIOS,
   TARGET_V2_VERSION,
+  buildTargetYardageGuidePoints,
   estimateTargetFinishYards,
+  targetFinishDistanceYards,
   targetPointAtViewBox,
 } from "./target-v2";
 
@@ -59,12 +61,48 @@ test("calibrated finish readout starts at zero and reaches the stated shot regio
   }
 
   const approachFlag = targetPointAtViewBox(455, 180);
-  assert.equal(estimateTargetFinishYards(TARGET_V2_SCENARIOS[1], approachFlag), 180);
+  assert.equal(estimateTargetFinishYards(TARGET_V2_SCENARIOS[1], approachFlag), 181);
 
   const parFiveFlag = targetPointAtViewBox(487, 78);
-  assert.equal(estimateTargetFinishYards(TARGET_V2_SCENARIOS[2], parFiveFlag), 335);
+  assert.equal(estimateTargetFinishYards(TARGET_V2_SCENARIOS[2], parFiveFlag), 336);
+});
+
+test("finish readout resolves every yard rather than five-yard bands", () => {
+  const tee = TARGET_V2_SCENARIOS[0];
+  const calibration = tee.yardage!;
+  const point251 = buildTargetYardageGuidePoints(
+    calibration,
+    { yards: 251, startX: 525, endX: 525 },
+  )[0];
+  const point252 = buildTargetYardageGuidePoints(
+    calibration,
+    { yards: 252, startX: 525, endX: 525 },
+  )[0];
+
+  assert.equal(estimateTargetFinishYards(tee, targetPointAtViewBox(point251.x, point251.y)), 251);
+  assert.equal(estimateTargetFinishYards(tee, targetPointAtViewBox(point252.x, point252.y)), 252);
+});
+
+test("every generated yardage guide follows the same proportional distance model", () => {
+  for (const scenario of TARGET_V2_SCENARIOS) {
+    const calibration = scenario.yardage!;
+    for (const guide of calibration.guides) {
+      const points = buildTargetYardageGuidePoints(calibration, guide, 41);
+      for (const point of points) {
+        const actual = targetFinishDistanceYards(
+          scenario,
+          targetPointAtViewBox(point.x, point.y),
+        );
+        assert.ok(actual !== null);
+        assert.ok(
+          Math.abs(actual - guide.yards) < 0.05,
+          `${scenario.id} ${guide.yards}-yard guide measured ${actual}`,
+        );
+      }
+    }
+  }
 });
 
 test("v2 preview has a distinct version identifier", () => {
-  assert.equal(TARGET_V2_VERSION, "hawthorn-vale-finish-position-preview-2.1");
+  assert.equal(TARGET_V2_VERSION, "hawthorn-vale-finish-position-preview-2.2");
 });

@@ -12,7 +12,10 @@ import {
   moveTargetPoint,
   normaliseTargetPoint,
 } from "@/lib/target-challenge";
-import { estimateTargetFinishYards } from "@/lib/target-v2";
+import {
+  buildTargetYardageGuidePoints,
+  estimateTargetFinishYards,
+} from "@/lib/target-v2";
 
 interface CourseMapProps {
   scenario: TargetScenario;
@@ -269,36 +272,46 @@ function CourseGuides({
 
   return (
     <g pointerEvents="none">
-      {scenario.yardage?.guides.map((guide) => (
-        <g key={`${scenario.id}-${guide.yards}`}>
-          <path
-            d={guide.path}
-            fill="none"
-            stroke="#f4df9d"
-            strokeWidth="3"
-            strokeDasharray="9 9"
-            opacity=".78"
-          />
-          <rect
-            x={guide.labelX - 30}
-            y={guide.labelY - 17}
-            width="60"
-            height="32"
-            rx="16"
-            fill="rgba(7,29,20,.84)"
-          />
-          <text
-            x={guide.labelX}
-            y={guide.labelY + 6}
-            textAnchor="middle"
-            fill="#fff6d9"
-            fontSize="17"
-            fontWeight="900"
-          >
-            {guide.yards}
-          </text>
-        </g>
-      ))}
+      {scenario.yardage?.guides.map((guide) => {
+        const points = buildTargetYardageGuidePoints(scenario.yardage!, guide);
+        const endpoint = points[points.length - 1];
+        const labelX = endpoint.x + 28;
+        const labelY = endpoint.y;
+        const path = points
+          .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+          .join(" ");
+        return (
+          <g key={`${scenario.id}-${guide.yards}`}>
+            <path
+              d={path}
+              fill="none"
+              stroke="#f4df9d"
+              strokeWidth="3"
+              strokeDasharray="9 9"
+              strokeLinejoin="round"
+              opacity=".78"
+            />
+            <rect
+              x={labelX - 30}
+              y={labelY - 17}
+              width="60"
+              height="32"
+              rx="16"
+              fill="rgba(7,29,20,.84)"
+            />
+            <text
+              x={labelX}
+              y={labelY + 6}
+              textAnchor="middle"
+              fill="#fff6d9"
+              fontSize="17"
+              fontWeight="900"
+            >
+              {guide.yards}
+            </text>
+          </g>
+        );
+      })}
 
       {ballPosition ? (
         <g transform={`translate(${ballPosition.x} ${ballPosition.y})`}>

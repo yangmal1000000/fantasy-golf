@@ -5,9 +5,10 @@ import {
   type TargetScenario,
   type TargetYardageAnchor,
   type TargetYardageCalibration,
+  type TargetYardageGuide,
 } from "./target-challenge";
 
-export const TARGET_V2_VERSION = "hawthorn-vale-finish-position-preview-2.1";
+export const TARGET_V2_VERSION = "hawthorn-vale-finish-position-preview-2.2";
 
 export interface TargetV2Metric {
   label: string;
@@ -34,10 +35,10 @@ const TEE_YARDAGE: TargetYardageCalibration = {
     { viewBoxY: 85, forwardYards: 390, centerX: 615, lateralYardsPerUnit: 0.24 },
   ],
   guides: [
-    { yards: 220, path: "M190 402 Q505 356 812 394", labelX: 830, labelY: 394 },
-    { yards: 250, path: "M205 342 Q520 300 825 330", labelX: 842, labelY: 330 },
-    { yards: 275, path: "M225 287 Q545 247 840 274", labelX: 857, labelY: 274 },
-    { yards: 300, path: "M250 234 Q565 197 850 220", labelX: 867, labelY: 220 },
+    { yards: 220, startX: 190, endX: 812 },
+    { yards: 250, startX: 205, endX: 825 },
+    { yards: 275, startX: 225, endX: 840 },
+    { yards: 300, startX: 250, endX: 850 },
   ],
 };
 
@@ -52,9 +53,9 @@ const APPROACH_YARDAGE: TargetYardageCalibration = {
     { viewBoxY: 145, forwardYards: 195, centerX: 450, lateralYardsPerUnit: 0.23 },
   ],
   guides: [
-    { yards: 160, path: "M300 266 Q458 222 620 258", labelX: 642, labelY: 257 },
-    { yards: 175, path: "M318 226 Q455 188 602 220", labelX: 624, labelY: 219 },
-    { yards: 190, path: "M335 184 Q452 151 585 178", labelX: 607, labelY: 177 },
+    { yards: 160, startX: 300, endX: 620 },
+    { yards: 175, startX: 318, endX: 602 },
+    { yards: 190, startX: 335, endX: 585 },
   ],
 };
 
@@ -70,10 +71,10 @@ const SECOND_SHOT_YARDAGE: TargetYardageCalibration = {
     { viewBoxY: 78, forwardYards: 336, centerX: 487, lateralYardsPerUnit: 0.24 },
   ],
   guides: [
-    { yards: 125, path: "M120 390 Q475 344 845 392", labelX: 868, labelY: 391 },
-    { yards: 175, path: "M170 292 Q482 250 805 288", labelX: 828, labelY: 287 },
-    { yards: 225, path: "M220 215 Q487 179 765 210", labelX: 788, labelY: 209 },
-    { yards: 275, path: "M270 148 Q488 118 720 143", labelX: 743, labelY: 142 },
+    { yards: 125, startX: 120, endX: 845 },
+    { yards: 175, startX: 170, endX: 805 },
+    { yards: 225, startX: 220, endX: 765 },
+    { yards: 275, startX: 270, endX: 720 },
   ],
 };
 
@@ -203,12 +204,72 @@ export function estimateTargetFinishYards(
   scenario: Pick<TargetScenario, "yardage">,
   point: TargetPoint | null,
 ): number | null {
+  const distance = targetFinishDistanceYards(scenario, point);
+  return distance === null ? null : Math.max(0, Math.round(distance));
+}
+
+export function targetFinishDistanceYards(
+  scenario: Pick<TargetScenario, "yardage">,
+  point: TargetPoint | null,
+): number | null {
   if (!scenario.yardage || !point) return null;
   const position = targetPointToMapSpace(point);
-  const sample = interpolateYardageAnchor(scenario.yardage.anchors, position.y);
+  return targetFinishDistanceAtMapPoint(scenario.yardage, position);
+}
+
+export function buildTargetYardageGuidePoints(
+  calibration: TargetYardageCalibration,
+  guide: TargetYardageGuide,
+  sampleCount = 25,
+): TargetPoint[] {
+  const count = Math.max(2, Math.round(sampleCount));
+  return Array.from({ length: count }, (_, index) => {
+    const ratio = index / (count - 1);
+    const x = lerp(guide.startX, guide.endX, ratio);
+    return {
+      x,
+      y: solveViewBoxYForDistance(calibration, guide.yards, x),
+    };
+  });
+}
+
+function targetFinishDistanceAtMapPoint(
+  calibration: TargetYardageCalibration,
+  position: TargetPoint,
+): number {
+  const sample = interpolateYardageAnchor(calibration.anchors, position.y);
   const lateralYards = (position.x - sample.centerX) * sample.lateralYardsPerUnit;
-  const distance = Math.hypot(sample.forwardYards, lateralYards);
-  return Math.max(0, Math.round(distance / 5) * 5);
+  return Math.hypot(sample.forwardYards, lateralYards);
+}
+
+function solveViewBoxYForDistance(
+  calibration: TargetYardageCalibration,
+  targetYards: number,
+  viewBoxX: number,
+): number {
+  const ordered = [...calibration.anchors].sort((a, b) => b.viewBoxY - a.viewBoxY);
+  if (ordered.length === 0) {
+    throw new Error("At least one yardage anchor is required");
+  }
+
+  let nearY = ordered[0].viewBoxY;
+  let farY = ordered[ordered.length - 1].viewBoxY;
+  const distanceAt = (viewBoxY: number) =>
+    targetFinishDistanceAtMapPoint(calibration, { x: viewBoxX, y: viewBoxY });
+
+  if (targetYards <= distanceAt(nearY)) return nearY;
+  if (targetYards >= distanceAt(farY)) return farY;
+
+  for (let iteration = 0; iteration < 48; iteration += 1) {
+    const midY = (nearY + farY) / 2;
+    if (distanceAt(midY) < targetYards) {
+      nearY = midY;
+    } else {
+      farY = midY;
+    }
+  }
+
+  return (nearY + farY) / 2;
 }
 
 export function targetPointAtViewBox(x: number, y: number): TargetPoint {

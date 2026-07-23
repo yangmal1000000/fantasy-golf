@@ -24,9 +24,8 @@ export interface TargetYardageAnchor {
 
 export interface TargetYardageGuide {
   yards: number;
-  path: string;
-  labelX: number;
-  labelY: number;
+  startX: number;
+  endX: number;
 }
 
 export interface TargetYardageCalibration {
