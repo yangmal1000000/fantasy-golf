@@ -265,7 +265,7 @@ export default function TeamEntryForm({
   const hasSavedTeams = savedTeams.length > 0;
 
   return (
-    <div className="pb-24 sm:pb-0">
+    <div className="pb-32 sm:pb-0">
       {/* Confetti burst on success */}
       {showConfetti && <Confetti />}
 
@@ -694,7 +694,7 @@ export default function TeamEntryForm({
           </div>
 
           {/* Mobile fixed submit bar */}
-          <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:hidden">
+          <div className="fixed bottom-[calc(48px+env(safe-area-inset-bottom))] left-0 right-0 z-40 border-t border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900 sm:hidden">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-zinc-600 dark:text-zinc-400">
