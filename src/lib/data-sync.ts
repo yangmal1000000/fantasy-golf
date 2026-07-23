@@ -15,6 +15,7 @@ import { prisma } from "./prisma";
 import { processAutoSubs } from "./auto-sub";
 import { recalculateTeamScores } from "./team-scores";
 import { applyCutLogic } from "./scoring";
+import { deriveLiveTournamentState } from "./live-sync-state";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -907,13 +908,23 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
       }
 
       const competitors = matchingEvent.competitions?.[0]?.competitors ?? [];
-      const espnCurrentRound = matchingEvent.competitions?.[0]?.status?.period ?? 0;
+      const competition = matchingEvent.competitions?.[0];
+      const espnCurrentRound = competition?.status?.period ?? 0;
+      const liveState = deriveLiveTournamentState({
+        eventState:
+          matchingEvent.status?.type?.state ??
+          competition?.status?.type?.state,
+        completed:
+          matchingEvent.status?.type?.completed === true ||
+          competition?.status?.type?.completed === true,
+        currentRound: espnCurrentRound,
+      });
 
-      // Update current round on tournament
-      if (espnCurrentRound > 0) {
+      // Keep the public event lifecycle aligned with ESPN while scores arrive.
+      if (liveState) {
         await prisma.tournament.update({
           where: { id: tournament.id },
-          data: { currentRound: espnCurrentRound },
+          data: liveState,
         });
       }
 
