@@ -15,6 +15,25 @@ export interface TargetPoint {
   y: number;
 }
 
+export interface TargetYardageAnchor {
+  viewBoxY: number;
+  forwardYards: number;
+  centerX: number;
+  lateralYardsPerUnit: number;
+}
+
+export interface TargetYardageGuide {
+  yards: number;
+  path: string;
+  labelX: number;
+  labelY: number;
+}
+
+export interface TargetYardageCalibration {
+  anchors: TargetYardageAnchor[];
+  guides: TargetYardageGuide[];
+}
+
 export interface TargetScenario {
   id: string;
   number: number;
@@ -29,6 +48,9 @@ export interface TargetScenario {
   conditions: string[];
   windLabel: string;
   windArrowDegrees: number;
+  ballPoint?: TargetPoint;
+  yardage?: TargetYardageCalibration;
+  pinSheetLabel?: string;
   hardest?: boolean;
 }
 

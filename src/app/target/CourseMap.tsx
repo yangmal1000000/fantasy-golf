@@ -12,6 +12,7 @@ import {
   moveTargetPoint,
   normaliseTargetPoint,
 } from "@/lib/target-challenge";
+import { estimateTargetFinishYards } from "@/lib/target-v2";
 
 interface CourseMapProps {
   scenario: TargetScenario;
@@ -85,6 +86,9 @@ export default function CourseMap({
   }
 
   const marker = point ? pointToViewBox(point) : null;
+  const ballPoint = scenario.ballPoint ?? BALL_POSITIONS[scenario.mapKind];
+  const ballMarker = ballPoint ? pointToViewBox(ballPoint) : null;
+  const finishYards = estimateTargetFinishYards(scenario, point);
   const prefix = `course-${scenario.mapKind}`;
 
   return (
@@ -160,7 +164,26 @@ export default function CourseMap({
             </text>
           </g>
 
-          <CourseGuides scenario={scenario} />
+          <CourseGuides scenario={scenario} ballPoint={ballPoint} />
+
+          {marker && ballMarker && finishYards !== null ? (
+            <g pointerEvents="none">
+              <path
+                d={`M${ballMarker.x} ${ballMarker.y} L${marker.x} ${marker.y}`}
+                fill="none"
+                stroke="#fff7dd"
+                strokeWidth="4"
+                strokeDasharray="10 9"
+                opacity=".9"
+              />
+              <g transform={`translate(${Math.max(72, Math.min(928, (ballMarker.x + marker.x) / 2))} ${Math.max(38, Math.min(612, (ballMarker.y + marker.y) / 2))})`}>
+                <rect x="-66" y="-21" width="132" height="42" rx="21" fill="rgba(7,29,20,.9)" stroke="#f4df9d" strokeWidth="2" />
+                <text y="7" textAnchor="middle" fill="#fff6d9" fontSize="20" fontWeight="900">
+                  ≈ {finishYards} YDS
+                </text>
+              </g>
+            </g>
+          ) : null}
 
           {referencePoints.map((reference) => {
             const position = pointToViewBox(reference.point);
@@ -206,9 +229,16 @@ export default function CourseMap({
             edgeToEdgeOnMobile ? "px-4 sm:px-0" : ""
           }`}
         >
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Fine tune with the arrows or your keyboard. Hold Shift for larger steps.
-          </p>
+          <div>
+            {finishYards !== null ? (
+              <p className="text-sm font-black text-[#0a3d2a] dark:text-green-300" aria-live="polite">
+                Approx. finishing distance: {finishYards} yards
+              </p>
+            ) : null}
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+              Fine tune with the arrows or your keyboard. Hold Shift for larger steps.
+            </p>
+          </div>
           <div className="grid grid-cols-3 gap-1" aria-label="Fine target adjustment">
             <span />
             <NudgeButton label="Move target up" glyph="↑" onClick={() => onChange(moveTargetPoint(point, 0, -250))} />
@@ -226,12 +256,49 @@ export default function CourseMap({
   );
 }
 
-function CourseGuides({ scenario }: { scenario: TargetScenario }) {
-  const ball = BALL_POSITIONS[scenario.mapKind];
+function CourseGuides({
+  scenario,
+  ballPoint,
+}: {
+  scenario: TargetScenario;
+  ballPoint: TargetPoint | undefined;
+}) {
+  const ball = ballPoint;
   const ballPosition = ball ? pointToViewBox(ball) : null;
 
   return (
     <g pointerEvents="none">
+      {scenario.yardage?.guides.map((guide) => (
+        <g key={`${scenario.id}-${guide.yards}`}>
+          <path
+            d={guide.path}
+            fill="none"
+            stroke="#f4df9d"
+            strokeWidth="3"
+            strokeDasharray="9 9"
+            opacity=".78"
+          />
+          <rect
+            x={guide.labelX - 30}
+            y={guide.labelY - 17}
+            width="60"
+            height="32"
+            rx="16"
+            fill="rgba(7,29,20,.84)"
+          />
+          <text
+            x={guide.labelX}
+            y={guide.labelY + 6}
+            textAnchor="middle"
+            fill="#fff6d9"
+            fontSize="17"
+            fontWeight="900"
+          >
+            {guide.yards}
+          </text>
+        </g>
+      ))}
+
       {ballPosition ? (
         <g transform={`translate(${ballPosition.x} ${ballPosition.y})`}>
           <circle r="14" fill="#ffffff" stroke="#071d14" strokeWidth="5" />
@@ -248,12 +315,21 @@ function CourseGuides({ scenario }: { scenario: TargetScenario }) {
             <path d="M3 -69 L56 -53 L3 -35Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="3" />
             <circle r="10" fill="none" stroke="#fff" strokeWidth="4" />
           </g>
-          <rect x="340" y="82" width="200" height="40" rx="20" fill="rgba(7,29,20,.84)" />
-          <text x="440" y="109" textAnchor="middle" fill="#fff" fontSize="21" fontWeight="800">FRONT-LEFT PIN</text>
+          <rect
+            x={scenario.pinSheetLabel ? 300 : 340}
+            y="82"
+            width={scenario.pinSheetLabel ? 280 : 200}
+            height="40"
+            rx="20"
+            fill="rgba(7,29,20,.84)"
+          />
+          <text x="440" y="109" textAnchor="middle" fill="#fff" fontSize={scenario.pinSheetLabel ? 18 : 21} fontWeight="800">
+            {scenario.pinSheetLabel ?? "FRONT-LEFT PIN"}
+          </text>
         </g>
       ) : null}
 
-      {scenario.mapKind === "layup" ? (
+      {scenario.mapKind === "layup" && !scenario.yardage ? (
         <g>
           <path
             d="M-15 293 C165 298 288 324 420 365 C595 419 760 484 1015 594"
@@ -276,6 +352,25 @@ function CourseGuides({ scenario }: { scenario: TargetScenario }) {
           <text x="576" y="245" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="800">174 YD CARRY ARC</text>
           <rect x="475" y="109" width="207" height="40" rx="20" fill="rgba(7,29,20,.86)" />
           <text x="579" y="136" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="800">≈102 YDS REMAINING</text>
+        </g>
+      ) : null}
+
+      {scenario.mapKind === "layup" && scenario.yardage ? (
+        <g>
+          <path
+            d="M-15 293 C165 298 288 324 420 365 C595 419 760 484 1015 594"
+            fill="none"
+            stroke="#fff7dd"
+            strokeWidth="5"
+            strokeDasharray="13 10"
+            opacity=".9"
+          />
+          <rect x="170" y="309" width="244" height="40" rx="20" fill="rgba(7,29,20,.86)" />
+          <text x="292" y="336" textAnchor="middle" fill="#fff" fontSize="19" fontWeight="800">CREEK · 137 YD CENTRE</text>
+          <g transform="translate(487 78)">
+            <path d="M0 34 V-20" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
+            <path d="M3 -19 L42 -7 L3 7Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="3" />
+          </g>
         </g>
       ) : null}
     </g>
