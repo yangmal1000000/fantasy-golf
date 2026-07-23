@@ -27,3 +27,12 @@ test("team-entry review dialogs stack above the persistent mobile navigation", (
     2,
   );
 });
+
+test("review actions remain actionable and reveal missing entry requirements", () => {
+  assert.match(teamEntrySource, /teamNameInputRef\.current\?\.focus\(\)/);
+  assert.match(teamEntrySource, /team-tier-\$\{firstMissingTier\}/);
+  assert.doesNotMatch(
+    teamEntrySource,
+    /disabled=\{\s*!allTiersFilled/,
+  );
+});
