@@ -520,27 +520,36 @@ function PlayingStage({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col sm:grid sm:flex-none lg:grid-cols-[minmax(0,1.45fr)_minmax(330px,.8fr)]">
-        <button
-          type="button"
-          onClick={onOpenBrief}
-          className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-[#f4f0e5] px-3 text-left dark:border-zinc-800 dark:bg-zinc-900 sm:hidden"
-          aria-haspopup="dialog"
-        >
-          <span className="truncate text-[11px] font-black text-zinc-800 dark:text-zinc-100">
-            {essentialFacts.map((metric) => metric.value).join(" · ")}
-          </span>
-          <span className="shrink-0 text-[10px] font-black uppercase tracking-wide text-[#0a3d2a] dark:text-green-300">
-            Details
-          </span>
-        </button>
-
-        <div className="shrink-0 self-start bg-[#071f16] sm:p-5">
+        <div className="w-full shrink-0 bg-[#071f16] sm:p-5">
           <CourseMap
             scenario={scenario}
             point={point}
             onChange={onChange}
             edgeToEdgeOnMobile
             immersiveMobileControls
+            mobileBelowMap={
+              <button
+                type="button"
+                onClick={onOpenBrief}
+                className="w-full border-b border-white/10 bg-[#10231c] px-4 py-3 text-left sm:hidden"
+                aria-haspopup="dialog"
+              >
+                <span className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-black text-white">
+                    {scenario.title}
+                  </span>
+                  <span className="shrink-0 text-[10px] font-black uppercase tracking-wide text-green-300">
+                    Full details
+                  </span>
+                </span>
+                <span className="mt-1 block truncate text-[11px] font-bold text-[#e4cc85]">
+                  {essentialFacts.map((metric) => metric.value).join(" · ")}
+                </span>
+                <span className="mt-1 block text-xs leading-4 text-white/70">
+                  {scenario.summary}
+                </span>
+              </button>
+            }
           />
         </div>
 
