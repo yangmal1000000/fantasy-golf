@@ -3,6 +3,10 @@ import {
   geometricMedianTarget,
   type TargetPoint,
 } from "@/lib/target-challenge";
+import type {
+  TargetPilotEntryDto,
+  TargetPilotResultsRecord,
+} from "@/lib/target-pilot-core";
 
 export const TARGET_JUDGE_ROUND_SLUG = "hawthorn-vale-mvp-1";
 export const TARGET_SCENARIO_VERSION = "hawthorn-vale-mvp-1.0";
@@ -61,6 +65,12 @@ export interface TargetJudgeRoundDto {
   officialTargets: TargetOfficialTargetsRecord | null;
   officialTargetsHash: string | null;
   calculatedAt: string | null;
+  pilotEntriesSealedAt: string | null;
+  pilotEntrySetHash: string | null;
+  pilotEntryCount: number | null;
+  pilotResults: TargetPilotResultsRecord | null;
+  pilotResultsHash: string | null;
+  pilotScoredAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -76,6 +86,7 @@ export interface TargetJudgeAuditDto {
 export interface TargetJudgeControlDto {
   round: TargetJudgeRoundDto | null;
   assignments: TargetJudgeAssignmentDto[];
+  pilotEntries: TargetPilotEntryDto[];
   auditEvents: TargetJudgeAuditDto[];
 }
 

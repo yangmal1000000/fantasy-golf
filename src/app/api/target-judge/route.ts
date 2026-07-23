@@ -17,9 +17,15 @@ import {
   type TargetOfficialTargetsRecord,
 } from "@/lib/target-judge-core";
 import {
+  rankTargetPilotEntries,
+  validateTargetPilotSubmission,
+} from "@/lib/target-pilot-core";
+import {
   TargetJudgeAccessError,
   getVerifiedTargetEmail,
   targetOfficialTargetsHash,
+  targetPilotEntrySetHash,
+  targetPilotResultsHash,
   targetScenarioHash,
 } from "@/lib/target-judge-server";
 
@@ -193,6 +199,43 @@ async function lockFinalSubmission(email: string, submission: TargetJudgeSubmiss
       finalSubmissions,
       officialTargets,
     });
+    if (
+      !assignment.round.pilotEntriesSealedAt ||
+      !assignment.round.pilotEntrySetHash ||
+      !assignment.round.pilotEntryCount
+    ) {
+      throw new TargetJudgeRequestError("The pilot entry set is not sealed", 409);
+    }
+    const pilotEntries = await tx.targetPilotEntry.findMany({
+      where: { roundId: assignment.roundId },
+      orderBy: { email: "asc" },
+    });
+    const entrySetHash = targetPilotEntrySetHash({
+      scenarioHash: assignment.round.scenarioHash,
+      entries: pilotEntries.map((entry) => ({
+        email: entry.email,
+        submissionHash: entry.submissionHash,
+      })),
+    });
+    if (
+      pilotEntries.length !== assignment.round.pilotEntryCount ||
+      entrySetHash !== assignment.round.pilotEntrySetHash
+    ) {
+      throw new TargetJudgeRequestError("The sealed pilot entry set failed integrity checks", 409);
+    }
+    const pilotResults = rankTargetPilotEntries(
+      pilotEntries.map((entry) => ({
+        entryId: entry.id,
+        submission: validateTargetPilotSubmission(entry.submission),
+      })),
+      points,
+    );
+    const pilotResultsHash = targetPilotResultsHash({
+      scenarioHash: assignment.round.scenarioHash,
+      entrySetHash,
+      officialTargetsHash,
+      results: pilotResults,
+    });
     const transitioned = await tx.targetJudgingRound.updateMany({
       where: { id: assignment.roundId, status: "FINAL_MARKING" },
       data: {
@@ -200,6 +243,9 @@ async function lockFinalSubmission(email: string, submission: TargetJudgeSubmiss
         officialTargets: officialTargets as unknown as Prisma.InputJsonValue,
         officialTargetsHash,
         calculatedAt: now,
+        pilotResults: pilotResults as unknown as Prisma.InputJsonValue,
+        pilotResultsHash,
+        pilotScoredAt: now,
       },
     });
     if (transitioned.count === 1) {
@@ -211,6 +257,9 @@ async function lockFinalSubmission(email: string, submission: TargetJudgeSubmiss
           payload: {
             algorithm: officialTargets.algorithm,
             officialTargetsHash,
+            entrySetHash,
+            pilotResultsHash,
+            pilotEntryCount: pilotEntries.length,
             inputSeats: finalSubmissions.map((item) => item.seat),
           },
         },
@@ -255,6 +304,12 @@ async function readJudgeContext(email: string): Promise<TargetJudgeContextDto> {
       : null,
     officialTargetsHash: canSeeFinal ? round.officialTargetsHash : null,
     calculatedAt: canSeeFinal ? round.calculatedAt?.toISOString() ?? null : null,
+    pilotEntriesSealedAt: round.pilotEntriesSealedAt?.toISOString() ?? null,
+    pilotEntrySetHash: round.pilotEntrySetHash,
+    pilotEntryCount: round.pilotEntryCount,
+    pilotResults: null,
+    pilotResultsHash: null,
+    pilotScoredAt: null,
     createdAt: round.createdAt.toISOString(),
     updatedAt: round.updatedAt.toISOString(),
   };

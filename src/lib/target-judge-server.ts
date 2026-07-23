@@ -11,6 +11,10 @@ import {
   TARGET_SCENARIO_VERSION,
   type TargetJudgeSubmission,
 } from "@/lib/target-judge-core";
+import type {
+  TargetPilotResultsRecord,
+  TargetPilotSubmission,
+} from "@/lib/target-pilot-core";
 import { createClient } from "@/utils/supabase/server";
 
 export class TargetJudgeAccessError extends Error {
@@ -59,6 +63,45 @@ export function targetOfficialTargetsHash(input: {
     scenarioHash: input.scenarioHash,
     finalSubmissions: [...input.finalSubmissions].sort((a, b) => a.seat - b.seat),
     officialTargets: input.officialTargets,
+  });
+}
+
+export function targetPilotSubmissionHash(input: {
+  scenarioHash: string;
+  email: string;
+  submission: TargetPilotSubmission;
+}): string {
+  return sha256({
+    version: "target-pilot-submission-v1",
+    scenarioHash: input.scenarioHash,
+    email: input.email,
+    submission: input.submission,
+  });
+}
+
+export function targetPilotEntrySetHash(input: {
+  scenarioHash: string;
+  entries: Array<{ email: string; submissionHash: string }>;
+}): string {
+  return sha256({
+    version: "target-pilot-entry-set-v1",
+    scenarioHash: input.scenarioHash,
+    entries: [...input.entries].sort((a, b) => a.email.localeCompare(b.email)),
+  });
+}
+
+export function targetPilotResultsHash(input: {
+  scenarioHash: string;
+  entrySetHash: string;
+  officialTargetsHash: string;
+  results: TargetPilotResultsRecord;
+}): string {
+  return sha256({
+    version: "target-pilot-results-v1",
+    scenarioHash: input.scenarioHash,
+    entrySetHash: input.entrySetHash,
+    officialTargetsHash: input.officialTargetsHash,
+    results: input.results,
   });
 }
 

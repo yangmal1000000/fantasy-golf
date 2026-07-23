@@ -10,6 +10,7 @@ import {
   formatTargetCoordinate,
   type TargetPoint,
 } from "@/lib/target-challenge";
+import type { TargetPilotStatusDto } from "@/lib/target-pilot-core";
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -22,7 +23,7 @@ import {
 } from "@/components/icons";
 import CourseMap from "./CourseMap";
 
-type Stage = "intro" | "eligibility" | "playing" | "review" | "submitted" | "expired";
+type Stage = "intro" | "eligibility" | "playing" | "review" | "submitted" | "expired" | "closed";
 
 const EMPTY_POINTS: Array<TargetPoint | null> = [null, null, null];
 
@@ -37,6 +38,10 @@ export default function TargetChallengeClient() {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [territoryConfirmed, setTerritoryConfirmed] = useState(false);
   const [rulesConfirmed, setRulesConfirmed] = useState(false);
+  const [pilotChecking, setPilotChecking] = useState(true);
+  const [submissionBusy, setSubmissionBusy] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
 
   const completedCount = points.filter(Boolean).length;
   const allComplete = completedCount === TARGET_SCENARIOS.length;
@@ -56,6 +61,39 @@ export default function TargetChallengeClient() {
     const interval = window.setInterval(syncTimer, 1_000);
     return () => window.clearInterval(interval);
   }, [deadline, stage]);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/target-pilot-entry", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error ?? "Unable to check pilot entry status");
+        return body as TargetPilotStatusDto;
+      })
+      .then((status) => {
+        if (!active) return;
+        if (status.entry?.submission) {
+          setPoints(status.entry.submission.points.map((item) => item.point));
+          setEntryReference(status.entry.reference);
+          setSubmittedAt(status.entry.submittedAt);
+          setDeadline(null);
+          setStage("submitted");
+        } else if (!status.entryOpen) {
+          setStage("closed");
+        }
+      })
+      .catch((caught: unknown) => {
+        if (active) {
+          setSubmissionError(caught instanceof Error ? caught.message : "Unable to check pilot entry status");
+        }
+      })
+      .finally(() => {
+        if (active) setPilotChecking(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const statusLabel = useMemo(() => {
     if (stage === "playing") return `Decision ${currentScenario + 1} of ${TARGET_SCENARIOS.length}`;
@@ -86,12 +124,36 @@ export default function TargetChallengeClient() {
     }
   }
 
-  function submitPrototype() {
+  async function submitPrototype() {
     if (!allComplete || secondsRemaining === 0) return;
-    const stamp = Date.now().toString(36).toUpperCase();
-    setEntryReference(`HV-PROTO-${stamp.slice(-7)}`);
-    setDeadline(null);
-    setStage("submitted");
+    setSubmissionBusy(true);
+    setSubmissionError(null);
+    try {
+      const response = await fetch("/api/target-pilot-entry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submission: {
+            points: TARGET_SCENARIOS.map((item, index) => ({
+              scenarioId: item.id,
+              point: points[index],
+            })),
+          },
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? "Unable to save the pilot entry");
+      const status = body as TargetPilotStatusDto;
+      if (!status.entry) throw new Error("The saved pilot entry could not be confirmed");
+      setEntryReference(status.entry.reference);
+      setSubmittedAt(status.entry.submittedAt);
+      setDeadline(null);
+      setStage("submitted");
+    } catch (caught) {
+      setSubmissionError(caught instanceof Error ? caught.message : "Unable to save the pilot entry");
+    } finally {
+      setSubmissionBusy(false);
+    }
   }
 
   function resetPrototype() {
@@ -102,6 +164,8 @@ export default function TargetChallengeClient() {
     setSecondsRemaining(TARGET_ATTEMPT_SECONDS);
     setDeadline(null);
     setEntryReference(null);
+    setSubmittedAt(null);
+    setSubmissionError(null);
     setAgeConfirmed(false);
     setTerritoryConfirmed(false);
     setRulesConfirmed(false);
@@ -114,7 +178,7 @@ export default function TargetChallengeClient() {
           <span className="inline-flex items-center gap-2 font-bold uppercase tracking-[0.16em] text-[#e4cc85]">
             <ShieldIcon className="h-4 w-4" /> Prototype mode
           </span>
-          <span className="text-right text-white/65">No payment taken · No live prize entry created</span>
+          <span className="text-right text-white/65">No payment · Closed development pilot · No live prize</span>
         </div>
       </div>
 
@@ -140,6 +204,12 @@ export default function TargetChallengeClient() {
       </section>
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
+        {pilotChecking ? (
+          <p className="mb-4 rounded-2xl border border-zinc-200 bg-white p-3 text-center text-xs font-bold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">Checking your private pilot status…</p>
+        ) : null}
+        {submissionError ? (
+          <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-300">{submissionError}</p>
+        ) : null}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">{statusLabel}</p>
@@ -257,11 +327,20 @@ export default function TargetChallengeClient() {
               setStage("playing");
             }}
             onSubmit={submitPrototype}
+            submitting={submissionBusy}
           />
         )}
 
         {stage === "submitted" && (
-          <SubmittedStage points={points} entryReference={entryReference} onReset={resetPrototype} />
+          <SubmittedStage points={points} entryReference={entryReference} submittedAt={submittedAt} />
+        )}
+
+        {stage === "closed" && (
+          <section className="mx-auto max-w-xl rounded-3xl border border-zinc-200 bg-white p-8 text-center shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+            <LockIcon className="mx-auto h-12 w-12 text-[#9b7b25] dark:text-[#d7bc6a]" />
+            <h2 className="mt-4 text-2xl font-black text-zinc-900 dark:text-white">Pilot entries are closed</h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">The coordinator has sealed this rehearsal entry set. No late or replacement target can be added.</p>
+          </section>
         )}
 
         {stage === "expired" && (
@@ -418,10 +497,12 @@ function ReviewStage({
   points,
   onEdit,
   onSubmit,
+  submitting,
 }: {
   points: Array<TargetPoint | null>;
   onEdit: (index: number) => void;
-  onSubmit: () => void;
+  onSubmit: () => Promise<void>;
+  submitting: boolean;
 }) {
   return (
     <section className="-mx-4 overflow-hidden rounded-none border-y border-zinc-200 bg-white p-0 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 sm:mx-0 sm:rounded-3xl sm:border-x sm:p-8">
@@ -454,11 +535,11 @@ function ReviewStage({
       </div>
 
       <div className="mx-4 mt-7 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200 sm:mx-0">
-        <strong>Prototype confirmation:</strong> submitting locks these browser-session coordinates for the demonstration only. It does not create a paid or prize-eligible entry.
+        <strong>Closed-pilot confirmation:</strong> submitting stores one no-payment rehearsal entry against your verified account. It cannot be edited after submission and creates no paid or prize-eligible claim.
       </div>
 
       <div className="mx-4 mb-6 mt-6 flex justify-end sm:mx-0 sm:mb-0">
-        <button type="button" onClick={onSubmit} className="rounded-xl bg-[#0a3d2a] px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-[#0a3d2a]/15 transition hover:bg-[#15543b]">Submit and lock prototype entry</button>
+        <button type="button" disabled={submitting} onClick={() => void onSubmit()} className="rounded-xl bg-[#0a3d2a] px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-[#0a3d2a]/15 transition hover:bg-[#15543b] disabled:cursor-not-allowed disabled:opacity-50">{submitting ? "Locking pilot entry…" : "Submit and lock pilot entry"}</button>
       </div>
     </section>
   );
@@ -467,18 +548,19 @@ function ReviewStage({
 function SubmittedStage({
   points,
   entryReference,
-  onReset,
+  submittedAt,
 }: {
   points: Array<TargetPoint | null>;
   entryReference: string | null;
-  onReset: () => void;
+  submittedAt: string | null;
 }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
       <div className="bg-[#0a3d2a] px-6 py-9 text-center text-white sm:px-10">
         <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#c8a951] text-[#0a3d2a] shadow-lg"><CheckCircleIcon className="h-9 w-9" /></span>
-        <h2 className="mt-5 text-3xl font-black">Prototype targets locked</h2>
+        <h2 className="mt-5 text-3xl font-black">Pilot targets locked</h2>
         <p className="mt-2 text-sm text-white/70">Reference <span className="font-mono font-bold text-[#f0d986]">{entryReference}</span></p>
+        {submittedAt ? <p className="mt-1 text-xs text-white/50">Saved {new Date(submittedAt).toLocaleString()}</p> : null}
       </div>
       <div className="p-6 sm:p-9">
         <div className="grid gap-4 sm:grid-cols-3">
@@ -495,8 +577,8 @@ function SubmittedStage({
             <div className="flex items-start gap-3">
               <InfoIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#9b7b25]" />
               <div>
-                <h3 className="font-black text-zinc-900 dark:text-white">What production adds</h3>
-                <p className="mt-1 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Verified accounts, approved checkout, server-side coordinate locking, PGA judging, independent certification and winner payout. None is active in this prototype.</p>
+                <h3 className="font-black text-zinc-900 dark:text-white">What this pilot records</h3>
+                <p className="mt-1 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Your verified account, frozen scenario version, three coordinates, submission time and integrity hash. There is still no checkout, live prize or payout.</p>
               </div>
             </div>
           </div>
@@ -507,9 +589,7 @@ function SubmittedStage({
           </div>
         </div>
 
-        <div className="mt-7 text-center">
-          <button type="button" onClick={onReset} className="text-sm font-black text-[#0a3d2a] underline decoration-[#c8a951] decoration-2 underline-offset-4 dark:text-green-400">Restart the prototype</button>
-        </div>
+        <p className="mt-7 text-center text-sm font-bold text-zinc-500 dark:text-zinc-400">One entry per verified tester. The coordinator may clear all entries only before the rehearsal set is sealed.</p>
       </div>
     </section>
   );

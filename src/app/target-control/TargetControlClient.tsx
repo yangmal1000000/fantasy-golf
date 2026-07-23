@@ -94,6 +94,7 @@ export default function TargetControlClient() {
 
   const round = data?.round ?? null;
   const assignments = data?.assignments ?? [];
+  const pilotEntries = data?.pilotEntries ?? [];
   const auditEvents = data?.auditEvents ?? [];
   const panelReady = panel.every((member) => member.email.trim() && member.displayName.trim() && member.credential.trim().length >= 5);
 
@@ -155,6 +156,69 @@ export default function TargetControlClient() {
               </div>
             </section>
 
+            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-7">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Closed pilot</p>
+                  <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Rehearsal entry set</h2>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">Approved testers receive one no-payment entry each. Seal the complete set before opening official judging.</p>
+                </div>
+                <span className={`rounded-full px-3 py-1.5 text-xs font-black uppercase tracking-wide ${round.pilotEntriesSealedAt ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300" : "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"}`}>
+                  {round.pilotEntriesSealedAt ? `Sealed · ${round.pilotEntryCount ?? pilotEntries.length}` : `Open · ${pilotEntries.length}`}
+                </span>
+              </div>
+
+              {pilotEntries.length ? (
+                <div className="mt-5 divide-y divide-zinc-100 rounded-2xl border border-zinc-200 px-4 dark:divide-zinc-800 dark:border-zinc-700">
+                  {pilotEntries.map((entry) => (
+                    <div key={entry.id} className="grid gap-1 py-3 text-xs sm:grid-cols-[1fr_150px_180px] sm:items-center">
+                      <div>
+                        <p className="font-black text-zinc-900 dark:text-white">{entry.email}</p>
+                        <p className="mt-0.5 font-mono text-zinc-400">{entry.reference}</p>
+                      </div>
+                      <time className="text-zinc-500">{new Date(entry.submittedAt).toLocaleString()}</time>
+                      <span className="truncate font-mono text-zinc-400" title={entry.submissionHash}>{entry.submissionHash}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-5 rounded-2xl bg-zinc-50 p-4 text-sm text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400">No tester has locked a pilot entry yet.</p>
+              )}
+
+              {round.status === "DRAFT" && !round.pilotEntriesSealedAt ? (
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    disabled={!pilotEntries.length || busy}
+                    onClick={() => {
+                      if (window.confirm(`Seal all ${pilotEntries.length} current pilot entries? No entries can be added, changed or cleared afterward.`)) mutate("seal_pilot_entries");
+                    }}
+                    className="rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white disabled:opacity-35"
+                  >
+                    Seal pilot entry set
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!pilotEntries.length || busy}
+                    onClick={() => {
+                      if (window.confirm(`Clear all ${pilotEntries.length} unsealed pilot entries? Testers will be able to enter again.`)) mutate("clear_pilot_entries");
+                    }}
+                    className="rounded-xl border border-red-200 px-5 py-3 text-sm font-black text-red-700 disabled:opacity-35 dark:border-red-900/50 dark:text-red-300"
+                  >
+                    Clear unsealed entries
+                  </button>
+                </div>
+              ) : null}
+
+              {round.pilotEntriesSealedAt ? (
+                <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-xs leading-5 text-green-800 dark:border-green-900/50 dark:bg-green-950/20 dark:text-green-300">
+                  <p><strong>Sealed:</strong> {new Date(round.pilotEntriesSealedAt).toLocaleString()}</p>
+                  <p className="mt-1 break-all font-mono"><strong>Entry-set hash:</strong> {round.pilotEntrySetHash}</p>
+                  <p className="mt-2 font-bold">Sealed evidence cannot be reset. A later rehearsal should use a new round version.</p>
+                </div>
+              ) : null}
+            </section>
+
             {round.status === "DRAFT" ? (
               <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-7">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Panel setup</p>
@@ -176,13 +240,13 @@ export default function TargetControlClient() {
                   </button>
                   <button
                     type="button"
-                    disabled={assignments.length !== 3 || busy}
+                    disabled={assignments.length !== 3 || !round.pilotEntriesSealedAt || busy}
                     onClick={() => {
                       if (window.confirm("Freeze this scenario version and panel, then open blind initial judging?")) mutate("open_initial");
                     }}
                     className="rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white disabled:opacity-35"
                   >
-                    Open initial judging
+                    {round.pilotEntriesSealedAt ? "Open initial judging" : "Seal entries before judging"}
                   </button>
                 </div>
               </section>
@@ -227,6 +291,37 @@ export default function TargetControlClient() {
                   <p className="mt-2"><strong>Algorithm:</strong> weiszfeld-map-v1</p>
                   <p className="mt-2"><strong>Calculated:</strong> {round.calculatedAt ? new Date(round.calculatedAt).toLocaleString() : "—"}</p>
                 </section>
+                {round.pilotResults ? (
+                  <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-7">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Automatic scoring</p>
+                    <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Closed-pilot results</h2>
+                    <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">Ranked by combined normalised distance. Exact-total ties use Decision 3, then 2, then 1; completely identical results share the rank.</p>
+                    <div className="mt-5 overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-700">
+                      <table className="w-full min-w-[720px] text-left text-xs">
+                        <thead className="bg-zinc-50 text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
+                          <tr><th className="px-4 py-3">Rank</th><th className="px-4 py-3">Tester</th><th className="px-4 py-3">Total</th><th className="px-4 py-3">Decision 1</th><th className="px-4 py-3">Decision 2</th><th className="px-4 py-3">Decision 3</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                          {round.pilotResults.entries.map((result) => {
+                            const entry = pilotEntries.find((item) => item.id === result.entryId);
+                            return (
+                              <tr key={result.entryId}>
+                                <td className="px-4 py-3 text-lg font-black text-[#0a3d2a] dark:text-green-400">{result.rank}{result.tied ? "=" : ""}</td>
+                                <td className="px-4 py-3"><p className="font-black text-zinc-900 dark:text-white">{entry?.email ?? result.entryId}</p><p className="mt-0.5 font-mono text-zinc-400">{entry?.reference}</p></td>
+                                <td className="px-4 py-3 font-black text-zinc-900 dark:text-white">{formatError(result.totalError)}</td>
+                                {result.scenarioErrors.map((error, index) => <td key={index} className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{formatError(error)}</td>)}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-5 rounded-2xl bg-zinc-50 p-4 text-xs text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400">
+                      <p className="break-all"><strong>Results hash:</strong> <span className="font-mono">{round.pilotResultsHash}</span></p>
+                      <p className="mt-1"><strong>Scored:</strong> {round.pilotScoredAt ? new Date(round.pilotScoredAt).toLocaleString() : "—"}</p>
+                    </div>
+                  </section>
+                ) : null}
               </>
             ) : null}
 
@@ -279,6 +374,10 @@ function LockPill({ label, locked }: { label: string; locked: boolean }) {
 function StatusBadge({ status }: { status: string }) {
   const labels: Record<string, string> = { DRAFT: "Draft", INITIAL_MARKING: "Initial open", INITIAL_COMPLETE: "Discussion", FINAL_MARKING: "Final open", CALCULATED: "Calculated" };
   return <span className="rounded-full bg-[#e8f2eb] px-4 py-2 text-xs font-black uppercase tracking-wide text-[#0a3d2a] dark:bg-green-950/40 dark:text-green-300">{labels[status] ?? status}</span>;
+}
+
+function formatError(error: number) {
+  return `${(error * 100).toFixed(3)}%`;
 }
 
 function ControlCard({ title, detail, tone = "neutral", children }: { title: string; detail?: string; tone?: "neutral" | "success"; children?: React.ReactNode }) {
