@@ -1,15 +1,15 @@
 import {
-  TARGET_SCENARIOS,
   geometricMedianTarget,
   type TargetPoint,
 } from "@/lib/target-challenge";
+import { TARGET_V2_SCENARIOS as TARGET_SCENARIOS, TARGET_V2_VERSION } from "@/lib/target-v2";
 import type {
   TargetPilotEntryDto,
   TargetPilotResultsRecord,
 } from "@/lib/target-pilot-core";
 
 export const TARGET_JUDGE_ROUND_SLUG = "hawthorn-vale-mvp-1";
-export const TARGET_SCENARIO_VERSION = "hawthorn-vale-mvp-1.0";
+export const TARGET_SCENARIO_VERSION = TARGET_V2_VERSION;
 export const TARGET_JUDGE_STATUSES = [
   "DRAFT",
   "INITIAL_MARKING",

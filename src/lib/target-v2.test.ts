@@ -103,6 +103,6 @@ test("every generated yardage guide follows the same proportional distance model
   }
 });
 
-test("v2 preview has a distinct version identifier", () => {
-  assert.equal(TARGET_V2_VERSION, "hawthorn-vale-finish-position-preview-2.2");
+test("v2 live Target has a distinct stable version identifier", () => {
+  assert.equal(TARGET_V2_VERSION, "hawthorn-vale-finish-position-2.2");
 });

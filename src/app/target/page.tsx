@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import SignInPrompt from "@/components/SignInPrompt";
 import { getCurrentUser } from "@/lib/auth";
 import { getRocketBetaStateForUser } from "@/lib/rocket-beta";
-import TargetChallengeClient from "./TargetChallengeClient";
+import TargetV2Client from "../target-v2-preview/TargetV2PreviewClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function TargetPreviewPage() {
+export default async function TargetPage() {
   const user = await getCurrentUser();
   if (!user) {
     return (
@@ -32,5 +32,5 @@ export default async function TargetPreviewPage() {
   const state = await getRocketBetaStateForUser(user);
   if (!state.approved) notFound();
 
-  return <TargetChallengeClient />;
+  return <TargetV2Client />;
 }

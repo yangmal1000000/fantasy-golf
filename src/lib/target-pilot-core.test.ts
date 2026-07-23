@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { TARGET_SCENARIOS, type TargetPoint } from "./target-challenge";
+import type { TargetPoint } from "./target-challenge";
+import { TARGET_V2_SCENARIOS as TARGET_SCENARIOS } from "./target-v2";
 import {
   rankTargetPilotEntries,
   targetPilotReference,

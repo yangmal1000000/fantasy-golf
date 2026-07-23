@@ -2,9 +2,9 @@
 
 import CourseMap from "@/app/target/CourseMap";
 import {
-  TARGET_SCENARIOS,
   formatTargetCoordinate,
 } from "@/lib/target-challenge";
+import { TARGET_V2_SCENARIOS as TARGET_SCENARIOS } from "@/lib/target-v2";
 import type {
   TargetJudgeAssignmentDto,
   TargetJudgePhase,
