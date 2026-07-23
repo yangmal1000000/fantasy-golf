@@ -69,6 +69,7 @@ async function createTargetJudgeSchema() {
 
   await prisma.$executeRawUnsafe(`
     ALTER TABLE "TargetJudgingRound"
+      ADD COLUMN IF NOT EXISTS "panelMode" TEXT NOT NULL DEFAULT 'OFFICIAL',
       ADD COLUMN IF NOT EXISTS "pilotEntriesSealedAt" TIMESTAMPTZ,
       ADD COLUMN IF NOT EXISTS "pilotEntrySetHash" TEXT,
       ADD COLUMN IF NOT EXISTS "pilotEntryCount" INTEGER,

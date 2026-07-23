@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import CourseMap from "@/app/target/CourseMap";
 import TargetPanelReview from "@/components/TargetPanelReview";
 import {
@@ -9,6 +9,7 @@ import {
   type TargetPoint,
 } from "@/lib/target-challenge";
 import type {
+  TargetJudgeControlDto,
   TargetJudgeContextDto,
   TargetJudgePhase,
   TargetJudgeSubmission,
@@ -20,13 +21,13 @@ type Declaration = {
   noConflict: boolean;
 };
 
-export default function TargetJudgeClient({ sandbox = false }: { sandbox?: boolean }) {
+export default function TargetJudgeClient({ sandbox = false, rehearsal = false }: { sandbox?: boolean; rehearsal?: boolean }) {
   const [data, setData] = useState<TargetJudgeContextDto | null>(null);
-  const [loading, setLoading] = useState(!sandbox);
+  const [loading, setLoading] = useState(!sandbox && !rehearsal);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (sandbox) {
+    if (sandbox || rehearsal) {
       return;
     }
 
@@ -49,17 +50,23 @@ export default function TargetJudgeClient({ sandbox = false }: { sandbox?: boole
     return () => {
       active = false;
     };
-  }, [sandbox]);
+  }, [rehearsal, sandbox]);
+
+  const modeLabel = rehearsal
+    ? "Coordinator Panel Rehearsal"
+    : sandbox
+      ? "Development Judge Sandbox"
+      : "Private Judge Mode";
 
   return (
     <div className="min-h-screen bg-[#f6f4ee] pb-20 dark:bg-[#0d0f0e] sm:pb-10">
       <div className="border-b border-[#c8a951]/25 bg-[#071f16] text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5 text-xs">
           <span className="font-bold uppercase tracking-[0.16em] text-[#e4cc85]">
-            {sandbox ? "Development Judge Sandbox" : "Private Judge Mode"}
+            {modeLabel}
           </span>
           <span className="text-right text-white/65">
-            {sandbox ? "Browser-only · No official records" : "Pilot only · No entrant pins visible"}
+            {rehearsal ? "Persisted development evidence · Not an independent panel" : sandbox ? "Browser-only · No official records" : "Pilot only · No entrant pins visible"}
           </span>
         </div>
       </div>
@@ -67,13 +74,15 @@ export default function TargetJudgeClient({ sandbox = false }: { sandbox?: boole
       <header className="bg-[#0a3d2a] text-white">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-[#d7bc6a]">
-            Hawthorn Vale · {sandbox ? "Coordinator development test" : "Blind panel rehearsal"}
+            Hawthorn Vale · {rehearsal ? "Three test seats" : sandbox ? "Coordinator development test" : "Blind panel rehearsal"}
           </p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-            {sandbox ? "Test the complete judge experience" : "Judge the same three golf decisions"}
+            {rehearsal ? "Complete the sealed pilot rehearsal" : sandbox ? "Test the complete judge experience" : "Judge the same three golf decisions"}
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/75">
-            {sandbox
+            {rehearsal
+              ? "Operate each development seat in turn. The marks are persisted and will produce pilot rankings, but they do not represent three independent PGA professionals."
+              : sandbox
               ? "Place initial pins, review them, revise final pins and complete a test submission. Nothing here changes the official round or its audit trail."
               : "Your pins and reasoning are private until every judge has locked the same phase. Locked marks cannot be edited by you or the coordinator."}
           </p>
@@ -82,10 +91,164 @@ export default function TargetJudgeClient({ sandbox = false }: { sandbox?: boole
 
       <main className="mx-auto max-w-6xl px-4 py-7 sm:py-10">
         {sandbox ? <SandboxJudgeStage /> : null}
-        {!sandbox && loading ? <StateCard title="Loading private assignment…" /> : null}
-        {!sandbox && error ? <StateCard title="Judge Mode unavailable" detail={error} tone="danger" /> : null}
-        {!sandbox && data ? <JudgeStage data={data} onUpdate={setData} /> : null}
+        {rehearsal ? <CoordinatorRehearsalStage /> : null}
+        {!sandbox && !rehearsal && loading ? <StateCard title="Loading private assignment…" /> : null}
+        {!sandbox && !rehearsal && error ? <StateCard title="Judge Mode unavailable" detail={error} tone="danger" /> : null}
+        {!sandbox && !rehearsal && data ? <JudgeStage data={data} onUpdate={setData} /> : null}
       </main>
+    </div>
+  );
+}
+
+function CoordinatorRehearsalStage() {
+  const [control, setControl] = useState<TargetJudgeControlDto | null>(null);
+  const [data, setData] = useState<TargetJudgeContextDto | null>(null);
+  const [selectedSeat, setSelectedSeat] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadSeat = useCallback(async (seat: number) => {
+    const response = await fetch(`/api/target-judge?rehearsalSeat=${seat}`, { cache: "no-store" });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error ?? "Unable to load development seat");
+    setData(body as TargetJudgeContextDto);
+  }, []);
+
+  const refresh = useCallback(async (preferredSeat?: number) => {
+    const response = await fetch("/api/target-control", { cache: "no-store" });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error ?? "Unable to load rehearsal progress");
+    const nextControl = body as TargetJudgeControlDto;
+    setControl(nextControl);
+    const status = nextControl.round?.status;
+    const nextIncomplete = status === "INITIAL_MARKING"
+      ? nextControl.assignments.find((assignment) => !assignment.initialLockedAt)?.seat
+      : status === "FINAL_MARKING"
+        ? nextControl.assignments.find((assignment) => !assignment.finalLockedAt)?.seat
+        : undefined;
+    const seat = preferredSeat ?? nextIncomplete ?? 1;
+    setSelectedSeat(seat);
+    await loadSeat(seat);
+  }, [loadSeat]);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/target-control", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error ?? "Unable to load rehearsal progress");
+        return body as TargetJudgeControlDto;
+      })
+      .then(async (nextControl) => {
+        if (!active) return;
+        setControl(nextControl);
+        const status = nextControl.round?.status;
+        const seat = status === "INITIAL_MARKING"
+          ? nextControl.assignments.find((assignment) => !assignment.initialLockedAt)?.seat ?? 1
+          : status === "FINAL_MARKING"
+            ? nextControl.assignments.find((assignment) => !assignment.finalLockedAt)?.seat ?? 1
+            : 1;
+        setSelectedSeat(seat);
+        const response = await fetch(`/api/target-judge?rehearsalSeat=${seat}`, { cache: "no-store" });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error ?? "Unable to load development seat");
+        if (active) setData(body as TargetJudgeContextDto);
+      })
+      .catch((caught: unknown) => {
+        if (active) setError(caught instanceof Error ? caught.message : "Unable to load panel rehearsal");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function selectSeat(seat: number) {
+    setSelectedSeat(seat);
+    setError(null);
+    try {
+      await loadSeat(seat);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to load development seat");
+    }
+  }
+
+  async function handleUpdate(next: TargetJudgeContextDto) {
+    setData(next);
+    setLoading(true);
+    try {
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to refresh rehearsal progress");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading && !control) return <StateCard title="Loading development panel…" />;
+  if (error && !control) return <StateCard title="Panel rehearsal unavailable" detail={error} tone="danger" />;
+  if (!control?.round) return <StateCard title="No rehearsal round exists" detail="Return to Target Control and create the round first." tone="danger" />;
+
+  return (
+    <div className="space-y-7">
+      <StateCard
+        title="Development evidence only"
+        detail="You are operating all three test seats. The system will lock marks, calculate targets, rank the sealed entries and confirm a rehearsal winner, but this cannot be presented as independent PGA judging."
+      />
+      {error ? <StateCard title="Unable to update rehearsal" detail={error} tone="danger" /> : null}
+
+      <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Development panel</p>
+            <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Choose the seat to operate</h2>
+          </div>
+          <StatusBadge status={control.round.status} />
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          {control.assignments.map((assignment) => {
+            const active = assignment.seat === selectedSeat;
+            return (
+              <button
+                key={assignment.id}
+                type="button"
+                onClick={() => selectSeat(assignment.seat)}
+                className={`rounded-2xl border p-4 text-left transition ${active ? "border-[#0a3d2a] bg-[#e8f2eb] dark:border-green-500 dark:bg-green-950/30" : "border-zinc-200 dark:border-zinc-700"}`}
+              >
+                <p className="font-black text-zinc-900 dark:text-white">Test seat {assignment.seat}</p>
+                <p className="mt-2 text-xs text-zinc-500">
+                  {assignment.initialLockedAt ? "✓ Initial" : "○ Initial"} · {assignment.finalLockedAt ? "✓ Final" : "○ Final"}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {data ? (
+        <JudgeStage
+          data={data}
+          rehearsal
+          onUpdate={handleUpdate}
+        />
+      ) : null}
+
+      {control.round.status === "INITIAL_COMPLETE" ? (
+        <StateCard
+          title="All three initial seats are locked"
+          detail="Review the panel above, then return to Target Control and open final marking. Come back here to complete test seats 1–3 again."
+          tone="success"
+        />
+      ) : null}
+      {control.round.status === "CALCULATED" ? (
+        <div className="text-center">
+          <Link href="/target-control" className="inline-flex rounded-xl bg-[#0a3d2a] px-6 py-3 text-sm font-black text-white">
+            View confirmed rehearsal winner
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -199,9 +362,11 @@ function SandboxActions({ children }: { children: ReactNode }) {
 function JudgeStage({
   data,
   onUpdate,
+  rehearsal = false,
 }: {
   data: TargetJudgeContextDto;
   onUpdate: (data: TargetJudgeContextDto) => void;
+  rehearsal?: boolean;
 }) {
   const { round, assignment } = data;
 
@@ -210,14 +375,14 @@ function JudgeStage({
       <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Panel seat {assignment.seat}</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">{rehearsal ? "Development test seat" : "Panel seat"} {assignment.seat}</p>
             <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">{assignment.displayName}</h2>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{assignment.credential}</p>
           </div>
           <StatusBadge status={round.status} />
         </div>
         <div className="mt-5 grid gap-3 text-xs sm:grid-cols-3">
-          <ProgressItem label="Declaration" complete={Boolean(assignment.declarationConfirmedAt)} />
+          <ProgressItem label={rehearsal ? "Development seat" : "Declaration"} complete={rehearsal || Boolean(assignment.declarationConfirmedAt)} />
           <ProgressItem label="Initial marks" complete={Boolean(assignment.initialLockedAt)} />
           <ProgressItem label="Final marks" complete={Boolean(assignment.finalLockedAt)} />
         </div>
@@ -228,7 +393,7 @@ function JudgeStage({
       ) : null}
 
       {round.status === "INITIAL_MARKING" && !assignment.initialLockedAt ? (
-        <MarkingForm phase="initial" onComplete={onUpdate} />
+        <MarkingForm phase="initial" rehearsalSeat={rehearsal ? assignment.seat : undefined} onComplete={onUpdate} />
       ) : null}
 
       {round.status === "INITIAL_MARKING" && assignment.initialLockedAt ? (
@@ -254,6 +419,7 @@ function JudgeStage({
             <MarkingForm
               phase="final"
               seed={assignment.initialSubmission ?? undefined}
+              rehearsalSeat={rehearsal ? assignment.seat : undefined}
               onComplete={onUpdate}
             />
           ) : (
@@ -264,7 +430,7 @@ function JudgeStage({
 
       {round.status === "CALCULATED" && data.panelFinal ? (
         <>
-          <StateCard title="Official targets calculated" detail="All three final submissions were locked and combined automatically using the frozen geometric-median algorithm." tone="success" />
+          <StateCard title={rehearsal ? "Rehearsal targets calculated" : "Official targets calculated"} detail={`All three final submissions were locked and combined automatically using the frozen geometric-median algorithm.${rehearsal ? " These are development results, not an independent-panel decision." : ""}`} tone="success" />
           <TargetPanelReview
             assignments={data.panelFinal}
             phase="final"
@@ -291,12 +457,14 @@ function MarkingForm({
   seed,
   onComplete,
   sandbox = false,
+  rehearsalSeat,
   onSandboxComplete,
 }: {
   phase: TargetJudgePhase;
   seed?: TargetJudgeSubmission;
   onComplete?: (data: TargetJudgeContextDto) => void;
   sandbox?: boolean;
+  rehearsalSeat?: number;
   onSandboxComplete?: (submission: TargetJudgeSubmission) => void;
 }) {
   const seedByScenario = useMemo(
@@ -318,7 +486,8 @@ function MarkingForm({
   const [error, setError] = useState<string | null>(null);
 
   const completeMarks = points.every(Boolean) && rationales.every((text) => text.trim().length >= 40);
-  const declarationComplete = sandbox || phase === "final" || Object.values(declaration).every(Boolean);
+  const developmentMode = sandbox || Boolean(rehearsalSeat);
+  const declarationComplete = developmentMode || phase === "final" || Object.values(declaration).every(Boolean);
 
   function updatePoint(index: number, point: TargetPoint | null) {
     setPoints((current) => current.map((existing, i) => (i === index ? point : existing)));
@@ -331,8 +500,10 @@ function MarkingForm({
   async function lockSubmission() {
     if (!completeMarks || !declarationComplete || busy) return;
     const confirmed = window.confirm(
-      sandbox
-        ? `Complete your ${phase} sandbox marks? You can restart the sandbox afterward.`
+      rehearsalSeat
+        ? `Lock ${phase} marks for development seat ${rehearsalSeat}? They cannot be edited afterward.`
+        : sandbox
+          ? `Complete your ${phase} sandbox marks? You can restart the sandbox afterward.`
         : `Lock your ${phase} marks? They cannot be edited after submission.`,
     );
     if (!confirmed) return;
@@ -353,7 +524,7 @@ function MarkingForm({
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch("/api/target-judge", {
+      const response = await fetch(`/api/target-judge${rehearsalSeat ? `?rehearsalSeat=${rehearsalSeat}` : ""}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -386,13 +557,15 @@ function MarkingForm({
         </p>
       </div>
 
-      {phase === "initial" && sandbox ? (
+      {phase === "initial" && developmentMode ? (
         <div className="rounded-3xl border border-blue-200 bg-blue-50 p-5 text-sm leading-6 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-200">
-          Development sandbox: qualification and independence declarations are not requested or recorded here. Real judges must complete them before an official initial submission.
+          {rehearsalSeat
+            ? `Development seat ${rehearsalSeat}: independence declarations are not requested because the coordinator is explicitly simulating this seat. These marks cannot be represented as PGA panel evidence.`
+            : "Development sandbox: qualification and independence declarations are not requested or recorded here. Real judges must complete them before an official initial submission."}
         </div>
       ) : null}
 
-      {phase === "initial" && !sandbox ? (
+      {phase === "initial" && !developmentMode ? (
         <div className="rounded-3xl border border-[#c8a951]/35 bg-[#fffaf0] p-5 dark:bg-[#c8a951]/10">
           <h3 className="font-black text-zinc-900 dark:text-white">Required declaration</h3>
           <div className="mt-3 space-y-3">
@@ -446,7 +619,9 @@ function MarkingForm({
       {error ? <p className="rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700 dark:bg-red-950/30 dark:text-red-300">{error}</p> : null}
       <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-7">
         <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          {sandbox
+          {rehearsalSeat
+            ? "This development mark is irreversible and is recorded in the private rehearsal audit trail. It is never described as an independent judge submission."
+            : sandbox
             ? "This test stays in browser memory only. It does not create a judge assignment, database submission, audit event or official target."
             : "This is irreversible. The server records the exact coordinates, rationales, scenario version and lock time in the private audit trail."}
         </p>
@@ -456,7 +631,7 @@ function MarkingForm({
           disabled={!completeMarks || !declarationComplete || busy}
           className="mt-5 w-full rounded-xl bg-[#0a3d2a] px-6 py-3.5 text-sm font-black text-white transition hover:bg-[#15543b] disabled:cursor-not-allowed disabled:opacity-35 sm:w-auto"
         >
-          {busy ? "Locking…" : sandbox ? `Complete ${phase} test` : `Lock ${phase} marks`}
+          {busy ? "Locking…" : sandbox ? `Complete ${phase} test` : rehearsalSeat ? `Lock test seat ${rehearsalSeat}` : `Lock ${phase} marks`}
         </button>
       </div>
     </section>

@@ -48,6 +48,12 @@ export interface TargetPilotResultsRecord {
   entries: TargetPilotRankedResult[];
 }
 
+export function targetPilotWinners(
+  results: TargetPilotResultsRecord,
+): TargetPilotRankedResult[] {
+  return validateTargetPilotResults(results).entries.filter((entry) => entry.rank === 1);
+}
+
 export function validateTargetPilotSubmission(value: unknown): TargetPilotSubmission {
   if (!value || typeof value !== "object") {
     throw new Error("A complete pilot entry is required");

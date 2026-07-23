@@ -5,6 +5,7 @@ import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import {
   TARGET_JUDGE_ROUND_SLUG,
   TARGET_SCENARIO_VERSION,
+  isTargetJudgePanelMode,
   isTargetJudgeStatus,
   validateJudgeSubmission,
   validateOfficialTargetsRecord,
@@ -66,6 +67,9 @@ export async function POST(request: NextRequest) {
         break;
       case "seal_pilot_entries":
         await sealPilotEntries(actorEmail);
+        break;
+      case "start_coordinator_rehearsal":
+        await startCoordinatorRehearsal(actorEmail);
         break;
       case "open_initial":
         await openInitialMarking(actorEmail);
@@ -135,12 +139,73 @@ async function savePanel(actorEmail: string, rawPanel: unknown) {
         })),
       },
     });
+    await tx.targetJudgingRound.update({
+      where: { id: round.id },
+      data: { panelMode: "OFFICIAL" },
+    });
   });
+}
+
+async function startCoordinatorRehearsal(actorEmail: string) {
+  await prisma.$transaction(async (tx) => {
+    const round = await requireDraftRound(tx);
+    if (round.scenarioHash !== targetScenarioHash()) {
+      throw new TargetControlRequestError("The live scenarios no longer match this round", 409);
+    }
+    if (!round.pilotEntriesSealedAt || !round.pilotEntrySetHash || !round.pilotEntryCount) {
+      throw new TargetControlRequestError("Seal at least one pilot entry before starting the rehearsal", 409);
+    }
+    const entries = await tx.targetPilotEntry.findMany({
+      where: { roundId: round.id },
+      select: { email: true, submissionHash: true },
+    });
+    const currentEntrySetHash = targetPilotEntrySetHash({
+      scenarioHash: round.scenarioHash,
+      entries,
+    });
+    if (entries.length !== round.pilotEntryCount || currentEntrySetHash !== round.pilotEntrySetHash) {
+      throw new TargetControlRequestError("The sealed pilot entry set failed integrity checks", 409);
+    }
+
+    await tx.targetJudgeAssignment.deleteMany({ where: { roundId: round.id } });
+    await tx.targetJudgeAssignment.createMany({
+      data: [1, 2, 3].map((seat) => ({
+        roundId: round.id,
+        seat,
+        email: `coordinator-rehearsal-seat-${seat}@fantasy-golf.invalid`,
+        displayName: `Development panel seat ${seat}`,
+        credential: "Coordinator-operated rehearsal seat · not an independent PGA judge",
+      })),
+    });
+    await tx.targetJudgingRound.update({
+      where: { id: round.id },
+      data: {
+        panelMode: "COORDINATOR_REHEARSAL",
+        status: "INITIAL_MARKING",
+      },
+    });
+    await tx.targetJudgeAudit.create({
+      data: {
+        roundId: round.id,
+        actorEmail,
+        action: "coordinator_rehearsal_started",
+        payload: {
+          entryCount: entries.length,
+          entrySetHash: currentEntrySetHash,
+          seats: 3,
+          independentPanel: false,
+        },
+      },
+    });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 
 async function openInitialMarking(actorEmail: string) {
   await prisma.$transaction(async (tx) => {
     const round = await requireDraftRound(tx);
+    if (round.panelMode !== "OFFICIAL") {
+      throw new TargetControlRequestError("The coordinator rehearsal uses its own judging path", 409);
+    }
     if (round.scenarioHash !== targetScenarioHash()) {
       throw new TargetControlRequestError(
         "The live scenario bundle no longer matches the frozen round. Create a new version before judging.",
@@ -292,6 +357,7 @@ async function readControlDto(): Promise<TargetJudgeControlDto> {
   });
   if (!round) return { round: null, assignments: [], pilotEntries: [], auditEvents: [] };
   if (!isTargetJudgeStatus(round.status)) throw new Error("Unknown judging status");
+  if (!isTargetJudgePanelMode(round.panelMode)) throw new Error("Unknown judging panel mode");
   const revealInitial = ["INITIAL_COMPLETE", "FINAL_MARKING", "CALCULATED"].includes(round.status);
   const revealFinal = round.status === "CALCULATED";
 
@@ -302,6 +368,7 @@ async function readControlDto(): Promise<TargetJudgeControlDto> {
     scenarioVersion: round.scenarioVersion,
     scenarioHash: round.scenarioHash,
     status: round.status,
+    panelMode: round.panelMode,
     officialTargets: round.officialTargets
       ? validateOfficialTargetsRecord(round.officialTargets)
       : null,

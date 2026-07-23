@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   calculateOfficialTargets,
+  isTargetJudgePanelMode,
   validateTargetJudgePanel,
   validateJudgeSubmission,
   type TargetJudgeSubmission,
@@ -34,6 +35,12 @@ test("requires three distinct, identified panel members", () => {
     () => validateTargetJudgePanel([panel[0], panel[0], panel[2]]),
     /must be unique/,
   );
+});
+
+test("accepts only explicit official and coordinator-rehearsal panel modes", () => {
+  assert.equal(isTargetJudgePanelMode("OFFICIAL"), true);
+  assert.equal(isTargetJudgePanelMode("COORDINATOR_REHEARSAL"), true);
+  assert.equal(isTargetJudgePanelMode("COORDINATOR_AS_PGA_JUDGE"), false);
 });
 
 test("rejects short rationales and duplicate scenarios", () => {
