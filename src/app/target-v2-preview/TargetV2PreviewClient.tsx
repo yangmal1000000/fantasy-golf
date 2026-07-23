@@ -4,14 +4,12 @@ import Link from "next/link";
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
 import {
   CheckCircleIcon,
   ClockIcon,
-  InfoIcon,
   MapPinIcon,
   ShieldIcon,
   TargetIcon,
@@ -46,8 +44,6 @@ export default function TargetV2PreviewClient() {
   const [secondsRemaining, setSecondsRemaining] = useState(
     TARGET_ATTEMPT_SECONDS,
   );
-  const [briefOpen, setBriefOpen] = useState(false);
-  const [briefSeen, setBriefSeen] = useState([false, false, false]);
 
   const completedCount = points.filter(Boolean).length;
   const allComplete = completedCount === TARGET_V2_SCENARIOS.length;
@@ -90,8 +86,6 @@ export default function TargetV2PreviewClient() {
     setCurrentScenario(0);
     setSecondsRemaining(TARGET_ATTEMPT_SECONDS);
     setDeadline(Date.now() + TARGET_ATTEMPT_SECONDS * 1_000);
-    setBriefSeen([false, false, false]);
-    setBriefOpen(true);
     setStage("playing");
   }
 
@@ -105,29 +99,15 @@ export default function TargetV2PreviewClient() {
 
   function continueFromScenario() {
     if (!currentPoint) return;
-    setBriefSeen((seen) =>
-      seen.map((value, index) => (index === currentScenario ? true : value)),
-    );
     if (currentScenario < TARGET_V2_SCENARIOS.length - 1) {
-      const nextScenario = currentScenario + 1;
-      setCurrentScenario(nextScenario);
-      setBriefOpen(!briefSeen[nextScenario]);
+      setCurrentScenario((index) => index + 1);
       return;
     }
-    setBriefOpen(false);
     setStage("review");
   }
 
   function selectScenario(index: number) {
     setCurrentScenario(index);
-    setBriefOpen(!briefSeen[index]);
-  }
-
-  function dismissBrief() {
-    setBriefSeen((seen) =>
-      seen.map((value, index) => (index === currentScenario ? true : value)),
-    );
-    setBriefOpen(false);
   }
 
   function restartPreview() {
@@ -138,8 +118,6 @@ export default function TargetV2PreviewClient() {
     setRulesConfirmed(false);
     setDeadline(null);
     setSecondsRemaining(TARGET_ATTEMPT_SECONDS);
-    setBriefOpen(false);
-    setBriefSeen([false, false, false]);
   }
 
   return (
@@ -231,12 +209,9 @@ export default function TargetV2PreviewClient() {
             completedCount={completedCount}
             points={points}
             secondsRemaining={secondsRemaining}
-            briefOpen={briefOpen}
             onSelectScenario={selectScenario}
             onChange={(point) => updatePoint(currentScenario, point)}
             onBack={() => setCurrentScenario((index) => Math.max(0, index - 1))}
-            onOpenBrief={() => setBriefOpen(true)}
-            onDismissBrief={dismissBrief}
             onContinue={continueFromScenario}
           />
         ) : null}
@@ -246,7 +221,6 @@ export default function TargetV2PreviewClient() {
             points={points}
             onEdit={(index) => {
               setCurrentScenario(index);
-              setBriefOpen(false);
               setStage("playing");
             }}
             onComplete={() => {
@@ -415,12 +389,9 @@ function PlayingStage({
   completedCount,
   points,
   secondsRemaining,
-  briefOpen,
   onSelectScenario,
   onChange,
   onBack,
-  onOpenBrief,
-  onDismissBrief,
   onContinue,
 }: {
   scenario: TargetV2Scenario;
@@ -429,12 +400,9 @@ function PlayingStage({
   completedCount: number;
   points: Array<TargetPoint | null>;
   secondsRemaining: number;
-  briefOpen: boolean;
   onSelectScenario: (index: number) => void;
   onChange: (point: TargetPoint | null) => void;
   onBack: () => void;
-  onOpenBrief: () => void;
-  onDismissBrief: () => void;
   onContinue: () => void;
 }) {
   return (
@@ -449,15 +417,6 @@ function PlayingStage({
               Decision {currentScenario + 1} of {TARGET_V2_SCENARIOS.length}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onOpenBrief}
-            className="flex min-h-11 items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-black text-white"
-            aria-haspopup="dialog"
-          >
-            <InfoIcon className="h-4 w-4 text-[#e4cc85]" />
-            Brief
-          </button>
           <div
             className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-black tabular ${
               secondsRemaining <= 120
@@ -529,24 +488,14 @@ function PlayingStage({
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-white/10 bg-[#10231c] px-4 py-3 text-white sm:hidden">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#d7bc6a]">
-                  {scenario.eyebrow}
-                </p>
-                <h2 className="mt-0.5 text-sm font-black">{scenario.title}</h2>
-                <p className="mt-0.5 text-[11px] font-semibold text-green-300">
-                  {scenario.hole}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={onOpenBrief}
-                className="min-h-11 shrink-0 rounded-xl border border-white/15 bg-white/5 px-3 text-[10px] font-black uppercase tracking-wide text-green-300"
-                aria-haspopup="dialog"
-              >
-                Open brief
-              </button>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#d7bc6a]">
+                {scenario.eyebrow}
+              </p>
+              <h2 className="mt-0.5 text-sm font-black">{scenario.title}</h2>
+              <p className="mt-0.5 text-[11px] font-semibold text-green-300">
+                {scenario.hole}
+              </p>
             </div>
 
             <p className="mt-3 rounded-xl bg-white/7 px-3 py-2.5 text-xs font-black leading-4">
@@ -641,112 +590,7 @@ function PlayingStage({
           </button>
         </div>
       </div>
-
-      <ShotBriefSheet
-        open={briefOpen}
-        scenario={scenario}
-        onDismiss={onDismissBrief}
-      />
     </section>
-  );
-}
-
-function ShotBriefSheet({
-  open,
-  scenario,
-  onDismiss,
-}: {
-  open: boolean;
-  scenario: TargetV2Scenario;
-  onDismiss: () => void;
-}) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = `shot-brief-${scenario.id}`;
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const mobile = window.matchMedia("(max-width: 639px)");
-
-    const syncDialog = () => {
-      if (open && mobile.matches && !dialog.open) {
-        dialog.showModal();
-      } else if ((!open || !mobile.matches) && dialog.open) {
-        dialog.close();
-      }
-    };
-
-    syncDialog();
-    mobile.addEventListener("change", syncDialog);
-    return () => {
-      mobile.removeEventListener("change", syncDialog);
-      if (dialog.open) dialog.close();
-    };
-  }, [open]);
-
-  return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby={titleId}
-      onCancel={(event) => {
-        event.preventDefault();
-        onDismiss();
-      }}
-      onClick={(event) => {
-        if (event.currentTarget === event.target) onDismiss();
-      }}
-      className="target-shot-dialog fixed inset-x-0 bottom-0 top-auto m-0 max-h-[86dvh] w-full max-w-none overflow-y-auto rounded-t-3xl border-0 bg-white p-0 text-zinc-900 shadow-2xl dark:bg-zinc-900 dark:text-white sm:hidden safe-area-bottom"
-    >
-      <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 px-4 pb-3 pt-2 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/95">
-        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">
-              Decision {scenario.number} · Shot brief
-            </p>
-            <h2 id={titleId} className="mt-1 text-xl font-black">
-              {scenario.title}
-            </h2>
-            <p className="mt-0.5 text-xs font-semibold text-[#0a3d2a] dark:text-green-300">
-              {scenario.hole}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xl font-black text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
-            aria-label="Close shot brief"
-          >
-            ×
-          </button>
-        </div>
-      </div>
-
-      <div className="p-4">
-        <p className="rounded-2xl bg-[#f4f0e5] p-3 text-sm font-black leading-5 dark:bg-zinc-800">
-          {scenario.question}
-        </p>
-        <MetricGrid metrics={scenario.metrics} />
-        <p className="mt-4 text-sm font-semibold leading-5 text-zinc-700 dark:text-zinc-200">
-          {scenario.summary}
-        </p>
-        <ul className="mt-3 space-y-2 text-sm leading-5 text-zinc-600 dark:text-zinc-300">
-          {scenario.details.map((detail) => (
-            <li key={detail} className="flex items-start gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c8a951]" />
-              <span>{detail}</span>
-            </li>
-          ))}
-        </ul>
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="mt-5 min-h-12 w-full rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white"
-        >
-          Choose finishing position
-        </button>
-      </div>
-    </dialog>
   );
 }
 

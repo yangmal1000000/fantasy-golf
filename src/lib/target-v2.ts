@@ -200,26 +200,6 @@ export const TARGET_V2_PRACTICE: TargetV2Scenario = {
   yardage: TEE_YARDAGE,
 };
 
-export function targetV2EssentialFacts(
-  scenario: Pick<TargetV2Scenario, "metrics">,
-): TargetV2Metric[] {
-  const selected = [
-    ...scenario.metrics.slice(0, 2),
-    ...scenario.metrics.filter((metric) => metric.label === "Wind"),
-    ...scenario.metrics,
-  ];
-  const seen = new Set<string>();
-
-  return selected
-    .filter((metric) => {
-      const key = `${metric.label}:${metric.value}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, 3);
-}
-
 export function estimateTargetFinishYards(
   scenario: Pick<TargetScenario, "yardage">,
   point: TargetPoint | null,
