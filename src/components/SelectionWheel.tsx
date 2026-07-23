@@ -6,7 +6,7 @@
  * Designed to be sticky on mobile.
  */
 
-import { TIER_ORDER } from "@/lib/ui";
+import { TEAM_ENTRY_TIERS } from "@/lib/team-entry-validation";
 
 interface SelectionWheelProps {
   selectedCount: number;
@@ -17,9 +17,9 @@ export default function SelectionWheel({ selectedCount }: SelectionWheelProps) {
   const stroke = 5;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progress = selectedCount / TIER_ORDER.length;
+  const progress = selectedCount / TEAM_ENTRY_TIERS.length;
   const offset = circumference - progress * circumference;
-  const complete = selectedCount === TIER_ORDER.length;
+  const complete = selectedCount === TEAM_ENTRY_TIERS.length;
 
   return (
     <div

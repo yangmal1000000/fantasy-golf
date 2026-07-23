@@ -9,6 +9,11 @@ import {
   getRocketBetaStateForUser,
   requireRocketBetaEntryPass,
 } from "@/lib/rocket-beta";
+import {
+  TeamEntryValidationError,
+  validateTeamEntryPayload,
+  validateTeamEntryPlayers,
+} from "@/lib/team-entry-validation";
 
 export async function POST(
   req: NextRequest,
@@ -27,46 +32,7 @@ export async function POST(
     const userId = user.id;
 
     const { id: tournamentId } = await params;
-    const body = await req.json();
-
-    const { teamName, selections } = body as {
-      teamName: string;
-      selections: string[]; // tournamentPlayerIds
-    };
-
-    // Validate
-    if (
-      typeof teamName !== "string" ||
-      !teamName.trim() ||
-      teamName.trim().length > 80
-    ) {
-      return NextResponse.json(
-        { error: "Team name must be between 1 and 80 characters" },
-        { status: 400 },
-      );
-    }
-
-    if (
-      !Array.isArray(selections) ||
-      selections.length !== 5 ||
-      !selections.every(
-        (selection) =>
-          typeof selection === "string" &&
-          selection.length > 0 &&
-          selection.length <= 100,
-      )
-    ) {
-      return NextResponse.json(
-        { error: "Must select exactly 5 players (one per tier)" },
-        { status: 400 }
-      );
-    }
-    if (new Set(selections).size !== selections.length) {
-      return NextResponse.json(
-        { error: "Each player may be selected only once" },
-        { status: 400 },
-      );
-    }
+    const { teamName, selections } = validateTeamEntryPayload(await req.json());
 
     // Verify tournament exists and entries are open
     const tournament = await prisma.tournament.findUnique({
@@ -109,20 +75,7 @@ export async function POST(
       where: { id: { in: selections }, tournamentId },
     });
 
-    if (tournamentPlayers.length !== 5) {
-      return NextResponse.json(
-        { error: "Invalid player selections" },
-        { status: 400 }
-      );
-    }
-
-    const tiers = new Set(tournamentPlayers.map((tp) => tp.tier));
-    if (tiers.size !== 5) {
-      return NextResponse.json(
-        { error: "Must pick one player from each of the 5 tiers" },
-        { status: 400 }
-      );
-    }
+    validateTeamEntryPlayers(tournamentPlayers, selections);
 
     const team = await prisma.$transaction(
       async (tx) => {
@@ -132,7 +85,7 @@ export async function POST(
 
         const created = await tx.team.create({
           data: {
-            name: teamName.trim(),
+            name: teamName,
             userId,
             tournamentId,
             selections: {
@@ -187,6 +140,9 @@ export async function POST(
   } catch (err) {
     console.error("Team creation error:", err);
     if (err instanceof RocketBetaError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    if (err instanceof TeamEntryValidationError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
