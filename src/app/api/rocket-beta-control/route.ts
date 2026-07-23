@@ -8,6 +8,7 @@ import {
   ROCKET_BETA_CAMPAIGN_SLUG,
   ensureRocketBetaCampaign,
 } from "@/lib/rocket-beta";
+import { ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED } from "@/lib/rocket-beta-config";
 import { calculateLeaderboard } from "@/lib/scoring";
 
 export const dynamic = "force-dynamic";
@@ -273,6 +274,7 @@ async function readControl() {
       status: campaign.status,
       tournamentId: campaign.tournamentId,
       entryClosesAt: campaign.entryClosesAt?.toISOString() ?? null,
+      entryDeadlineConfirmed: ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED,
       fieldVersion: campaign.fieldVersion,
       fieldHash: campaign.fieldHash,
       fieldFrozenAt: campaign.fieldFrozenAt?.toISOString() ?? null,

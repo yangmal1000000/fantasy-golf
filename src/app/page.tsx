@@ -2,10 +2,14 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import {
-  ROCKET_BETA_ENTRY_CLOSES_AT,
   ROCKET_BETA_TOURNAMENT_ID,
   getRocketBetaStateForUser,
 } from "@/lib/rocket-beta";
+import {
+  ROCKET_BETA_ENTRY_CLOSES_AT,
+  ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED,
+  formatRocketBetaEntryDeadline,
+} from "@/lib/rocket-beta-config";
 import {
   CheckCircleIcon,
   GolfFlagIcon,
@@ -114,11 +118,9 @@ export default async function Home() {
               <EventFact label="Par" value="70" />
               <EventFact
                 label="Team lock"
-                value={ROCKET_BETA_ENTRY_CLOSES_AT.toLocaleString("en-GB", {
-                  timeZone: "Europe/London",
-                  weekday: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
+                value={formatRocketBetaEntryDeadline({
+                  closesAt: ROCKET_BETA_ENTRY_CLOSES_AT,
+                  confirmed: ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED,
                 })}
               />
             </dl>

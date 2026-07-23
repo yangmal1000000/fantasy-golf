@@ -8,12 +8,13 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isRocketBetaRegistrationOpen } from "@/lib/rocket-beta-access";
+import { ROCKET_BETA_ENTRY_CLOSES_AT } from "@/lib/rocket-beta-config";
 import { ensureRocketBetaSchema } from "@/lib/rocket-beta-schema";
 import { TARGET_JUDGE_ROUND_SLUG } from "@/lib/target-judge-core";
 
 export const ROCKET_BETA_CAMPAIGN_SLUG = "rocket-classic-2026-beta";
 export const ROCKET_BETA_TOURNAMENT_ID = "rocket-classic";
-export const ROCKET_BETA_ENTRY_CLOSES_AT = new Date("2026-07-30T10:45:00.000Z");
+export { ROCKET_BETA_ENTRY_CLOSES_AT } from "@/lib/rocket-beta-config";
 
 export type RocketBetaPassState = "LOCKED" | "UNLOCKED" | "REDEEMED";
 
