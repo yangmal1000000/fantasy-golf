@@ -8,8 +8,22 @@ export async function middleware(request: NextRequest) {
   const protectedApi =
     pathname.startsWith("/api/admin") ||
     pathname.startsWith("/api/sync") ||
+    pathname === "/api/rocket-beta-control" ||
     pathname === "/api/test-db";
-  const protectedPage = pathname === "/admin" || pathname.startsWith("/admin/");
+  const protectedPage =
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname === "/rocket-control";
+  const disabledRocketSideGame =
+    pathname === "/tournaments/rocket-classic/side-games" ||
+    pathname.startsWith("/tournaments/rocket-classic/side-games/");
+
+  if (disabledRocketSideGame) {
+    return new NextResponse("Not Found", {
+      status: 404,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
 
   if ((protectedApi || protectedPage) && !isTargetJudgeCoordinator(verifiedEmail)) {
     if (protectedApi) {

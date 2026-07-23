@@ -25,6 +25,9 @@ export interface RocketBetaState {
   tournamentHref: "/tournaments/rocket-classic";
   enterHref: "/tournaments/rocket-classic/enter";
   entryClosesAt: string;
+  fieldVersion: string | null;
+  fieldFrozenAt: string | null;
+  fieldReady: boolean;
   passState: RocketBetaPassState;
   unlockedAt: string | null;
   redeemedAt: string | null;
@@ -92,6 +95,24 @@ export async function ensureRocketBetaCampaign() {
   });
 }
 
+export async function isRocketBetaEmailApproved(
+  email: string | null | undefined,
+) {
+  if (!email) return false;
+  const campaign = await ensureRocketBetaCampaign();
+  if (!campaign) return false;
+  const member = await prisma.rocketBetaMember.findUnique({
+    where: {
+      campaignId_email: {
+        campaignId: campaign.id,
+        email: normaliseEmail(email),
+      },
+    },
+    select: { active: true },
+  });
+  return member?.active === true;
+}
+
 export async function getRocketBetaStateForUser(
   user: BetaActor,
 ): Promise<RocketBetaState> {
@@ -149,6 +170,9 @@ export async function getRocketBetaStateForUser(
     tournamentHref: "/tournaments/rocket-classic",
     enterHref: "/tournaments/rocket-classic/enter",
     entryClosesAt: (campaign.entryClosesAt ?? ROCKET_BETA_ENTRY_CLOSES_AT).toISOString(),
+    fieldVersion: campaign.fieldVersion,
+    fieldFrozenAt: campaign.fieldFrozenAt?.toISOString() ?? null,
+    fieldReady: Boolean(campaign.fieldFrozenAt && campaign.fieldHash),
     passState: pass?.status === "REDEEMED" ? "REDEEMED" : pass ? "UNLOCKED" : "LOCKED",
     unlockedAt: pass?.unlockedAt.toISOString() ?? null,
     redeemedAt: pass?.redeemedAt?.toISOString() ?? null,
@@ -216,6 +240,12 @@ export async function requireRocketBetaEntryPass(
   if (campaign.entryClosesAt && new Date() >= campaign.entryClosesAt) {
     throw new RocketBetaError("Rocket Classic beta entries are closed", 409);
   }
+  if (!campaign.fieldFrozenAt || !campaign.fieldHash) {
+    throw new RocketBetaError(
+      "The reviewed Rocket Classic field is not open for team selection yet",
+      409,
+    );
+  }
   const pass = await tx.rocketBetaPass.findUnique({
     where: { campaignId_userId: { campaignId: campaign.id, userId: user.id } },
   });
@@ -241,6 +271,9 @@ function emptyState(
     tournamentHref: "/tournaments/rocket-classic",
     enterHref: "/tournaments/rocket-classic/enter",
     entryClosesAt: ROCKET_BETA_ENTRY_CLOSES_AT.toISOString(),
+    fieldVersion: null,
+    fieldFrozenAt: null,
+    fieldReady: false,
     passState: "LOCKED",
     unlockedAt: null,
     redeemedAt: null,

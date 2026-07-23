@@ -357,6 +357,9 @@ model RocketBetaCampaign {
   fieldVersion    String?
   fieldHash       String?
   fieldFrozenAt   DateTime?
+  results         Json?
+  resultsHash     String?
+  finalizedAt     DateTime?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   members         RocketBetaMember[]

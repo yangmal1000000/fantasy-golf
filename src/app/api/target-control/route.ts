@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureRocketBetaCampaign } from "@/lib/rocket-beta";
 import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import {
   TARGET_JUDGE_ROUND_SLUG,
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
     assertSameOrigin(request);
     const actorEmail = await requireTargetJudgeCoordinator();
     await ensureTargetJudgeSchema();
+    await ensureRocketBetaCampaign();
     const body = (await request.json()) as { action?: unknown; panel?: unknown };
 
     switch (body.action) {
@@ -254,6 +256,23 @@ async function clearPilotEntries(actorEmail: string) {
     if (round.pilotEntriesSealedAt) {
       throw new TargetControlRequestError("Sealed pilot evidence cannot be cleared", 409);
     }
+    const entryIds = await tx.targetPilotEntry.findMany({
+      where: { roundId: round.id },
+      select: { id: true },
+    });
+    const passes = await tx.rocketBetaPass.findMany({
+      where: { sourceTargetEntryId: { in: entryIds.map((entry) => entry.id) } },
+      select: { id: true, campaignId: true, teamId: true },
+    });
+    if (passes.some((pass) => pass.teamId)) {
+      throw new TargetControlRequestError(
+        "A Test Pass has already been redeemed; its Target entry cannot be reset",
+        409,
+      );
+    }
+    const deletedPasses = await tx.rocketBetaPass.deleteMany({
+      where: { id: { in: passes.map((pass) => pass.id) } },
+    });
     const deleted = await tx.targetPilotEntry.deleteMany({ where: { roundId: round.id } });
     await tx.targetJudgeAudit.create({
       data: {
@@ -263,6 +282,20 @@ async function clearPilotEntries(actorEmail: string) {
         payload: { deletedEntries: deleted.count },
       },
     });
+    const campaignId = passes[0]?.campaignId;
+    if (campaignId) {
+      await tx.rocketBetaAudit.create({
+        data: {
+          campaignId,
+          actorEmail,
+          action: "unredeemed_test_passes_reset",
+          payload: {
+            deletedEntries: deleted.count,
+            deletedPasses: deletedPasses.count,
+          },
+        },
+      });
+    }
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 

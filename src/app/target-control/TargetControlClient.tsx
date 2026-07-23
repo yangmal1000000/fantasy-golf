@@ -105,7 +105,12 @@ export default function TargetControlClient() {
       <div className="border-b border-[#c8a951]/25 bg-[#071f16] text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5 text-xs">
           <span className="font-bold uppercase tracking-[0.16em] text-[#e4cc85]">Private Target Control</span>
-          <span className="text-right text-white/65">Pilot only · Coordinator access</span>
+          <Link
+            href="/rocket-control"
+            className="rounded-lg bg-white/10 px-3 py-1.5 font-bold text-white/80 transition hover:bg-white/15 hover:text-white"
+          >
+            Rocket beta control →
+          </Link>
         </div>
       </div>
 

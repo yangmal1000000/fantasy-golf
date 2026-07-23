@@ -7,6 +7,7 @@ export default function NavLinks() {
   const pathname = usePathname();
 
   const links = [
+    { href: "/tournaments/rocket-classic", label: "Rocket Beta", active: pathname.startsWith("/tournaments/rocket-classic") },
     { href: "/dashboard", label: "Dashboard", active: pathname.startsWith("/dashboard") },
     { href: "/tournaments", label: "Tournaments", active: pathname.startsWith("/tournaments") },
     { href: "/players", label: "Players", active: pathname.startsWith("/players") },

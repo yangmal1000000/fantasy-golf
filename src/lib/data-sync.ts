@@ -12,6 +12,9 @@
  */
 
 import { prisma } from "./prisma";
+import { processAutoSubs } from "./auto-sub";
+import { recalculateTeamScores } from "./team-scores";
+import { applyCutLogic } from "./scoring";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -91,6 +94,7 @@ const TOURNAMENT_META: Record<
   "FedEx St. Jude Championship": { slug: "fedex-st-jude-championship", course: "TPC Southwind", par: 70, category: "playoff", tour: "pga", entryFee: 1000 },
   "BMW Championship": { slug: "bmw-championship", course: "TBD", par: 71, category: "playoff", tour: "pga", entryFee: 1000 },
   "BMW PGA Championship": { slug: "bmw-pga-championship", course: "Wentworth Club", par: 72, category: "dpwt", tour: "dpwt", entryFee: 1000 },
+  "Rocket Classic": { slug: "rocket-classic", course: "Detroit Golf Club", par: 70, category: "regular", tour: "pga", entryFee: 0 },
 };
 
 /**
@@ -256,7 +260,7 @@ function computeStatus(startDate: string, endDate: string, espnStatus: string): 
 const FETCH_TIMEOUT = 15000;
 const USER_AGENT = "Mozilla/5.0 (compatible; FantasyGolfSync/1.0)";
 
-async function fetchESPN(path: string): Promise<any | null> {
+async function fetchESPN<T>(path: string): Promise<T | null> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
@@ -268,7 +272,7 @@ async function fetchESPN(path: string): Promise<any | null> {
     clearTimeout(timeout);
 
     if (!res.ok) return null;
-    return await res.json();
+    return (await res.json()) as T;
   } catch (e) {
     console.error(`ESPN fetch error (${path}):`, e);
     return null;
@@ -280,7 +284,9 @@ async function fetchESPN(path: string): Promise<any | null> {
  * Format: dates=YYYYMMDD-YYYYMMDD
  */
 async function fetchScoreboard(dateRange: string): Promise<ESPNScoreboardResponse | null> {
-  return fetchESPN(`/apis/site/v2/sports/golf/pga/scoreboard?dates=${dateRange}`);
+  return fetchESPN<ESPNScoreboardResponse>(
+    `/apis/site/v2/sports/golf/pga/scoreboard?dates=${dateRange}`,
+  );
 }
 
 // ── Tier helper ────────────────────────────────────────────────────────────
@@ -580,16 +586,27 @@ async function processESPNCompetitors(
   const existingPlayers = await prisma.player.findMany({ select: { id: true, name: true, country: true, dataGolfRank: true } });
   const playerMap = new Map<string, { id: string; name: string; country: string | null; dataGolfRank: number | null }>();
   for (const p of existingPlayers) {
-    playerMap.set(p.name.toLowerCase().trim(), p);
+    playerMap.set(normalizePlayerName(p.name), p);
   }
 
   // 2. Load existing tournament players and scores in bulk
   const existingTPs = await prisma.tournamentPlayer.findMany({
     where: { tournamentId },
-    select: { playerId: true, tier: true, madeCut: true },
+    select: { playerId: true, tier: true, madeCut: true, withdrew: true },
   });
-  const tpMap = new Map<string, { tier: string; madeCut: boolean | null }>();
-  for (const tp of existingTPs) tpMap.set(tp.playerId, { tier: tp.tier, madeCut: tp.madeCut });
+  const tpMap = new Map<string, { tier: string; madeCut: boolean | null; withdrew: boolean }>();
+  for (const tp of existingTPs) {
+    tpMap.set(tp.playerId, {
+      tier: tp.tier,
+      madeCut: tp.madeCut,
+      withdrew: tp.withdrew,
+    });
+  }
+  const frozenBeta = await prisma.rocketBetaCampaign.findUnique({
+    where: { tournamentId },
+    select: { fieldFrozenAt: true },
+  }).catch(() => null);
+  const fieldIsFrozen = Boolean(frozenBeta?.fieldFrozenAt);
 
   const existingScores = await prisma.score.findMany({
     where: { tournamentId },
@@ -599,9 +616,8 @@ async function processESPNCompetitors(
   for (const s of existingScores) scoreMap.set(`${s.playerId}:${s.round}`, s.strokes ?? -1);
 
   // 3. Process competitors in memory, collect what needs to be created/updated
-  const newPlayers: Array<{ name: string; country: string | null }> = [];
-  const newTPs: Array<{ tournamentId: string; playerId: string; tier: string; madeCut: boolean | null }> = [];
-  const tpUpdates: Array<{ playerId: string; tier: string; madeCut: boolean }> = [];
+  const newTPs: Array<{ tournamentId: string; playerId: string; tier: string; madeCut: boolean | null; withdrew: boolean }> = [];
+  const tpUpdates: Array<{ playerId: string; tier: string; madeCut: boolean | null; withdrew: boolean }> = [];
   const newScores: Array<{ tournamentId: string; playerId: string; round: number; strokes: number; isEstimated: boolean }> = [];
   const scoreUpdates: Array<{ playerId: string; round: number; strokes: number }> = [];
 
@@ -611,7 +627,7 @@ async function processESPNCompetitors(
     const playerName = comp.athlete?.fullName;
     if (!playerName || playerName.trim().length === 0) continue;
 
-    const key = playerName.toLowerCase().trim();
+    const key = normalizePlayerName(playerName);
     if (processedNames.has(key)) continue;
     processedNames.add(key);
 
@@ -625,6 +641,7 @@ async function processESPNCompetitors(
       playerId = existing.id;
       rank = existing.dataGolfRank;
     } else {
+      if (fieldIsFrozen) continue;
       // Create new player immediately
       const created = await prisma.player.create({
         data: { name: playerName, country },
@@ -634,20 +651,41 @@ async function processESPNCompetitors(
       playerMap.set(key, { id: playerId, name: playerName, country, dataGolfRank: null });
     }
 
-    // Determine madeCut and tier
-    const madeCut = comp.thru !== "CUT" && comp.status?.type?.name !== "STATUS_CUT";
-    const tierVal = tierForRank(rank);
+    // Determine status. A golfer has not "made the cut" merely by starting;
+    // keep the state unknown until ESPN explicitly reports CUT or R3 begins.
+    const existingTP = tpMap.get(playerId);
+    const statusName = comp.status?.type?.name ?? "";
+    const detectedWithdrawal =
+      comp.thru === "WD" ||
+      statusName === "STATUS_WITHDRAWN" ||
+      statusName === "STATUS_WITHDRAWAL";
+    const withdrew = existingTP?.withdrew === true || detectedWithdrawal;
+    const missedCut = comp.thru === "CUT" || statusName === "STATUS_CUT";
+    const reachedRoundThree = (comp.linescores ?? []).some(
+      (score) => score.period >= 3 && score.value > 0,
+    );
+    const madeCut = missedCut
+      ? false
+      : reachedRoundThree
+        ? true
+        : existingTP?.madeCut ?? null;
+    const tierVal =
+      fieldIsFrozen && existingTP ? existingTP.tier : tierForRank(rank);
 
     // Check if tournament link exists
-    const existingTP = tpMap.get(playerId);
     if (!existingTP) {
-      newTPs.push({ tournamentId, playerId, tier: tierVal, madeCut });
-      tpMap.set(playerId, { tier: tierVal, madeCut });
+      if (fieldIsFrozen) continue;
+      newTPs.push({ tournamentId, playerId, tier: tierVal, madeCut, withdrew });
+      tpMap.set(playerId, { tier: tierVal, madeCut, withdrew });
       playersLinked++;
     } else {
       // Update if changed
-      if (existingTP.tier !== tierVal || existingTP.madeCut !== madeCut) {
-        tpUpdates.push({ playerId, tier: tierVal, madeCut });
+      if (
+        existingTP.tier !== tierVal ||
+        existingTP.madeCut !== madeCut ||
+        existingTP.withdrew !== withdrew
+      ) {
+        tpUpdates.push({ playerId, tier: tierVal, madeCut, withdrew });
       }
     }
 
@@ -679,8 +717,8 @@ async function processESPNCompetitors(
   if (newTPs.length > 0) {
     try {
       await prisma.tournamentPlayer.createMany({
-        data: newTPs.map(({ tournamentId: tid, playerId, tier, madeCut }) => ({
-          tournamentId: tid, playerId, tier, madeCut,
+        data: newTPs.map(({ tournamentId: tid, playerId, tier, madeCut, withdrew }) => ({
+          tournamentId: tid, playerId, tier, madeCut, withdrew,
         })),
         skipDuplicates: true,
       });
@@ -699,7 +737,11 @@ async function processESPNCompetitors(
     try {
       await prisma.tournamentPlayer.update({
         where: { tournamentId_playerId: { tournamentId, playerId: update.playerId } },
-        data: { tier: update.tier, madeCut: update.madeCut },
+        data: {
+          tier: update.tier,
+          madeCut: update.madeCut,
+          withdrew: update.withdrew,
+        },
       });
     } catch { /* ignore */ }
   }
@@ -789,6 +831,7 @@ export async function syncTournamentResults(tournamentId?: string): Promise<Sync
       totalPlayersLinked += result.playersLinked;
       totalScoresCreated += result.scoresCreated;
       totalScoresUpdated += result.scoresUpdated;
+      await recalculateTeamScores(tournament.id);
 
       tournamentsProcessed++;
     } catch (e) {
@@ -824,6 +867,7 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
   let totalScoresCreated = 0;
   let totalScoresUpdated = 0;
   let tournamentsProcessed = 0;
+  let substitutionsProcessed = 0;
 
   let tournaments: Array<{ id: string; name: string; startDate: Date; endDate: Date }>;
 
@@ -877,6 +921,12 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
       const result = await processESPNCompetitors(tournament.id, competitors);
       totalScoresCreated += result.scoresCreated;
       totalScoresUpdated += result.scoresUpdated;
+      const substitutions = await processAutoSubs(tournament.id);
+      substitutionsProcessed += substitutions.subsProcessed;
+      if (espnCurrentRound >= 3) {
+        await applyCutLogic(tournament.id);
+      }
+      await recalculateTeamScores(tournament.id);
 
       tournamentsProcessed++;
     } catch (e) {
@@ -888,7 +938,7 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
     ok: true,
     created: totalScoresCreated,
     updated: totalScoresUpdated,
-    details: { tournamentsProcessed },
+    details: { tournamentsProcessed, substitutionsProcessed },
     errors,
   };
 }
@@ -1090,10 +1140,13 @@ export async function fixVenues(): Promise<SyncResult> {
 export async function linkPlayersToTournaments(): Promise<SyncResult> {
   let totalLinked = 0;
   let totalSkipped = 0;
-  let errors: string[] = [];
+  const errors: string[] = [];
 
   const tournaments = await prisma.tournament.findMany({
-    where: { status: { in: ["upcoming", "entries_open"] } },
+    where: {
+      status: { in: ["upcoming", "entries_open"] },
+      id: { not: "rocket-classic" },
+    },
   });
   const players = await prisma.player.findMany({
     where: { dataGolfRank: { not: null } },
@@ -1121,7 +1174,7 @@ export async function linkPlayersToTournaments(): Promise<SyncResult> {
           },
         });
         totalLinked++;
-      } catch (e) {
+      } catch {
         // Ignore unique constraint violations (race conditions)
         totalSkipped++;
       }
@@ -1135,4 +1188,13 @@ export async function linkPlayersToTournaments(): Promise<SyncResult> {
     details: { tournaments: tournaments.length, players: players.length },
     errors,
   };
+}
+
+function normalizePlayerName(name: string) {
+  return name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }

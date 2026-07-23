@@ -186,6 +186,14 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
           tournamentPlayerId: replacement.id,
         },
       }),
+      prisma.tournamentPlayer.update({
+        where: { id: selection.tournamentPlayer.id },
+        data: { selectionCount: { decrement: 1 } },
+      }),
+      prisma.tournamentPlayer.update({
+        where: { id: replacement.id },
+        data: { selectionCount: { increment: 1 } },
+      }),
       // Log the substitution
       prisma.teamSubLog.create({
         data: {
@@ -241,7 +249,7 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
     if (!team) continue;
 
     const notifTitle = `⚠️ No sub available for ${u.wdPlayerName}`;
-    const notifBody = `${tournament.name}: ${u.wdPlayerName} withdrew (Tier ${u.tier}) but no replacement player was available. Your team will play with 4 players.`;
+    const notifBody = `${tournament.name}: ${u.wdPlayerName} withdrew (Tier ${u.tier}) but no replacement player was available. The published withdrawal score will apply to that slot.`;
 
     try {
       await prisma.notification.create({

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { getTeamsWithScores } from "@/lib/team-scores";
+import { calculateLeaderboard } from "@/lib/scoring";
+import { ROCKET_BETA_TOURNAMENT_ID } from "@/lib/rocket-beta";
 import { majorTheme } from "@/lib/ui";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -24,11 +25,11 @@ export default async function LeaderboardPage({
 
   if (!tournament) notFound();
 
+  const isRocketBeta = tournament.id === ROCKET_BETA_TOURNAMENT_ID;
   const theme = majorTheme(tournament.id);
   const potTotal = tournament._count.teams * tournament.entryFee;
-  const teams = await getTeamsWithScores(id);
-  const hasFantasyTeams = teams.length > 0 && teams.some((t) => t.position != null && t.position > 0);
-  const totalPar = tournament.par * 4 * 5;
+  const teams = await calculateLeaderboard(id);
+  const hasFantasyTeams = teams.length > 0;
 
   return (
     <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
@@ -46,8 +47,10 @@ export default async function LeaderboardPage({
           <p className="text-[10px] text-zinc-500">Teams</p>
         </div>
         <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2 text-center">
-          <p className="text-base font-bold tabular text-[#c8a951]">{potTotal > 0 ? `£${(potTotal / 100).toFixed(0)}` : "—"}</p>
-          <p className="text-[10px] text-zinc-500">Pot</p>
+          <p className="text-base font-bold tabular text-[#c8a951]">
+            {isRocketBeta ? "Test" : potTotal > 0 ? `£${(potTotal / 100).toFixed(0)}` : "—"}
+          </p>
+          <p className="text-[10px] text-zinc-500">{isRocketBeta ? "No-prize beta" : "Pot"}</p>
         </div>
         <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2 text-center">
           <p className="text-base font-bold tabular text-[#0a3d2a] dark:text-green-400">{tournament.par}</p>
@@ -69,31 +72,40 @@ export default async function LeaderboardPage({
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {teams.map((team) => {
-                const vsPar = team.totalScore - totalPar;
                 return (
-                  <tr key={team.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                  <tr key={team.teamId} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                     <td className="px-3 py-2.5">
                       <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
                         team.position === 1 ? "bg-[#c8a951] text-[#1a1a1a]" : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
-                      }`}>{team.position}</span>
+                      }`}>{team.position || "—"}</span>
                     </td>
                     <td className="px-3 py-2.5">
-                      <Link href={`/tournaments/${id}/teams/${team.id}`} className="font-semibold text-[#0a3d2a] hover:underline dark:text-green-400">
-                        {team.name}
+                      <Link href={`/tournaments/${id}/teams/${team.teamId}`} className="font-semibold text-[#0a3d2a] hover:underline dark:text-green-400">
+                        {team.teamName}
                       </Link>
-                      <p className="text-xs text-zinc-500">{team.user?.name ?? team.user?.email ?? "—"}</p>
+                      <p className="text-xs text-zinc-500">
+                        {team.ownerName} · {team.roundsScored}/20 rounds scored
+                      </p>
                       {/* Player chips */}
                       <div className="mt-1 flex gap-1">
-                        {team.selections.map((sel: any) => (
-                          <span key={sel.id} className="inline-flex items-center gap-0.5 rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 dark:text-zinc-400">
-                            {sel.tournamentPlayer?.tier?.replace("_", " ").replace("PLUS", "+")} · {sel.tournamentPlayer?.player?.name?.split(" ").slice(-1)[0]}
+                        {team.players.map((player) => (
+                          <span key={player.playerId} className="inline-flex items-center gap-0.5 rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 dark:text-zinc-400">
+                            {player.tier.replace("_", " ").replace("PLUS", "+")} · {player.playerName.split(" ").slice(-1)[0]}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-right font-bold tabular text-[#0a3d2a] dark:text-green-400">{team.totalScore}</td>
+                    <td className="px-3 py-2.5 text-right font-bold tabular text-[#0a3d2a] dark:text-green-400">
+                      {team.roundsScored > 0 ? team.totalStrokes : "—"}
+                    </td>
                     <td className="px-3 py-2.5 text-right tabular text-zinc-600 dark:text-zinc-400">
-                      {vsPar === 0 ? "E" : vsPar > 0 ? `+${vsPar}` : vsPar}
+                      {team.roundsScored === 0
+                        ? "—"
+                        : team.vsPar === 0
+                          ? "E"
+                          : team.vsPar > 0
+                            ? `+${team.vsPar}`
+                            : team.vsPar}
                     </td>
                   </tr>
                 );
@@ -104,7 +116,9 @@ export default async function LeaderboardPage({
       ) : (
         <div className="rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 p-8 text-center">
           <p className="text-sm text-zinc-500">No fantasy teams with scores yet.</p>
-          <Link href={`/tournaments/${id}/enter`} className="mt-3 inline-block rounded-full bg-[#0a3d2a] px-5 py-2 text-sm font-bold text-white hover:bg-[#1a5c3e]">Enter Team →</Link>
+          <Link href={isRocketBeta ? `/tournaments/${id}` : `/tournaments/${id}/enter`} className="mt-3 inline-block rounded-full bg-[#0a3d2a] px-5 py-2 text-sm font-bold text-white hover:bg-[#1a5c3e]">
+            {isRocketBeta ? "View beta journey →" : "Enter Team →"}
+          </Link>
         </div>
       )}
     </div>

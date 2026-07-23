@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   ROCKET_BETA_ENTRY_CLOSES_AT,
   ROCKET_BETA_TOURNAMENT_ID,
+  ensureRocketBetaCampaign,
   getRocketBetaStateForUser,
 } from "@/lib/rocket-beta";
 import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP, majorTheme, majorKey } from "@/lib/ui";
@@ -42,8 +43,11 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   ]);
 
   if (!tournament) notFound();
-  const betaState =
-    isRocketBeta && betaUser ? await getRocketBetaStateForUser(betaUser) : null;
+  const [betaState, betaCampaign] = await Promise.all([
+    isRocketBeta && betaUser ? getRocketBetaStateForUser(betaUser) : Promise.resolve(null),
+    isRocketBeta ? ensureRocketBetaCampaign() : Promise.resolve(null),
+  ]);
+  const betaResult = parseRocketBetaResult(betaCampaign?.results);
 
   // Fetch scores for this tournament
   const scores = await prisma.score.findMany({
@@ -255,6 +259,36 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </section>
       )}
 
+      {isRocketBeta && betaCampaign?.finalizedAt && betaResult && (
+        <section className="mt-3 rounded-xl border-2 border-[#c8a951]/55 bg-gradient-to-br from-[#c8a951]/15 via-white to-white p-4 shadow-sm dark:via-zinc-900 dark:to-zinc-900 sm:p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#c8a951] text-xl shadow-sm">
+              🏆
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#e4cc85]">
+                Final beta result confirmed
+              </p>
+              <p className="mt-1 text-lg font-black text-zinc-900 dark:text-white">
+                {betaResult.winners.map((team) => team.teamName).join(" & ")}
+              </p>
+              <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
+                {betaResult.winners.length > 1 ? "Joint winners" : "Winner"} ·{" "}
+                {toParDisplay(betaResult.winners[0].vsPar)} across five golfers
+              </p>
+              {betaCampaign.resultsHash && (
+                <p className="mt-2 font-mono text-[9px] text-zinc-400">
+                  Sealed result {betaCampaign.resultsHash.slice(0, 12)}
+                </p>
+              )}
+            </div>
+          </div>
+          <p className="mt-3 border-t border-[#c8a951]/20 pt-3 text-[11px] leading-5 text-zinc-500">
+            Closed-test result only. No payment, cash value or prize.
+          </p>
+        </section>
+      )}
+
       {/* Prize pool + countdown */}
       {!isRocketBeta && potValue > 0 && (
         <div className={`mt-2 flex items-center justify-between rounded-lg border p-3 ${theme ? theme.potCardClass : "border-[#c8a951]/30 bg-gradient-to-r from-[#c8a951]/10 to-transparent"}`}>
@@ -288,13 +322,13 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               <Link href="/target" className="flex items-center justify-center gap-1.5 rounded-lg bg-[#0a3d2a] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1a5c3e]">
                 <TargetIcon className="h-4 w-4" /> Complete Target
               </Link>
-            ) : tournament._count.players > 0 ? (
+            ) : betaState.fieldReady && tournament._count.players > 0 ? (
               <Link href={`/tournaments/${tournament.id}/enter`} className="flex items-center justify-center gap-1.5 rounded-lg bg-[#0a3d2a] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1a5c3e]">
                 <GolfFlagIcon className="h-4 w-4" /> Build My Team
               </Link>
             ) : (
               <div className="flex items-center justify-center gap-1.5 rounded-lg bg-[#c8a951]/20 px-4 py-2.5 text-sm font-bold text-[#7a5e16] dark:text-[#e4cc85]">
-                Test Pass Ready · Field Preparing
+                Test Pass Ready · Field Review
               </div>
             )
           ) : (
@@ -672,4 +706,21 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       )}
     </div>
   );
+}
+
+function parseRocketBetaResult(value: unknown) {
+  if (!value || typeof value !== "object" || !("teams" in value)) return null;
+  const teams = (value as { teams?: unknown }).teams;
+  if (!Array.isArray(teams)) return null;
+  const winners = teams.filter(
+    (team): team is { teamName: string; position: number; vsPar: number } =>
+      Boolean(
+        team &&
+          typeof team === "object" &&
+          (team as { position?: unknown }).position === 1 &&
+          typeof (team as { teamName?: unknown }).teamName === "string" &&
+          typeof (team as { vsPar?: unknown }).vsPar === "number",
+      ),
+  );
+  return winners.length > 0 ? { winners } : null;
 }

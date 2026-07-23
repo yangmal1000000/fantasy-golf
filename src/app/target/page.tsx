@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import SignInPrompt from "@/components/SignInPrompt";
-import { isTargetPreviewAllowed } from "@/lib/target-preview-access";
+import { isRocketBetaEmailApproved } from "@/lib/rocket-beta";
 import { createClient } from "@/utils/supabase/server";
 import TargetChallengeClient from "./TargetChallengeClient";
 
@@ -35,7 +35,7 @@ export default async function TargetPreviewPage() {
     );
   }
 
-  if (!isTargetPreviewAllowed(user.email)) {
+  if (!(await isRocketBetaEmailApproved(user.email))) {
     notFound();
   }
 

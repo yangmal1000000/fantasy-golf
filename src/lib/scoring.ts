@@ -1,4 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import {
+  applyFantasyScorePolicy,
+  compareTeamScoreKeys,
+  deriveCutLine,
+  fantasyScoreState,
+  sameTeamScorePosition,
+  type FantasyScoreState,
+} from "@/lib/scoring-core";
 
 // ---------- Types ----------
 
@@ -11,6 +19,7 @@ export interface PlayerScoreSummary {
   roundScores: (number | null)[]; // [R1, R2, R3, R4]
   totalStrokes: number;
   roundsPlayed: number;
+  vsPar: number;
   madeCut: boolean | null;
   withdrew: boolean;
   isEstimated: boolean[];
@@ -23,6 +32,8 @@ export interface TeamScoreResult {
   players: PlayerScoreSummary[];
   totalStrokes: number;
   vsPar: number;
+  roundsScored: number;
+  scoreState: FantasyScoreState;
   position: number;
 }
 
@@ -105,21 +116,13 @@ export async function calculateLeaderboard(
         }
       }
 
-      // Apply cut logic
-      if (madeCut === false) {
-        const estScore = getEstimatedScore(roundScores[0], roundScores[1]);
-        if (estScore != null && roundScores[2] == null) {
-          roundScores[2] = estScore;
-          isEstimated[2] = true;
-        }
-        if (estScore != null && roundScores[3] == null) {
-          roundScores[3] = estScore;
-          isEstimated[3] = true;
-        }
-      }
-
-      const totalStrokes = roundScores.reduce<number>((sum, s) => sum + (s ?? 0), 0);
-      const roundsPlayed = roundScores.filter((s) => s != null).length;
+      const scored = applyFantasyScorePolicy({
+        scores: roundScores,
+        estimates: isEstimated,
+        par: tournament.par,
+        madeCut,
+        withdrew,
+      });
 
       return {
         playerId: player.id,
@@ -127,12 +130,13 @@ export async function calculateLeaderboard(
         country: player.country,
         photoUrl: player.photoUrl,
         tier: tp.tier,
-        roundScores,
-        totalStrokes,
-        roundsPlayed,
+        roundScores: scored.roundScores,
+        totalStrokes: scored.totalStrokes,
+        roundsPlayed: scored.roundsScored,
+        vsPar: scored.vsPar,
         madeCut,
         withdrew,
-        isEstimated,
+        isEstimated: scored.isEstimated,
       };
     });
 
@@ -140,8 +144,8 @@ export async function calculateLeaderboard(
     playerSummaries.sort((a, b) => (TIER_ORDER[a.tier] ?? 99) - (TIER_ORDER[b.tier] ?? 99));
 
     const totalStrokes = playerSummaries.reduce((sum, p) => sum + p.totalStrokes, 0);
-    const totalPar = tournament.par * 4 * playerSummaries.length;
-    const vsPar = totalStrokes - totalPar;
+    const roundsScored = playerSummaries.reduce((sum, p) => sum + p.roundsPlayed, 0);
+    const vsPar = playerSummaries.reduce((sum, p) => sum + p.vsPar, 0);
 
     return {
       teamId: team.id,
@@ -150,16 +154,19 @@ export async function calculateLeaderboard(
       players: playerSummaries,
       totalStrokes,
       vsPar,
+      roundsScored,
+      scoreState: fantasyScoreState(roundsScored, playerSummaries.length * 4),
       position: 0,
     };
   });
 
-  // Sort by total strokes ascending
-  results.sort((a, b) => a.totalStrokes - b.totalStrokes);
+  results.sort(compareTeamScoreKeys);
 
   // Assign positions (handle ties)
   for (let i = 0; i < results.length; i++) {
-    if (i > 0 && results[i].totalStrokes === results[i - 1].totalStrokes) {
+    if (results[i].roundsScored === 0) {
+      results[i].position = 0;
+    } else if (i > 0 && sameTeamScorePosition(results[i], results[i - 1])) {
       results[i].position = results[i - 1].position;
     } else {
       results[i].position = i + 1;
@@ -224,20 +231,13 @@ export async function calculateTeamScore(
       }
     }
 
-    if (madeCut === false) {
-      const estScore = getEstimatedScore(roundScores[0], roundScores[1]);
-      if (estScore != null && roundScores[2] == null) {
-        roundScores[2] = estScore;
-        isEstimated[2] = true;
-      }
-      if (estScore != null && roundScores[3] == null) {
-        roundScores[3] = estScore;
-        isEstimated[3] = true;
-      }
-    }
-
-    const totalStrokes = roundScores.reduce<number>((sum, s) => sum + (s ?? 0), 0);
-    const roundsPlayed = roundScores.filter((s) => s != null).length;
+    const scored = applyFantasyScorePolicy({
+      scores: roundScores,
+      estimates: isEstimated,
+      par: team.tournament.par,
+      madeCut,
+      withdrew,
+    });
 
     return {
       playerId: player.id,
@@ -245,20 +245,21 @@ export async function calculateTeamScore(
       country: player.country,
       photoUrl: player.photoUrl,
       tier: tp.tier,
-      roundScores,
-      totalStrokes,
-      roundsPlayed,
+      roundScores: scored.roundScores,
+      totalStrokes: scored.totalStrokes,
+      roundsPlayed: scored.roundsScored,
+      vsPar: scored.vsPar,
       madeCut,
       withdrew,
-      isEstimated,
+      isEstimated: scored.isEstimated,
     };
   });
 
   playerSummaries.sort((a, b) => (TIER_ORDER[a.tier] ?? 99) - (TIER_ORDER[b.tier] ?? 99));
 
   const totalStrokes = playerSummaries.reduce((sum, p) => sum + p.totalStrokes, 0);
-  const totalPar = team.tournament.par * 4 * playerSummaries.length;
-  const vsPar = totalStrokes - totalPar;
+  const roundsScored = playerSummaries.reduce((sum, p) => sum + p.roundsPlayed, 0);
+  const vsPar = playerSummaries.reduce((sum, p) => sum + p.vsPar, 0);
 
   return {
     teamId: team.id,
@@ -267,6 +268,8 @@ export async function calculateTeamScore(
     players: playerSummaries,
     totalStrokes,
     vsPar,
+    roundsScored,
+    scoreState: fantasyScoreState(roundsScored, playerSummaries.length * 4),
     position: team.position ?? 0,
   };
 }
@@ -277,9 +280,13 @@ export async function getPlayerScoreSummary(
   playerId: string,
   tournamentId: string
 ): Promise<PlayerScoreSummary> {
-  const [tournamentPlayer, player, scores] = await Promise.all([
+  const [tournamentPlayer, tournament, player, scores] = await Promise.all([
     prisma.tournamentPlayer.findUnique({
       where: { tournamentId_playerId: { tournamentId, playerId } },
+    }),
+    prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      select: { par: true },
     }),
     prisma.player.findUnique({ where: { id: playerId } }),
     prisma.score.findMany({ where: { tournamentId, playerId }, orderBy: { round: "asc" } }),
@@ -299,16 +306,15 @@ export async function getPlayerScoreSummary(
     }
   }
 
-  if (madeCut === false) {
-    const estScore = getEstimatedScore(roundScores[0], roundScores[1]);
-    if (estScore != null && roundScores[2] == null) { roundScores[2] = estScore; isEstimated[2] = true; }
-    if (estScore != null && roundScores[3] == null) { roundScores[3] = estScore; isEstimated[3] = true; }
-  }
+  const scored = applyFantasyScorePolicy({
+    scores: roundScores,
+    estimates: isEstimated,
+    par: tournament?.par ?? 72,
+    madeCut,
+    withdrew,
+  });
 
-  const totalStrokes = roundScores.reduce<number>((sum, s) => sum + (s ?? 0), 0);
-  const roundsPlayed = roundScores.filter((s) => s != null).length;
-
-  return { playerId, playerName: player?.name ?? "Unknown", country: player?.country ?? null, photoUrl: player?.photoUrl ?? null, tier, roundScores, totalStrokes, roundsPlayed, madeCut, withdrew, isEstimated };
+  return { playerId, playerName: player?.name ?? "Unknown", country: player?.country ?? null, photoUrl: player?.photoUrl ?? null, tier, roundScores: scored.roundScores, totalStrokes: scored.totalStrokes, roundsPlayed: scored.roundsScored, vsPar: scored.vsPar, madeCut, withdrew, isEstimated: scored.isEstimated };
 }
 
 // ---------- Cut Logic ----------
@@ -353,10 +359,7 @@ export async function applyCutLogic(tournamentId: string): Promise<void> {
 
   let cutLine = tournament.cutLine;
   if (cutLine == null) {
-    const top30Score = playerTotals[29]?.total;
-    if (top30Score != null) {
-      cutLine = playerTotals.filter((p) => p.total <= top30Score).slice(-1)[0]?.total;
-    }
+    cutLine = deriveCutLine(playerTotals.map((player) => player.total));
   }
   if (cutLine == null) return;
 
@@ -367,7 +370,7 @@ export async function applyCutLogic(tournamentId: string): Promise<void> {
     const hasBoth = scores.r1 != null && scores.r2 != null;
     return prisma.tournamentPlayer.update({
       where: { id: tp.id },
-      data: { madeCut: hasBoth ? total <= cutLine! : false },
+      data: { madeCut: hasBoth ? total <= cutLine! : null },
     });
   });
 
