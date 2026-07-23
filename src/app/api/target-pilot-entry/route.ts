@@ -7,6 +7,7 @@ import {
   ensureRocketBetaCampaign,
   getRocketBetaStateForUser,
   grantRocketBetaPass,
+  isRocketBetaEmailApproved,
 } from "@/lib/rocket-beta";
 import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import { TARGET_JUDGE_ROUND_SLUG } from "@/lib/target-judge-core";
@@ -20,7 +21,6 @@ import {
   targetPilotSubmissionHash,
   targetScenarioHash,
 } from "@/lib/target-judge-server";
-import { isTargetPreviewAllowed } from "@/lib/target-preview-access";
 
 export const dynamic = "force-dynamic";
 
@@ -163,7 +163,7 @@ async function readPilotStatus(
 async function requireApprovedPilotUser() {
   const user = await getCurrentUser();
   if (!user) throw new TargetJudgeAccessError("Sign in required", 401);
-  if (!isTargetPreviewAllowed(user.email)) {
+  if (!(await isRocketBetaEmailApproved(user.email))) {
     throw new TargetJudgeAccessError("Pilot access required", 404);
   }
   return user;

@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { TargetIcon } from "@/components/icons";
 
 const MENU_LINKS = [
+  { href: "/tournaments/rocket-classic", label: "Rocket Beta" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/tournaments", label: "Tournaments" },
   { href: "/my-teams", label: "My Teams" },

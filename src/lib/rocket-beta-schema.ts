@@ -92,4 +92,10 @@ async function createRocketBetaSchema() {
   await prisma.$executeRawUnsafe(
     `CREATE INDEX IF NOT EXISTS "RocketBetaAudit_campaignId_createdAt_idx" ON "RocketBetaAudit"("campaignId", "createdAt")`,
   );
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "RocketBetaCampaign"
+      ADD COLUMN IF NOT EXISTS "results" JSONB,
+      ADD COLUMN IF NOT EXISTS "resultsHash" TEXT,
+      ADD COLUMN IF NOT EXISTS "finalizedAt" TIMESTAMPTZ
+  `);
 }

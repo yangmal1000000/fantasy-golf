@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { isTargetPreviewAllowed } from "@/lib/target-preview-access";
+import { isRocketBetaEmailApproved } from "@/lib/rocket-beta";
 import { createClient } from "@/utils/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   return NextResponse.json(
-    { allowed: isTargetPreviewAllowed(user?.email) },
+    { allowed: await isRocketBetaEmailApproved(user?.email) },
     {
       headers: {
         "Cache-Control": "private, no-store, max-age=0",

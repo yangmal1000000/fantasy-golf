@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { calculateTeamScore } from "@/lib/scoring";
+import { calculateLeaderboard, calculateTeamScore } from "@/lib/scoring";
+import { ROCKET_BETA_TOURNAMENT_ID } from "@/lib/rocket-beta";
 import { TIER_CONFIG } from "@/lib/ui";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -54,17 +55,25 @@ export default async function TeamDetailPage({
   const subLogPlayerMap = new Map(subLogPlayers.map((p) => [p.id, p]));
 
   if (!tournament || !team) notFound();
+  const isRocketBeta = tournament.id === ROCKET_BETA_TOURNAMENT_ID;
 
   // Calculate team score
   let scoreResult: Awaited<ReturnType<typeof calculateTeamScore>> | null = null;
   try {
-    scoreResult = await calculateTeamScore(teamId);
+    const [calculated, leaderboard] = await Promise.all([
+      calculateTeamScore(teamId),
+      calculateLeaderboard(tournamentId),
+    ]);
+    scoreResult = {
+      ...calculated,
+      position:
+        leaderboard.find((entry) => entry.teamId === teamId)?.position ?? 0,
+    };
   } catch {
     // scores not calculated yet
   }
 
-  const totalPar = tournament.par * 4 * 5;
-  const vsPar = scoreResult ? scoreResult.totalStrokes - totalPar : 0;
+  const vsPar = scoreResult?.vsPar ?? 0;
 
   // Build share card data
   const sharePlayers = scoreResult?.players.map((p) => ({
@@ -98,7 +107,7 @@ export default async function TeamDetailPage({
               {team.user?.name ?? team.user?.email}
             </p>
           </div>
-          {scoreResult && (
+          {scoreResult && scoreResult.roundsScored > 0 && (
             <div className="text-right shrink-0">
               <p className="text-2xl font-extrabold text-[#c8a951] sm:text-3xl">
                 {scoreResult.position || "—"}
@@ -110,8 +119,12 @@ export default async function TeamDetailPage({
         {scoreResult && (
           <div className="mt-4 flex gap-4 border-t border-white/20 pt-4 sm:gap-6">
             <div>
-              <p className="text-xl font-bold sm:text-2xl">{scoreResult.totalStrokes}</p>
-              <p className="text-xs text-white/60">Total Strokes</p>
+              <p className="text-xl font-bold sm:text-2xl">
+                {scoreResult.roundsScored > 0 ? scoreResult.totalStrokes : "—"}
+              </p>
+              <p className="text-xs text-white/60">
+                {scoreResult.roundsScored}/20 rounds scored
+              </p>
             </div>
             <div>
               <p
@@ -123,17 +136,18 @@ export default async function TeamDetailPage({
                       : "text-white/80"
                 }`}
               >
-                {vsPar > 0 ? "+" : ""}
-                {vsPar === 0 ? "E" : vsPar}
+                {scoreResult.roundsScored === 0
+                  ? "—"
+                  : `${vsPar > 0 ? "+" : ""}${vsPar === 0 ? "E" : vsPar}`}
               </p>
-              <p className="text-xs text-white/60">vs Par ({tournament.par})</p>
+              <p className="text-xs text-white/60">vs par for scored rounds</p>
             </div>
             <div>
               <p className="text-xl font-bold sm:text-2xl">
-                {team.paid ? "" : "⏳"}
+                {isRocketBeta ? "✓" : team.paid ? "" : "⏳"}
               </p>
               <p className="text-xs text-white/60">
-                {team.paid ? "Paid" : "Pending"}
+                {isRocketBeta ? "Test Pass confirmed" : team.paid ? "Paid" : "Pending"}
               </p>
             </div>
           </div>
@@ -293,7 +307,7 @@ export default async function TeamDetailPage({
                 <span className="text-zinc-600 dark:text-zinc-400">
                   Total:{" "}
                   <span className="font-bold text-zinc-900 dark:text-white">
-                    {p.totalStrokes}
+                    {p.roundsPlayed > 0 ? p.totalStrokes : "—"}
                   </span>
                 </span>
                 <span className="text-zinc-500 dark:text-zinc-400">
@@ -336,6 +350,14 @@ export default async function TeamDetailPage({
           <strong>* Estimated scores:</strong> When a player misses the cut,
           their R3 and R4 scores are estimated as the average of R1 + R2,
           rounded to the nearest whole number.
+        </div>
+      )}
+      {isRocketBeta && (
+        <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs leading-5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+          Future rounds display as — and never count as zero. Missed-cut golfers
+          receive their rounded R1/R2 average for R3 and R4. A post-lock
+          withdrawal uses the golfer&apos;s completed-round average, or par + 10
+          if no round was completed.
         </div>
       )}
     </div>

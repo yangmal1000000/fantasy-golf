@@ -189,8 +189,10 @@ export default async function DashboardPage() {
                 href={
                   rocketBeta.passState === "REDEEMED" && rocketBeta.teamId
                     ? `/tournaments/rocket-classic/teams/${rocketBeta.teamId}`
-                    : rocketBeta.passState === "UNLOCKED"
+                    : rocketBeta.passState === "UNLOCKED" && rocketBeta.fieldReady
                       ? rocketBeta.enterHref
+                      : rocketBeta.passState === "UNLOCKED"
+                        ? rocketBeta.tournamentHref
                       : rocketBeta.targetHref
                 }
                 className="rounded-xl bg-[#c8a951] px-4 py-2.5 text-sm font-black text-[#17251d]"
@@ -198,7 +200,9 @@ export default async function DashboardPage() {
                 {rocketBeta.passState === "REDEEMED"
                   ? "View my team →"
                   : rocketBeta.passState === "UNLOCKED"
-                    ? "Build my team →"
+                    ? rocketBeta.fieldReady
+                      ? "Build my team →"
+                      : "View field review →"
                     : "Start Target →"}
               </Link>
             </div>
@@ -308,7 +312,7 @@ export default async function DashboardPage() {
                     </div>
                     <p className="mt-0.5 truncate text-xs text-zinc-500">{team.name} · {t.course ?? "TBD"}</p>
                   </div>
-                  {score && (
+                  {score && score.roundsScored > 0 && (
                     <div className="text-right shrink-0">
                       <p className="text-lg font-bold tabular text-[#0a3d2a] dark:text-green-400">
                         {score.totalStrokes}
@@ -318,7 +322,7 @@ export default async function DashboardPage() {
                       </p>
                     </div>
                   )}
-                  {!score && (
+                  {(!score || score.roundsScored === 0) && (
                     <span className="shrink-0 text-xs font-semibold text-[#c8a951]">View Team →</span>
                   )}
                 </Link>

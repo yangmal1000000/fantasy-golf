@@ -144,7 +144,8 @@ export default async function EnterTeamPage({
             </a>
           </div>
         </div>
-      ) : tournament.players.length < 5 ||
+      ) : (betaState && !betaState.fieldReady) ||
+        tournament.players.length < 5 ||
         ["T1_10", "T11_20", "T21_30", "T31_50", "T51_PLUS"].some(
           (tier) => !playersByTier[tier]?.length,
         ) ? (

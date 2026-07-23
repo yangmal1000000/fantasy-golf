@@ -41,8 +41,10 @@ export default async function Home() {
   const primaryHref =
     beta?.passState === "REDEEMED" && beta.teamId
       ? `/tournaments/rocket-classic/teams/${beta.teamId}`
-      : beta?.passState === "UNLOCKED"
+      : beta?.passState === "UNLOCKED" && beta.fieldReady
         ? beta.enterHref
+        : beta?.passState === "UNLOCKED"
+          ? beta.tournamentHref
         : beta?.approved
           ? beta.targetHref
           : beta?.tournamentHref ?? "/tournaments/rocket-classic";
@@ -50,9 +52,9 @@ export default async function Home() {
     beta?.passState === "REDEEMED"
       ? "View my Rocket team"
       : beta?.passState === "UNLOCKED"
-        ? tournament._count.players > 0
+        ? beta.fieldReady && tournament._count.players > 0
           ? "Build my Rocket team"
-          : "View field status"
+          : "View field review"
         : beta?.approved
           ? "Start Target"
           : "View the test flight";

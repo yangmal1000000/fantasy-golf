@@ -22,7 +22,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Fantasy Golf",
-  description: "Pick your dream team. £10 entry, winner takes all.",
+  description: "Complete Target, unlock a Test Pass and build a five-player Rocket Classic beta team.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Fantasy Golf",
-    description: "Pick your dream team. £10 entry, winner takes all.",
+    description: "Target judgement meets live fantasy golf in the Rocket Classic closed test flight.",
     url: "https://fantasy-golf-phi.vercel.app",
     siteName: "Fantasy Golf",
     type: "website",
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Fantasy Golf",
-    description: "Pick your dream team. £10 entry, winner takes all.",
+    description: "Target judgement meets live fantasy golf in the Rocket Classic closed test flight.",
     images: ["https://fantasy-golf-phi.vercel.app/og-image.jpg"],
   },
 };
@@ -113,7 +113,7 @@ function Footer() {
           <span className="text-white/30">·</span>
           <Link href="/contact" className="transition hover:text-[#c8a951]">Contact</Link>
         </div>
-        <p className="mt-3 text-xs">Fantasy Golf &middot; Major Sweepstake</p>
+        <p className="mt-3 text-xs">Fantasy Golf &middot; Rocket Classic closed test flight</p>
         <p className="mt-1 text-xs text-white/65">For entertainment purposes only. Not affiliated with the R&amp;A, PGA Tour, or DP World Tour.</p>
         <p className="mt-1 text-xs text-white/60">Course images are artistic impressions, not actual photographs.</p>
       </div>
