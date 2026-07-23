@@ -8,7 +8,7 @@ import {
   type TargetYardageGuide,
 } from "./target-challenge";
 
-export const TARGET_V2_VERSION = "hawthorn-vale-finish-position-preview-2.2";
+export const TARGET_V2_VERSION = "hawthorn-vale-finish-position-2.2";
 
 export interface TargetV2Metric {
   label: string;

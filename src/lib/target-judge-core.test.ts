@@ -7,7 +7,8 @@ import {
   validateJudgeSubmission,
   type TargetJudgeSubmission,
 } from "./target-judge-core";
-import { TARGET_SCENARIOS, geometricMedianTarget } from "./target-challenge";
+import { geometricMedianTarget } from "./target-challenge";
+import { TARGET_V2_SCENARIOS as TARGET_SCENARIOS } from "./target-v2";
 
 function submission(offset: number): TargetJudgeSubmission {
   return {

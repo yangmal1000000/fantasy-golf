@@ -1,7 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ensureRocketBetaCampaign } from "@/lib/rocket-beta";
+import {
+  ensureRocketBetaCampaign,
+  ROCKET_BETA_CAMPAIGN_SLUG,
+} from "@/lib/rocket-beta";
 import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import {
   TARGET_JUDGE_ROUND_SLUG,
@@ -39,6 +42,12 @@ class TargetControlRequestError extends Error {
   }
 }
 
+const TARGET_V1_SCENARIO_VERSION = "hawthorn-vale-mvp-1.0";
+const TARGET_V1_SCENARIO_HASH =
+  "488f2b2222263a6fdd24e316258bf4781cdde7711cd4c90f733ceaeedc55e0c1";
+const TARGET_V2_MIGRATION_BACKUP =
+  "target-v1-pre-v2-2026-07-23T2322Z.json";
+
 export async function GET() {
   try {
     await requireTargetJudgeCoordinator();
@@ -66,6 +75,9 @@ export async function POST(request: NextRequest) {
         break;
       case "clear_pilot_entries":
         await clearPilotEntries(actorEmail);
+        break;
+      case "migrate_target_v2":
+        await migrateTargetV2(actorEmail);
         break;
       case "seal_pilot_entries":
         await sealPilotEntries(actorEmail);
@@ -296,6 +308,154 @@ async function clearPilotEntries(actorEmail: string) {
         },
       });
     }
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
+async function migrateTargetV2(actorEmail: string) {
+  const nextScenarioHash = targetScenarioHash();
+
+  await prisma.$transaction(async (tx) => {
+    const round = await tx.targetJudgingRound.findUnique({
+      where: { slug: TARGET_JUDGE_ROUND_SLUG },
+    });
+    if (!round) {
+      throw new TargetControlRequestError("The Target round is not ready", 404);
+    }
+    if (
+      round.scenarioVersion === TARGET_SCENARIO_VERSION &&
+      round.scenarioHash === nextScenarioHash
+    ) {
+      return;
+    }
+    if (
+      round.scenarioVersion !== TARGET_V1_SCENARIO_VERSION ||
+      round.scenarioHash !== TARGET_V1_SCENARIO_HASH
+    ) {
+      throw new TargetControlRequestError(
+        "The live Target version does not match the approved migration source",
+        409,
+      );
+    }
+    if (round.status !== "DRAFT" || round.pilotEntriesSealedAt) {
+      throw new TargetControlRequestError(
+        "Only the unsealed draft Target round can be migrated",
+        409,
+      );
+    }
+
+    const [campaign, assignments, entries] = await Promise.all([
+      tx.rocketBetaCampaign.findUnique({
+        where: { slug: ROCKET_BETA_CAMPAIGN_SLUG },
+      }),
+      tx.targetJudgeAssignment.count({ where: { roundId: round.id } }),
+      tx.targetPilotEntry.findMany({
+        where: { roundId: round.id },
+        select: { id: true, email: true, submissionHash: true },
+      }),
+    ]);
+    if (!campaign) {
+      throw new TargetControlRequestError(
+        "The Rocket test-flight campaign is not ready",
+        404,
+      );
+    }
+    if (assignments !== 0) {
+      throw new TargetControlRequestError(
+        "Remove the existing judge panel before migrating Target",
+        409,
+      );
+    }
+
+    const entryIds = entries.map((entry) => entry.id);
+    const passes = await tx.rocketBetaPass.findMany({
+      where: {
+        campaignId: campaign.id,
+        sourceTargetEntryId: { in: entryIds },
+      },
+      select: {
+        id: true,
+        sourceTargetEntryId: true,
+        status: true,
+        redeemedAt: true,
+        teamId: true,
+      },
+    });
+    if (entries.length !== 2 || passes.length !== 2) {
+      throw new TargetControlRequestError(
+        "The approved migration expected exactly two entries and two passes",
+        409,
+      );
+    }
+    if (
+      passes.some(
+        (pass) =>
+          pass.status !== "UNLOCKED" ||
+          Boolean(pass.redeemedAt) ||
+          Boolean(pass.teamId),
+      )
+    ) {
+      throw new TargetControlRequestError(
+        "A Test Pass has been redeemed; Target migration is no longer safe",
+        409,
+      );
+    }
+
+    const deletedPasses = await tx.rocketBetaPass.deleteMany({
+      where: { id: { in: passes.map((pass) => pass.id) } },
+    });
+    const deletedEntries = await tx.targetPilotEntry.deleteMany({
+      where: { id: { in: entryIds } },
+    });
+
+    await tx.targetJudgingRound.update({
+      where: { id: round.id },
+      data: {
+        name: "Hawthorn Vale Finish-Position Target",
+        scenarioVersion: TARGET_SCENARIO_VERSION,
+        scenarioHash: nextScenarioHash,
+        status: "DRAFT",
+        panelMode: "OFFICIAL",
+        officialTargets: Prisma.DbNull,
+        officialTargetsHash: null,
+        calculatedAt: null,
+        pilotEntriesSealedAt: null,
+        pilotEntrySetHash: null,
+        pilotEntryCount: null,
+        pilotResults: Prisma.DbNull,
+        pilotResultsHash: null,
+        pilotScoredAt: null,
+      },
+    });
+    await tx.targetJudgeAudit.create({
+      data: {
+        roundId: round.id,
+        actorEmail,
+        action: "target_v2_migration_completed",
+        payload: {
+          previousScenarioVersion: round.scenarioVersion,
+          previousScenarioHash: round.scenarioHash,
+          scenarioVersion: TARGET_SCENARIO_VERSION,
+          scenarioHash: nextScenarioHash,
+          deletedEntries: deletedEntries.count,
+          deletedPasses: deletedPasses.count,
+          backup: TARGET_V2_MIGRATION_BACKUP,
+        },
+      },
+    });
+    await tx.rocketBetaAudit.create({
+      data: {
+        campaignId: campaign.id,
+        actorEmail,
+        action: "target_v2_pass_reset",
+        payload: {
+          roundId: round.id,
+          scenarioVersion: TARGET_SCENARIO_VERSION,
+          deletedEntries: deletedEntries.count,
+          deletedPasses: deletedPasses.count,
+          backup: TARGET_V2_MIGRATION_BACKUP,
+        },
+      },
+    });
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 

@@ -4,10 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import CourseMap from "@/app/target/CourseMap";
 import TargetPanelReview from "@/components/TargetPanelReview";
-import {
-  TARGET_SCENARIOS,
-  type TargetPoint,
-} from "@/lib/target-challenge";
+import { type TargetPoint } from "@/lib/target-challenge";
+import { TARGET_V2_SCENARIOS as TARGET_SCENARIOS } from "@/lib/target-v2";
 import type {
   TargetJudgeControlDto,
   TargetJudgeContextDto,
@@ -445,7 +443,7 @@ function JudgeStage({
 
       <div className="text-center">
         <Link href="/target" className="text-sm font-bold text-[#0a3d2a] underline-offset-4 hover:underline dark:text-green-400">
-          Return to Target Challenge preview
+          Return to Target Challenge
         </Link>
       </div>
     </div>
@@ -592,9 +590,23 @@ function MarkingForm({
               <h3 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">{scenario.title}</h3>
               <p className="mt-1 text-sm font-semibold text-[#0a3d2a] dark:text-green-400">{scenario.hole}</p>
               <p className="mt-4 rounded-2xl bg-[#f4f0e5] p-4 text-sm font-bold leading-6 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">{scenario.question}</p>
-              <div className="mt-4 grid gap-4 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
-                <ScenarioFacts title="Supplied golfer" items={scenario.playerFacts} />
-                <ScenarioFacts title="Conditions" items={scenario.conditions} />
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                {scenario.metrics.map((metric) => (
+                  <div
+                    key={`${metric.label}-${metric.value}`}
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/70"
+                  >
+                    <p className="text-[10px] font-black uppercase tracking-wide text-zinc-400">
+                      {metric.label}
+                    </p>
+                    <p className="mt-1 text-sm font-black text-zinc-900 dark:text-white">
+                      {metric.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+                <ScenarioFacts title="Course detail" items={scenario.details} />
               </div>
               <label className="mt-5 block text-sm font-black text-zinc-900 dark:text-white" htmlFor={`rationale-${phase}-${scenario.id}`}>
                 Strategic rationale

@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
-import { TARGET_SCENARIOS } from "@/lib/target-challenge";
+import { TARGET_V2_SCENARIOS as TARGET_SCENARIOS } from "@/lib/target-v2";
 import { isTargetJudgeCoordinator } from "@/lib/target-judge-access";
 import {
   TARGET_JUDGE_ROUND_SLUG,

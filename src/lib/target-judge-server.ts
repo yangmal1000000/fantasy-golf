@@ -2,7 +2,8 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { cookies } from "next/headers";
-import { TARGET_MAP_HEIGHT, TARGET_MAP_WIDTH, TARGET_SCENARIOS } from "@/lib/target-challenge";
+import { TARGET_MAP_HEIGHT, TARGET_MAP_WIDTH } from "@/lib/target-challenge";
+import { TARGET_V2_SCENARIOS as TARGET_SCENARIOS } from "@/lib/target-v2";
 import {
   isTargetJudgeCoordinator,
   normaliseTargetEmail,

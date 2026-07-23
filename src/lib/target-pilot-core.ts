@@ -1,10 +1,10 @@
 import {
-  TARGET_SCENARIOS,
   compareTargetScores,
   scoreTargetEntry,
   type TargetEntryScore,
   type TargetPoint,
 } from "@/lib/target-challenge";
+import { TARGET_V2_SCENARIOS as TARGET_SCENARIOS } from "@/lib/target-v2";
 
 export const TARGET_PILOT_SCORING_ALGORITHM = "target-distance-v1" as const;
 export const TARGET_PILOT_TIE_ORDER = [2, 1, 0] as const;

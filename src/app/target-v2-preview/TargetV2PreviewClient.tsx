@@ -27,14 +27,21 @@ import {
   type TargetV2Metric,
   type TargetV2Scenario,
 } from "@/lib/target-v2";
+import type { TargetPilotStatusDto } from "@/lib/target-pilot-core";
 import CourseMap from "../target/CourseMap";
 
-type PreviewStage = "intro" | "playing" | "review" | "complete" | "expired";
+type TargetStage =
+  | "intro"
+  | "playing"
+  | "review"
+  | "complete"
+  | "expired"
+  | "closed";
 
 const EMPTY_POINTS: Array<TargetPoint | null> = [null, null, null];
 
-export default function TargetV2PreviewClient() {
-  const [stage, setStage] = useState<PreviewStage>("intro");
+export default function TargetV2Client() {
+  const [stage, setStage] = useState<TargetStage>("intro");
   const [practicePoint, setPracticePoint] = useState<TargetPoint | null>(null);
   const [points, setPoints] = useState<Array<TargetPoint | null>>([
     ...EMPTY_POINTS,
@@ -45,11 +52,58 @@ export default function TargetV2PreviewClient() {
   const [secondsRemaining, setSecondsRemaining] = useState(
     TARGET_ATTEMPT_SECONDS,
   );
+  const [pilotChecking, setPilotChecking] = useState(true);
+  const [submissionBusy, setSubmissionBusy] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [entryReference, setEntryReference] = useState<string | null>(null);
+  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
+  const [rocketPass, setRocketPass] =
+    useState<TargetPilotStatusDto["rocketPass"] | null>(null);
 
   const completedCount = points.filter(Boolean).length;
   const allComplete = completedCount === TARGET_V2_SCENARIOS.length;
   const scenario = TARGET_V2_SCENARIOS[currentScenario];
   const currentPoint = points[currentScenario];
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/target-pilot-entry", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) {
+          throw new Error(body.error ?? "Unable to check Target status");
+        }
+        return body as TargetPilotStatusDto;
+      })
+      .then((status) => {
+        if (!active) return;
+        setRocketPass(status.rocketPass);
+        if (status.entry?.submission) {
+          setPoints(status.entry.submission.points.map((item) => item.point));
+          setEntryReference(status.entry.reference);
+          setSubmittedAt(status.entry.submittedAt);
+          setDeadline(null);
+          setStage("complete");
+        } else if (!status.entryOpen) {
+          setStage("closed");
+        }
+      })
+      .catch((caught: unknown) => {
+        if (active) {
+          setSubmissionError(
+            caught instanceof Error
+              ? caught.message
+              : "Unable to check Target status",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setPilotChecking(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if ((stage !== "playing" && stage !== "review") || deadline === null)
@@ -79,10 +133,10 @@ export default function TargetV2PreviewClient() {
       return `Decision ${currentScenario + 1} of ${TARGET_V2_SCENARIOS.length}`;
     if (stage === "review") return "Review";
     if (stage === "complete") return "Read-only review";
-    return "Working preview";
+    return "Target challenge";
   }, [currentScenario, stage]);
 
-  function beginPreview() {
+  function beginTarget() {
     setPoints([...EMPTY_POINTS]);
     setCurrentScenario(0);
     setSecondsRemaining(TARGET_ATTEMPT_SECONDS);
@@ -111,7 +165,7 @@ export default function TargetV2PreviewClient() {
     setCurrentScenario(index);
   }
 
-  function restartPreview() {
+  function restartTarget() {
     setStage("intro");
     setPracticePoint(null);
     setPoints([...EMPTY_POINTS]);
@@ -119,6 +173,46 @@ export default function TargetV2PreviewClient() {
     setRulesConfirmed(false);
     setDeadline(null);
     setSecondsRemaining(TARGET_ATTEMPT_SECONDS);
+    setSubmissionError(null);
+  }
+
+  async function submitTarget() {
+    if (!allComplete || secondsRemaining === 0 || submissionBusy) return;
+    setSubmissionBusy(true);
+    setSubmissionError(null);
+    try {
+      const response = await fetch("/api/target-pilot-entry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submission: {
+            points: TARGET_V2_SCENARIOS.map((scenario, index) => ({
+              scenarioId: scenario.id,
+              point: points[index],
+            })),
+          },
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(body.error ?? "Unable to submit Target");
+      }
+      const status = body as TargetPilotStatusDto;
+      if (!status.entry) {
+        throw new Error("The saved Target entry could not be confirmed");
+      }
+      setEntryReference(status.entry.reference);
+      setSubmittedAt(status.entry.submittedAt);
+      setRocketPass(status.rocketPass);
+      setDeadline(null);
+      setStage("complete");
+    } catch (caught) {
+      setSubmissionError(
+        caught instanceof Error ? caught.message : "Unable to submit Target",
+      );
+    } finally {
+      setSubmissionBusy(false);
+    }
   }
 
   return (
@@ -130,12 +224,12 @@ export default function TargetV2PreviewClient() {
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2 text-[11px] sm:px-4 sm:py-2.5 sm:text-xs">
           <span className="inline-flex items-center gap-1.5 font-bold uppercase tracking-[0.13em] text-[#e4cc85] sm:gap-2 sm:tracking-[0.16em]">
-            <ShieldIcon className="h-4 w-4" /> Target v2 preview
+            <ShieldIcon className="h-4 w-4" /> Target · Rocket test flight
           </span>
           <span className="text-right text-white/65">
-            <span className="sm:hidden">Preview only · nothing saved</span>
+            <span className="sm:hidden">One locked entry</span>
             <span className="hidden sm:inline">
-              Nothing saved · no pass issued
+              Complete once · unlock one Test Pass
             </span>
           </span>
         </div>
@@ -147,7 +241,7 @@ export default function TargetV2PreviewClient() {
           <div className="absolute -right-16 bottom-0 h-64 w-64 rounded-full bg-[#4c9b67]/15 blur-3xl" />
           <div className="relative mx-auto max-w-6xl px-4 py-5 sm:py-11">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d7bc6a] sm:text-xs sm:tracking-[0.22em]">
-              Finish-position prototype
+              Finish-position Target
             </p>
             <h1 className="mt-2 max-w-3xl text-2xl font-black tracking-tight sm:mt-3 sm:text-5xl">
               Read the shot. Choose the finish.
@@ -157,9 +251,9 @@ export default function TargetV2PreviewClient() {
               marker.
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] font-bold sm:mt-5 sm:gap-2 sm:text-xs">
-              <PreviewPill>Free test flight</PreviewPill>
-              <PreviewPill>No payment</PreviewPill>
-              <PreviewPill>No prize</PreviewPill>
+              <TargetPill>Free test flight</TargetPill>
+              <TargetPill>No payment</TargetPill>
+              <TargetPill>No prize</TargetPill>
             </div>
           </div>
         </section>
@@ -192,13 +286,24 @@ export default function TargetV2PreviewClient() {
           </div>
         ) : null}
 
-        {stage === "intro" ? (
+        {pilotChecking ? (
+          <p className="mb-3 rounded-xl border border-zinc-200 bg-white p-3 text-center text-xs font-bold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
+            Checking your Target status…
+          </p>
+        ) : null}
+        {submissionError && stage !== "review" ? (
+          <p className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-300">
+            {submissionError}
+          </p>
+        ) : null}
+
+        {stage === "intro" && !pilotChecking ? (
           <IntroStage
             practicePoint={practicePoint}
             setPracticePoint={setPracticePoint}
             rulesConfirmed={rulesConfirmed}
             setRulesConfirmed={setRulesConfirmed}
-            onStart={beginPreview}
+            onStart={beginTarget}
           />
         ) : null}
 
@@ -224,35 +329,57 @@ export default function TargetV2PreviewClient() {
               setCurrentScenario(index);
               setStage("playing");
             }}
-            onComplete={() => {
-              setDeadline(null);
-              setStage("complete");
-            }}
+            onComplete={submitTarget}
             allComplete={allComplete}
             secondsRemaining={secondsRemaining}
+            submissionBusy={submissionBusy}
+            submissionError={submissionError}
           />
         ) : null}
 
         {stage === "complete" ? (
-          <CompleteStage points={points} onRestart={restartPreview} />
+          <CompleteStage
+            points={points}
+            entryReference={entryReference}
+            submittedAt={submittedAt}
+            rocketPass={rocketPass}
+          />
         ) : null}
 
         {stage === "expired" ? (
           <section className="mx-auto max-w-xl rounded-3xl border border-red-200 bg-white p-8 text-center shadow-lg dark:border-red-900/50 dark:bg-zinc-900">
             <ClockIcon className="mx-auto h-12 w-12 text-red-500" />
             <h2 className="mt-4 text-2xl font-black text-zinc-900 dark:text-white">
-              Preview time expired
+              Target time expired
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-              Nothing was saved. Restart whenever you are ready.
+              No entry was submitted. Restart whenever you are ready.
             </p>
             <button
               type="button"
-              onClick={restartPreview}
+              onClick={restartTarget}
               className="mt-6 rounded-xl bg-[#0a3d2a] px-6 py-3 text-sm font-black text-white"
             >
-              Restart preview
+              Restart Target
             </button>
+          </section>
+        ) : null}
+
+        {stage === "closed" ? (
+          <section className="mx-auto max-w-xl rounded-3xl border border-zinc-200 bg-white p-8 text-center shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+            <ShieldIcon className="mx-auto h-12 w-12 text-[#9b7b25]" />
+            <h2 className="mt-4 text-2xl font-black text-zinc-900 dark:text-white">
+              Target entry is closed
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+              New Target entries close at the official first tee.
+            </p>
+            <Link
+              href="/tournaments/rocket-classic"
+              className="mt-6 inline-flex min-h-11 items-center rounded-xl bg-[#0a3d2a] px-6 py-3 text-sm font-black text-white"
+            >
+              Return to Rocket
+            </Link>
           </section>
         ) : null}
       </main>
@@ -418,7 +545,7 @@ function PlayingStage({
         <div className="flex min-h-14 items-center gap-2 px-3">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#d7bc6a]">
-              Target v2 preview
+              Target challenge
             </p>
             <p className="mt-0.5 text-sm font-black">
               Decision {currentScenario + 1} of {TARGET_V2_SCENARIOS.length}
@@ -611,12 +738,16 @@ function ReviewStage({
   onComplete,
   allComplete,
   secondsRemaining,
+  submissionBusy,
+  submissionError,
 }: {
   points: Array<TargetPoint | null>;
   onEdit: (index: number) => void;
-  onComplete: () => void;
+  onComplete: () => Promise<void>;
   allComplete: boolean;
   secondsRemaining: number;
+  submissionBusy: boolean;
+  submissionError: string | null;
 }) {
   return (
     <section className="target-attempt-shell fixed inset-0 z-[80] flex h-[100dvh] flex-col overflow-hidden bg-[#f6f4ee] dark:bg-[#0d0f0e] sm:static sm:h-auto sm:overflow-hidden sm:rounded-3xl sm:border sm:border-zinc-200 sm:bg-white sm:p-8 sm:shadow-xl sm:dark:border-zinc-800 sm:dark:bg-zinc-900">
@@ -624,7 +755,7 @@ function ReviewStage({
         <div className="flex min-h-14 items-center justify-between gap-3 px-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#d7bc6a]">
-              Target v2 preview
+              Target challenge
             </p>
             <p className="mt-0.5 text-sm font-black">Final review</p>
           </div>
@@ -651,7 +782,7 @@ function ReviewStage({
           Check your finishing positions
         </h2>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 sm:mt-2 sm:text-sm">
-          In the live version, these markers lock when submitted.
+          These markers lock when submitted and cannot be replaced.
         </p>
       </div>
 
@@ -695,13 +826,18 @@ function ReviewStage({
           <CheckCircleIcon className="h-4 w-4" />
           Completion unlocks your Rocket Test Pass
         </p>
+        {submissionError ? (
+          <p className="mr-3 self-center text-xs font-bold text-red-600 dark:text-red-300">
+            {submissionError}
+          </p>
+        ) : null}
         <button
           type="button"
-          disabled={!allComplete}
+          disabled={!allComplete || submissionBusy}
           onClick={onComplete}
           className="min-h-11 w-full rounded-xl bg-[#0a3d2a] px-7 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-3.5"
         >
-          Complete preview
+          {submissionBusy ? "Submitting…" : "Submit Target"}
         </button>
       </div>
     </section>
@@ -710,10 +846,14 @@ function ReviewStage({
 
 function CompleteStage({
   points,
-  onRestart,
+  entryReference,
+  submittedAt,
+  rocketPass,
 }: {
   points: Array<TargetPoint | null>;
-  onRestart: () => void;
+  entryReference: string | null;
+  submittedAt: string | null;
+  rocketPass: TargetPilotStatusDto["rocketPass"] | null;
 }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
@@ -722,30 +862,40 @@ function CompleteStage({
           <CheckCircleIcon className="h-7 w-7 sm:h-9 sm:w-9" />
         </span>
         <h2 className="mt-3 text-2xl font-black sm:mt-5 sm:text-3xl">
-          Preview complete
+          Target complete
         </h2>
         <p className="mt-1 text-sm text-white/70 sm:mt-2">
-          This preview did not save or replace your live Target entry.
+          Your three finishing positions are locked.
         </p>
+        {entryReference ? (
+          <p className="mt-2 text-xs font-bold text-[#f0d986]">
+            Entry {entryReference}
+            {submittedAt
+              ? ` · ${new Date(submittedAt).toLocaleString()}`
+              : ""}
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-3 p-3 sm:space-y-5 sm:p-8">
         <div className="rounded-2xl border-2 border-[#c8a951]/45 bg-[#eef5f0] p-4 dark:bg-green-950/25 sm:p-5">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#9b7b25] dark:text-[#d7bc6a] sm:text-xs">
-            Live test-flight handoff
+            Test-flight handoff
           </p>
           <h3 className="mt-1 text-xl font-black text-[#0a3d2a] dark:text-green-300 sm:text-2xl">
-            Target complete · Test Pass unlocked
+            Test Pass unlocked
           </h3>
           <p className="mt-1 max-w-2xl text-sm leading-5 text-zinc-600 dark:text-zinc-300 sm:leading-6">
-            In the live v2 journey, this is where your account-bound pass takes
-            you directly to the five-player Rocket team builder.
+            Your account-bound pass is ready. Team selection opens after the
+            official Rocket field and five tiers are verified.
           </p>
           <Link
             href="/tournaments/rocket-classic/enter"
             className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-[#0a3d2a] px-5 py-2.5 text-sm font-black text-white"
           >
-            Build my Rocket team →
+            {rocketPass?.status === "REDEEMED"
+              ? "View my Rocket team →"
+              : "Build my Rocket team →"}
           </Link>
         </div>
 
@@ -802,16 +952,9 @@ function CompleteStage({
         </details>
 
         <div className="flex flex-wrap justify-center gap-2 pt-1 sm:gap-3 sm:pt-2">
-          <button
-            type="button"
-            onClick={onRestart}
-            className="min-h-11 rounded-xl bg-[#0a3d2a] px-5 py-2.5 text-sm font-black text-white sm:px-6 sm:py-3"
-          >
-            Run preview again
-          </button>
           <Link
             href="/tournaments/rocket-classic"
-            className="min-h-11 rounded-xl border border-zinc-300 px-5 py-2.5 text-sm font-black text-zinc-700 dark:border-zinc-700 dark:text-zinc-200 sm:px-6 sm:py-3"
+            className="min-h-11 rounded-xl bg-[#0a3d2a] px-5 py-2.5 text-sm font-black text-white sm:px-6 sm:py-3"
           >
             Return to Rocket hub
           </Link>
@@ -873,7 +1016,7 @@ function IntroBullet({
   );
 }
 
-function PreviewPill({ children }: { children: ReactNode }) {
+function TargetPill({ children }: { children: ReactNode }) {
   return (
     <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-white/80 sm:px-3 sm:py-1.5">
       {children}

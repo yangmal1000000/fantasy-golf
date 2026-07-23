@@ -71,9 +71,9 @@ export async function POST(request: NextRequest) {
       const round = await tx.targetJudgingRound.findUnique({
         where: { slug: TARGET_JUDGE_ROUND_SLUG },
       });
-      if (!round) throw new TargetPilotRequestError("The closed pilot round is not ready", 404);
+      if (!round) throw new TargetPilotRequestError("Target is not ready", 404);
       if (round.status !== "DRAFT" || round.pilotEntriesSealedAt) {
-        throw new TargetPilotRequestError("Pilot entries are closed and sealed", 409);
+        throw new TargetPilotRequestError("Target entries are closed", 409);
       }
       const currentScenarioHash = targetScenarioHash();
       if (round.scenarioHash !== currentScenarioHash) {
@@ -223,7 +223,7 @@ function privateJson(data: unknown, init?: ResponseInit) {
 function handleError(error: unknown) {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
     return privateJson(
-      { error: "You already have a locked entry in this rehearsal" },
+      { error: "You already have a locked Target entry" },
       { status: 409 },
     );
   }
