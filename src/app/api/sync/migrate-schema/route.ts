@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 export const maxDuration = 60;
 
@@ -8,7 +9,9 @@ export const maxDuration = 60;
  * Adds new columns to the Tournament table that were added to the Prisma schema
  * but couldn't be pushed via prisma db push (local connection issues).
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     // Raw SQL to add columns if they don't exist
     await prisma.$executeRawUnsafe(`ALTER TABLE "Tournament" ADD COLUMN IF NOT EXISTS "yardage" INTEGER`);

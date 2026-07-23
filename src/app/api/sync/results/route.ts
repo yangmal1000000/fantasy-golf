@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { recalculateTeamScores } from "@/lib/team-scores";
 import { processAutoSubs } from "@/lib/auto-sub";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 /**
  * POST /api/sync/results
@@ -75,6 +76,8 @@ function parseRounds(comp: any): (number | null)[] {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   const body = await request.json().catch(() => ({}));
   const { tournamentId } = body;
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 /**
  * GET /api/admin/season-tournaments?year=2027
@@ -8,6 +9,8 @@ import { prisma } from "@/lib/prisma";
  * Used by the Season Management admin page.
  */
 export async function GET(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     const { searchParams } = new URL(request.url);
     const year = Number(searchParams.get("year"));

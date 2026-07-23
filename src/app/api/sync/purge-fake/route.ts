@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 export const maxDuration = 55;
 
@@ -8,7 +9,9 @@ export const maxDuration = 55;
  * Deletes old fake data in small batches to avoid timeouts.
  * Call repeatedly until remaining.fakeTournaments === 0.
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     // 1. Delete a few year-suffixed tournaments (max 5 per request)
     const fakeTournaments = await prisma.tournament.findMany({

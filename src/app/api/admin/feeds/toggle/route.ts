@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 export async function POST(request: NextRequest) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   const { feedId, enabled } = await request.json();
 
   if (!feedId || typeof enabled !== "boolean") {

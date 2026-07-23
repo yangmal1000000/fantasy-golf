@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 // ── Women's LPGA tournaments (5 majors) ──────────────────────────────────────
 const WOMENS_TOURNAMENTS = [
@@ -140,7 +141,9 @@ function tierForRank(rank: number): string {
   return "T51_PLUS";
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     // Ensure Tour/Category columns exist (idempotent — mirrors seed-tournaments)
     await prisma.$executeRaw`ALTER TABLE "Tournament" ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'major'`;

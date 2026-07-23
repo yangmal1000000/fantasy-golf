@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 export const maxDuration = 55;
 
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   const tournaments = await prisma.tournament.findMany({ orderBy: { startDate: "asc" }, select: { id: true, name: true, startDate: true, course: true } });
   
   // Better normalization — catches more duplicates

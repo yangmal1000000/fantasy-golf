@@ -1,8 +1,24 @@
-import { type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/utils/supabase/middleware";
+import { isTargetJudgeCoordinator } from "@/lib/target-judge-access";
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+  const { response, verifiedEmail } = await updateSession(request);
+  const pathname = request.nextUrl.pathname;
+  const protectedApi =
+    pathname.startsWith("/api/admin") ||
+    pathname.startsWith("/api/sync") ||
+    pathname === "/api/test-db";
+  const protectedPage = pathname === "/admin" || pathname.startsWith("/admin/");
+
+  if ((protectedApi || protectedPage) && !isTargetJudgeCoordinator(verifiedEmail)) {
+    if (protectedApi) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  return response;
 }
 
 export const config = {

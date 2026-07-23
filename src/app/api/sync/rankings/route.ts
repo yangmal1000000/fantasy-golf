@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { syncOWGRRankings, recalculateAllTiers } from "@/lib/data-sync";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 // Maximum duration for Vercel serverless function
 export const maxDuration = 300;
@@ -10,7 +11,9 @@ export const maxDuration = 300;
  * then links players to tournaments with proper tiers.
  * Called by cron or admin — no auth check.
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     const rankResult = await syncOWGRRankings();
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { tierForRank } from "@/lib/data-sync";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 export const maxDuration = 300;
 
@@ -11,6 +12,8 @@ export const maxDuration = 300;
  * Pass ?offset=N to skip ahead (for chunked invocation).
  */
 export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const offset = parseInt(searchParams.get("offset") ?? "0", 10);
   const BATCH = 500;
