@@ -33,6 +33,28 @@ test("full shot information uses the remaining mobile height and scrolls interna
   assert.match(previewSource, /scenario\.details\.map/);
 });
 
+test("each decision resets the mobile shot information to the beginning", () => {
+  assert.match(previewSource, /const detailPanelRef = useRef<HTMLDivElement>\(null\)/);
+  assert.match(
+    previewSource,
+    /detailPanelRef\.current\.scrollTop = 0;[\s\S]*\[currentScenario\]/,
+  );
+  assert.match(previewSource, /ref=\{detailPanelRef\}/);
+});
+
+test("real decisions do not repeat the practice placement bubble", () => {
+  assert.match(previewSource, /showPlacementHint=\{false\}/);
+  assert.match(courseMapSource, /showPlacementHint &&[\s\S]*Tap the map to place/);
+});
+
+test("completion leads with the Test Pass handoff and collapses read-only detail", () => {
+  const handoffIndex = previewSource.indexOf("Live test-flight handoff");
+  const reviewIndex = previewSource.indexOf("Review my three decisions");
+  assert.ok(handoffIndex >= 0);
+  assert.ok(reviewIndex > handoffIndex);
+  assert.match(previewSource, /Build my Rocket team →/);
+});
+
 test("immersive fine adjustment is overlaid in the map's lower-left corner", () => {
   assert.match(
     courseMapSource,

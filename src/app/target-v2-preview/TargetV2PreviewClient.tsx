@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -405,6 +406,12 @@ function PlayingStage({
   onBack: () => void;
   onContinue: () => void;
 }) {
+  const detailPanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (detailPanelRef.current) detailPanelRef.current.scrollTop = 0;
+  }, [currentScenario]);
+
   return (
     <section className="target-attempt-shell fixed inset-0 z-[80] flex h-[100dvh] flex-col overflow-hidden bg-white dark:bg-[#0d0f0e] sm:static sm:h-auto sm:overflow-hidden sm:rounded-3xl sm:border sm:border-zinc-200 sm:bg-white sm:shadow-xl sm:shadow-[#0a3d2a]/5 sm:dark:border-zinc-800 sm:dark:bg-zinc-900">
       <header className="relative shrink-0 bg-[#071f16] text-white sm:hidden safe-area-top">
@@ -484,10 +491,14 @@ function PlayingStage({
               onChange={onChange}
               edgeToEdgeOnMobile
               immersiveMobileControls
+              showPlacementHint={false}
             />
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-white/10 bg-[#10231c] px-4 py-3 text-white sm:hidden">
+          <div
+            ref={detailPanelRef}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-white/10 bg-[#10231c] px-4 py-3 text-white sm:hidden"
+          >
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#d7bc6a]">
                 {scenario.eyebrow}
@@ -680,6 +691,10 @@ function ReviewStage({
       </div>
 
       <div className="mt-auto shrink-0 border-t border-zinc-200 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-950 sm:mt-6 sm:flex sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:dark:bg-transparent safe-area-bottom">
+        <p className="hidden text-sm font-bold text-[#0a3d2a] dark:text-green-400 sm:mr-auto sm:flex sm:items-center sm:gap-2">
+          <CheckCircleIcon className="h-4 w-4" />
+          Completion unlocks your Rocket Test Pass
+        </p>
         <button
           type="button"
           disabled={!allComplete}
@@ -702,7 +717,7 @@ function CompleteStage({
 }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="bg-[#0a3d2a] px-4 py-5 text-center text-white sm:px-10 sm:py-9">
+      <div className="bg-[#0a3d2a] px-4 py-5 text-center text-white sm:px-10 sm:py-8">
         <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#c8a951] text-[#0a3d2a] shadow-lg sm:h-16 sm:w-16">
           <CheckCircleIcon className="h-7 w-7 sm:h-9 sm:w-9" />
         </span>
@@ -710,53 +725,81 @@ function CompleteStage({
           Preview complete
         </h2>
         <p className="mt-1 text-sm text-white/70 sm:mt-2">
-          Nothing was saved. This is the proposed read-only view after a live
-          submission.
+          This preview did not save or replace your live Target entry.
         </p>
       </div>
 
       <div className="space-y-3 p-3 sm:space-y-5 sm:p-8">
-        {TARGET_V2_SCENARIOS.map((scenario, index) => (
-          <article
-            key={scenario.id}
-            className="grid overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700 md:grid-cols-[minmax(0,1.25fr)_minmax(280px,.75fr)]"
+        <div className="rounded-2xl border-2 border-[#c8a951]/45 bg-[#eef5f0] p-4 dark:bg-green-950/25 sm:p-5">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#9b7b25] dark:text-[#d7bc6a] sm:text-xs">
+            Live test-flight handoff
+          </p>
+          <h3 className="mt-1 text-xl font-black text-[#0a3d2a] dark:text-green-300 sm:text-2xl">
+            Target complete · Test Pass unlocked
+          </h3>
+          <p className="mt-1 max-w-2xl text-sm leading-5 text-zinc-600 dark:text-zinc-300 sm:leading-6">
+            In the live v2 journey, this is where your account-bound pass takes
+            you directly to the five-player Rocket team builder.
+          </p>
+          <Link
+            href="/tournaments/rocket-classic/enter"
+            className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-[#0a3d2a] px-5 py-2.5 text-sm font-black text-white"
           >
-            <div className="bg-[#071f16]">
-              <CourseMap scenario={scenario} point={points[index]} compact />
-            </div>
-            <div className="p-4 sm:p-5">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#9b7b25] dark:text-[#d7bc6a] sm:text-xs">
-                Decision {index + 1} · locked
-              </p>
-              <h3 className="mt-1 text-lg font-black text-zinc-900 dark:text-white sm:mt-2 sm:text-xl">
-                {scenario.title}
-              </h3>
-              <p className="mt-0.5 text-xs font-semibold text-[#0a3d2a] dark:text-green-400 sm:mt-1 sm:text-sm">
-                {scenario.hole}
-              </p>
-              <p className="mt-2 text-sm font-black leading-5 text-zinc-900 dark:text-white sm:mt-3 sm:leading-6">
-                {scenario.question}
-              </p>
-              <MetricGrid metrics={scenario.metrics} compact />
-              <p className="mt-3 text-sm leading-5 text-zinc-600 dark:text-zinc-300 sm:mt-4 sm:leading-6">
-                {scenario.summary}
-              </p>
-              <details className="mt-3 text-sm text-zinc-600 dark:text-zinc-300 sm:mt-4">
-                <summary className="cursor-pointer font-black text-[#0a3d2a] dark:text-green-300">
-                  Shot detail
-                </summary>
-                <ul className="mt-2 space-y-2 leading-5">
-                  {scenario.details.map((detail) => (
-                    <li key={detail} className="flex items-start gap-2">
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c8a951]" />
-                      <span>{detail}</span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            </div>
-          </article>
-        ))}
+            Build my Rocket team →
+          </Link>
+        </div>
+
+        <details className="rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/40">
+          <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-4 py-3 font-black text-zinc-900 dark:text-white sm:px-5">
+            <span>Review my three decisions</span>
+            <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+              Read only
+            </span>
+          </summary>
+          <div className="space-y-3 border-t border-zinc-200 p-3 dark:border-zinc-700 sm:space-y-5 sm:p-5">
+            {TARGET_V2_SCENARIOS.map((scenario, index) => (
+              <article
+                key={scenario.id}
+                className="grid overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 md:grid-cols-[minmax(0,1.25fr)_minmax(280px,.75fr)]"
+              >
+                <div className="bg-[#071f16]">
+                  <CourseMap scenario={scenario} point={points[index]} compact />
+                </div>
+                <div className="p-4 sm:p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#9b7b25] dark:text-[#d7bc6a] sm:text-xs">
+                    Decision {index + 1} · locked
+                  </p>
+                  <h3 className="mt-1 text-lg font-black text-zinc-900 dark:text-white sm:mt-2 sm:text-xl">
+                    {scenario.title}
+                  </h3>
+                  <p className="mt-0.5 text-xs font-semibold text-[#0a3d2a] dark:text-green-400 sm:mt-1 sm:text-sm">
+                    {scenario.hole}
+                  </p>
+                  <p className="mt-2 text-sm font-black leading-5 text-zinc-900 dark:text-white sm:mt-3 sm:leading-6">
+                    {scenario.question}
+                  </p>
+                  <MetricGrid metrics={scenario.metrics} compact />
+                  <p className="mt-3 text-sm leading-5 text-zinc-600 dark:text-zinc-300 sm:mt-4 sm:leading-6">
+                    {scenario.summary}
+                  </p>
+                  <details className="mt-3 text-sm text-zinc-600 dark:text-zinc-300 sm:mt-4">
+                    <summary className="cursor-pointer font-black text-[#0a3d2a] dark:text-green-300">
+                      Shot detail
+                    </summary>
+                    <ul className="mt-2 space-y-2 leading-5">
+                      {scenario.details.map((detail) => (
+                        <li key={detail} className="flex items-start gap-2">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c8a951]" />
+                          <span>{detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </div>
+              </article>
+            ))}
+          </div>
+        </details>
 
         <div className="flex flex-wrap justify-center gap-2 pt-1 sm:gap-3 sm:pt-2">
           <button

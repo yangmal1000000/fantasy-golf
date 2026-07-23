@@ -25,6 +25,7 @@ interface CourseMapProps {
   edgeToEdgeOnMobile?: boolean;
   compactMobileControls?: boolean;
   immersiveMobileControls?: boolean;
+  showPlacementHint?: boolean;
   referencePoints?: Array<{
     point: TargetPoint;
     label: string;
@@ -61,6 +62,7 @@ export default function CourseMap({
   edgeToEdgeOnMobile = false,
   compactMobileControls = false,
   immersiveMobileControls = false,
+  showPlacementHint = true,
   referencePoints = [],
 }: CourseMapProps) {
   const interactive = Boolean(onChange);
@@ -307,7 +309,8 @@ export default function CourseMap({
           ) : null}
         </svg>
 
-        {interactive &&
+        {showPlacementHint &&
+          interactive &&
           (!scenario.yardage || (immersiveMobileControls && !point)) && (
           <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-full bg-[#071d14]/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#f4df9d] backdrop-blur">
             Tap the map to place
