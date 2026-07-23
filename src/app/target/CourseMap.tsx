@@ -23,6 +23,7 @@ interface CourseMapProps {
   onChange?: (point: TargetPoint | null) => void;
   compact?: boolean;
   edgeToEdgeOnMobile?: boolean;
+  compactMobileControls?: boolean;
   referencePoints?: Array<{
     point: TargetPoint;
     label: string;
@@ -37,11 +38,12 @@ const COURSE_IMAGES: Record<TargetScenario["mapKind"], string> = {
   layup: "/images/target-challenge/hawthorn-vale-layup.png",
 };
 
-const BALL_POSITIONS: Partial<Record<TargetScenario["mapKind"], TargetPoint>> = {
-  tee: { x: 48_000, y: 93_000 },
-  approach: { x: 49_000, y: 93_000 },
-  layup: { x: 47_000, y: 94_000 },
-};
+const BALL_POSITIONS: Partial<Record<TargetScenario["mapKind"], TargetPoint>> =
+  {
+    tee: { x: 48_000, y: 93_000 },
+    approach: { x: 49_000, y: 93_000 },
+    layup: { x: 47_000, y: 94_000 },
+  };
 
 function pointToViewBox(point: TargetPoint) {
   return {
@@ -56,6 +58,7 @@ export default function CourseMap({
   onChange,
   compact = false,
   edgeToEdgeOnMobile = false,
+  compactMobileControls = false,
   referencePoints = [],
 }: CourseMapProps) {
   const interactive = Boolean(onChange);
@@ -120,7 +123,11 @@ export default function CourseMap({
           alt=""
           fill
           priority={scenario.mapKind === "practice"}
-          sizes={compact ? "(max-width: 768px) 100vw, 420px" : "(max-width: 1024px) 100vw, 900px"}
+          sizes={
+            compact
+              ? "(max-width: 768px) 100vw, 420px"
+              : "(max-width: 1024px) 100vw, 900px"
+          }
           className="pointer-events-none select-none object-cover"
           draggable={false}
         />
@@ -136,7 +143,13 @@ export default function CourseMap({
               <stop offset="0" stopColor="#1d5b3a" />
               <stop offset="1" stopColor="#0f432d" />
             </linearGradient>
-            <linearGradient id={`${prefix}-fairway`} x1="0" y1="1" x2="0" y2="0">
+            <linearGradient
+              id={`${prefix}-fairway`}
+              x1="0"
+              y1="1"
+              x2="0"
+              y2="0"
+            >
               <stop offset="0" stopColor="#79a84f" />
               <stop offset="1" stopColor="#a6c96b" />
             </linearGradient>
@@ -144,16 +157,45 @@ export default function CourseMap({
               <stop offset="0" stopColor="#2d85a8" />
               <stop offset="1" stopColor="#155575" />
             </linearGradient>
-            <pattern id={`${prefix}-grid`} width="100" height="65" patternUnits="userSpaceOnUse">
-              <path d="M 100 0 L 0 0 0 65" fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="1" />
+            <pattern
+              id={`${prefix}-grid`}
+              width="100"
+              height="65"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 100 0 L 0 0 0 65"
+                fill="none"
+                stroke="rgba(255,255,255,.08)"
+                strokeWidth="1"
+              />
             </pattern>
-            <filter id={`${prefix}-shadow`} x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#071d14" floodOpacity=".55" />
+            <filter
+              id={`${prefix}-shadow`}
+              x="-40%"
+              y="-40%"
+              width="180%"
+              height="180%"
+            >
+              <feDropShadow
+                dx="0"
+                dy="4"
+                stdDeviation="5"
+                floodColor="#071d14"
+                floodOpacity=".55"
+              />
             </filter>
           </defs>
 
           <g transform="translate(825 50)">
-            <rect x="-18" y="-22" width="150" height="90" rx="18" fill="rgba(8,28,20,.78)" />
+            <rect
+              x="-18"
+              y="-22"
+              width="150"
+              height="90"
+              rx="18"
+              fill="rgba(8,28,20,.78)"
+            />
             <path
               d="M18 34 H82 M68 22 L86 34 L68 46"
               fill="none"
@@ -163,7 +205,14 @@ export default function CourseMap({
               strokeLinejoin="round"
               transform={`rotate(${scenario.windArrowDegrees} 52 34)`}
             />
-            <text x="48" y="1" textAnchor="middle" fill="#fff6d9" fontSize="20" fontWeight="700">
+            <text
+              x="48"
+              y="1"
+              textAnchor="middle"
+              fill="#fff6d9"
+              fontSize="20"
+              fontWeight="700"
+            >
               {scenario.windLabel}
             </text>
           </g>
@@ -180,9 +229,26 @@ export default function CourseMap({
                 strokeDasharray="10 9"
                 opacity=".9"
               />
-              <g transform={`translate(${Math.max(72, Math.min(928, (ballMarker.x + marker.x) / 2))} ${Math.max(38, Math.min(612, (ballMarker.y + marker.y) / 2))})`}>
-                <rect x="-66" y="-21" width="132" height="42" rx="21" fill="rgba(7,29,20,.9)" stroke="#f4df9d" strokeWidth="2" />
-                <text y="7" textAnchor="middle" fill="#fff6d9" fontSize="20" fontWeight="900">
+              <g
+                transform={`translate(${Math.max(72, Math.min(928, (ballMarker.x + marker.x) / 2))} ${Math.max(38, Math.min(612, (ballMarker.y + marker.y) / 2))})`}
+              >
+                <rect
+                  x="-66"
+                  y="-21"
+                  width="132"
+                  height="42"
+                  rx="21"
+                  fill="rgba(7,29,20,.9)"
+                  stroke="#f4df9d"
+                  strokeWidth="2"
+                />
+                <text
+                  y="7"
+                  textAnchor="middle"
+                  fill="#fff6d9"
+                  fontSize="20"
+                  fontWeight="900"
+                >
                   ≈ {finishYards} YDS
                 </text>
               </g>
@@ -197,7 +263,12 @@ export default function CourseMap({
                 transform={`translate(${position.x} ${position.y})`}
                 filter={`url(#${prefix}-shadow)`}
               >
-                <circle r="22" fill={reference.color} stroke="#fff" strokeWidth="5" />
+                <circle
+                  r="22"
+                  fill={reference.color}
+                  stroke="#fff"
+                  strokeWidth="5"
+                />
                 <text
                   y="7"
                   textAnchor="middle"
@@ -212,10 +283,24 @@ export default function CourseMap({
           })}
 
           {marker ? (
-            <g transform={`translate(${marker.x} ${marker.y})`} filter={`url(#${prefix}-shadow)`}>
-              <path d="M0 26 C-20 2 -29 -11 -29 -29 A29 29 0 1 1 29 -29 C29 -11 20 2 0 26Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="6" />
+            <g
+              transform={`translate(${marker.x} ${marker.y})`}
+              filter={`url(#${prefix}-shadow)`}
+            >
+              <path
+                d="M0 26 C-20 2 -29 -11 -29 -29 A29 29 0 1 1 29 -29 C29 -11 20 2 0 26Z"
+                fill="#d8b85c"
+                stroke="#fff7dd"
+                strokeWidth="6"
+              />
               <circle cy="-29" r="10" fill="#0a3d2a" />
-              <path d="M-38 33 H38 M0 21 V42" stroke="#fff7dd" strokeWidth="4" strokeLinecap="round" opacity=".85" />
+              <path
+                d="M-38 33 H38 M0 21 V42"
+                stroke="#fff7dd"
+                strokeWidth="4"
+                strokeLinecap="round"
+                opacity=".85"
+              />
             </g>
           ) : null}
         </svg>
@@ -229,29 +314,95 @@ export default function CourseMap({
 
       {interactive && point && onChange && (
         <div
-          className={`mt-3 flex flex-wrap items-center justify-between gap-3 ${
-            edgeToEdgeOnMobile ? "px-4 sm:px-0" : ""
-          }`}
+          className={`flex flex-wrap items-center justify-between ${
+            compactMobileControls ? "mt-2 gap-2 sm:mt-3 sm:gap-3" : "mt-3 gap-3"
+          } ${edgeToEdgeOnMobile ? "px-4 sm:px-0" : ""}`}
         >
           <div>
             {finishYards !== null ? (
-              <p className="text-sm font-black text-[#0a3d2a] dark:text-green-300" aria-live="polite">
+              <p
+                className="text-sm font-black text-[#0a3d2a] dark:text-green-300"
+                aria-live="polite"
+              >
                 Approx. finishing distance: {finishYards} yards
               </p>
             ) : null}
             <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-              Fine tune the {markerTerm} with the arrows or your keyboard. Hold Shift for larger steps.
+              {compactMobileControls ? (
+                <span className="sm:hidden">Use the arrows to fine tune.</span>
+              ) : null}
+              <span className={compactMobileControls ? "hidden sm:inline" : ""}>
+                Fine tune the {markerTerm} with the arrows or your keyboard.
+                Hold Shift for larger steps.
+              </span>
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-1.5" aria-label={`Fine ${markerTerm} adjustment`}>
+          {compactMobileControls ? (
+            <div
+              className="grid w-full grid-cols-5 justify-items-center gap-1.5 sm:hidden"
+              aria-label={`Fine ${markerTerm} adjustment`}
+            >
+              <NudgeButton
+                label={`Move ${markerTerm} left`}
+                glyph="←"
+                onClick={() => onChange(moveTargetPoint(point, -250, 0))}
+              />
+              <NudgeButton
+                label={`Move ${markerTerm} up`}
+                glyph="↑"
+                onClick={() => onChange(moveTargetPoint(point, 0, -250))}
+              />
+              <NudgeButton
+                label={`Move ${markerTerm} down`}
+                glyph="↓"
+                onClick={() => onChange(moveTargetPoint(point, 0, 250))}
+              />
+              <NudgeButton
+                label={`Move ${markerTerm} right`}
+                glyph="→"
+                onClick={() => onChange(moveTargetPoint(point, 250, 0))}
+              />
+              <NudgeButton
+                label={`Clear ${markerTerm}`}
+                glyph="×"
+                onClick={() => onChange(null)}
+              />
+            </div>
+          ) : null}
+          <div
+            className={`grid grid-cols-3 gap-1.5 ${
+              compactMobileControls ? "hidden sm:grid" : ""
+            }`}
+            aria-label={`Fine ${markerTerm} adjustment`}
+          >
             <span />
-            <NudgeButton label={`Move ${markerTerm} up`} glyph="↑" onClick={() => onChange(moveTargetPoint(point, 0, -250))} />
+            <NudgeButton
+              label={`Move ${markerTerm} up`}
+              glyph="↑"
+              onClick={() => onChange(moveTargetPoint(point, 0, -250))}
+            />
             <span />
-            <NudgeButton label={`Move ${markerTerm} left`} glyph="←" onClick={() => onChange(moveTargetPoint(point, -250, 0))} />
-            <NudgeButton label={`Clear ${markerTerm}`} glyph="×" onClick={() => onChange(null)} />
-            <NudgeButton label={`Move ${markerTerm} right`} glyph="→" onClick={() => onChange(moveTargetPoint(point, 250, 0))} />
+            <NudgeButton
+              label={`Move ${markerTerm} left`}
+              glyph="←"
+              onClick={() => onChange(moveTargetPoint(point, -250, 0))}
+            />
+            <NudgeButton
+              label={`Clear ${markerTerm}`}
+              glyph="×"
+              onClick={() => onChange(null)}
+            />
+            <NudgeButton
+              label={`Move ${markerTerm} right`}
+              glyph="→"
+              onClick={() => onChange(moveTargetPoint(point, 250, 0))}
+            />
             <span />
-            <NudgeButton label={`Move ${markerTerm} down`} glyph="↓" onClick={() => onChange(moveTargetPoint(point, 0, 250))} />
+            <NudgeButton
+              label={`Move ${markerTerm} down`}
+              glyph="↓"
+              onClick={() => onChange(moveTargetPoint(point, 0, 250))}
+            />
             <span />
           </div>
         </div>
@@ -278,7 +429,10 @@ function CourseGuides({
         const labelX = endpoint.x + 28;
         const labelY = endpoint.y;
         const path = points
-          .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+          .map(
+            (point, index) =>
+              `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`,
+          )
           .join(" ");
         return (
           <g key={`${scenario.id}-${guide.yards}`}>
@@ -316,17 +470,49 @@ function CourseGuides({
       {ballPosition ? (
         <g transform={`translate(${ballPosition.x} ${ballPosition.y})`}>
           <circle r="14" fill="#ffffff" stroke="#071d14" strokeWidth="5" />
-          <path d="M0 -18 V-58" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" />
-          <rect x="-55" y="-95" width="110" height="34" rx="17" fill="rgba(7,29,20,.86)" />
-          <text y="-71" textAnchor="middle" fill="#fff" fontSize="19" fontWeight="800">YOUR BALL</text>
+          <path
+            d="M0 -18 V-58"
+            stroke="#ffffff"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+          <rect
+            x="-55"
+            y="-95"
+            width="110"
+            height="34"
+            rx="17"
+            fill="rgba(7,29,20,.86)"
+          />
+          <text
+            y="-71"
+            textAnchor="middle"
+            fill="#fff"
+            fontSize="19"
+            fontWeight="800"
+          >
+            YOUR BALL
+          </text>
         </g>
       ) : null}
 
       {scenario.mapKind === "approach" ? (
         <g>
-          <g transform={`translate(${APPROACH_FLAG_GROUND_VIEWBOX.x} ${APPROACH_FLAG_GROUND_VIEWBOX.y})`}>
-            <path d="M0 0 V-70" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-            <path d="M3 -69 L56 -53 L3 -35Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="3" />
+          <g
+            transform={`translate(${APPROACH_FLAG_GROUND_VIEWBOX.x} ${APPROACH_FLAG_GROUND_VIEWBOX.y})`}
+          >
+            <path
+              d="M0 0 V-70"
+              stroke="#fff"
+              strokeWidth="5"
+              strokeLinecap="round"
+            />
+            <path
+              d="M3 -69 L56 -53 L3 -35Z"
+              fill="#d8b85c"
+              stroke="#fff7dd"
+              strokeWidth="3"
+            />
             <circle r="10" fill="none" stroke="#fff" strokeWidth="4" />
           </g>
           <rect
@@ -337,7 +523,14 @@ function CourseGuides({
             rx="20"
             fill="rgba(7,29,20,.84)"
           />
-          <text x="440" y="109" textAnchor="middle" fill="#fff" fontSize={scenario.pinSheetLabel ? 18 : 21} fontWeight="800">
+          <text
+            x="440"
+            y="109"
+            textAnchor="middle"
+            fill="#fff"
+            fontSize={scenario.pinSheetLabel ? 18 : 21}
+            fontWeight="800"
+          >
             {scenario.pinSheetLabel ?? "FRONT-LEFT PIN"}
           </text>
         </g>
@@ -353,19 +546,84 @@ function CourseGuides({
             strokeDasharray="13 10"
             opacity=".9"
           />
-          <rect x="170" y="309" width="244" height="40" rx="20" fill="rgba(7,29,20,.86)" />
-          <text x="292" y="336" textAnchor="middle" fill="#fff" fontSize="19" fontWeight="800">CREEK · 137 YD CENTRE</text>
+          <rect
+            x="170"
+            y="309"
+            width="244"
+            height="40"
+            rx="20"
+            fill="rgba(7,29,20,.86)"
+          />
+          <text
+            x="292"
+            y="336"
+            textAnchor="middle"
+            fill="#fff"
+            fontSize="19"
+            fontWeight="800"
+          >
+            CREEK · 137 YD CENTRE
+          </text>
 
           <g transform="translate(487 78)">
-            <path d="M0 34 V-20" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
-            <path d="M3 -19 L42 -7 L3 7Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="3" />
+            <path
+              d="M0 34 V-20"
+              stroke="#fff"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+            <path
+              d="M3 -19 L42 -7 L3 7Z"
+              fill="#d8b85c"
+              stroke="#fff7dd"
+              strokeWidth="3"
+            />
           </g>
 
-          <path d="M273 263 Q470 211 677 263" fill="none" stroke="#f4df9d" strokeWidth="4" strokeDasharray="9 9" opacity=".9" />
-          <rect x="485" y="218" width="182" height="40" rx="20" fill="rgba(7,29,20,.86)" />
-          <text x="576" y="245" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="800">174 YD CARRY ARC</text>
-          <rect x="475" y="109" width="207" height="40" rx="20" fill="rgba(7,29,20,.86)" />
-          <text x="579" y="136" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="800">≈102 YDS REMAINING</text>
+          <path
+            d="M273 263 Q470 211 677 263"
+            fill="none"
+            stroke="#f4df9d"
+            strokeWidth="4"
+            strokeDasharray="9 9"
+            opacity=".9"
+          />
+          <rect
+            x="485"
+            y="218"
+            width="182"
+            height="40"
+            rx="20"
+            fill="rgba(7,29,20,.86)"
+          />
+          <text
+            x="576"
+            y="245"
+            textAnchor="middle"
+            fill="#fff"
+            fontSize="20"
+            fontWeight="800"
+          >
+            174 YD CARRY ARC
+          </text>
+          <rect
+            x="475"
+            y="109"
+            width="207"
+            height="40"
+            rx="20"
+            fill="rgba(7,29,20,.86)"
+          />
+          <text
+            x="579"
+            y="136"
+            textAnchor="middle"
+            fill="#fff"
+            fontSize="20"
+            fontWeight="800"
+          >
+            ≈102 YDS REMAINING
+          </text>
         </g>
       ) : null}
 
@@ -379,14 +637,54 @@ function CourseGuides({
             strokeDasharray="13 10"
             opacity=".9"
           />
-          <rect x="170" y="309" width="244" height="40" rx="20" fill="rgba(7,29,20,.86)" />
-          <text x="292" y="336" textAnchor="middle" fill="#fff" fontSize="19" fontWeight="800">CREEK · 137 YD CENTRE</text>
+          <rect
+            x="170"
+            y="309"
+            width="244"
+            height="40"
+            rx="20"
+            fill="rgba(7,29,20,.86)"
+          />
+          <text
+            x="292"
+            y="336"
+            textAnchor="middle"
+            fill="#fff"
+            fontSize="19"
+            fontWeight="800"
+          >
+            CREEK · 137 YD CENTRE
+          </text>
           <g transform="translate(487 78)">
-            <path d="M0 34 V-20" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
-            <path d="M3 -19 L42 -7 L3 7Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="3" />
+            <path
+              d="M0 34 V-20"
+              stroke="#fff"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+            <path
+              d="M3 -19 L42 -7 L3 7Z"
+              fill="#d8b85c"
+              stroke="#fff7dd"
+              strokeWidth="3"
+            />
           </g>
-          <rect x="377" y="8" width="220" height="38" rx="19" fill="rgba(7,29,20,.86)" />
-          <text x="487" y="34" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="800">
+          <rect
+            x="377"
+            y="8"
+            width="220"
+            height="38"
+            rx="19"
+            fill="rgba(7,29,20,.86)"
+          />
+          <text
+            x="487"
+            y="34"
+            textAnchor="middle"
+            fill="#fff"
+            fontSize="18"
+            fontWeight="800"
+          >
             {scenario.pinSheetLabel ?? "PIN"}
           </text>
         </g>
@@ -395,7 +693,15 @@ function CourseGuides({
   );
 }
 
-function NudgeButton({ label, glyph, onClick }: { label: string; glyph: string; onClick: () => void }) {
+function NudgeButton({
+  label,
+  glyph,
+  onClick,
+}: {
+  label: string;
+  glyph: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
