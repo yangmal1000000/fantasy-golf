@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import type { KeyboardEvent, PointerEvent, ReactNode } from "react";
+import type { KeyboardEvent, PointerEvent } from "react";
 import {
   APPROACH_FLAG_GROUND_VIEWBOX,
   TARGET_COORDINATE_MAX,
@@ -25,7 +25,6 @@ interface CourseMapProps {
   edgeToEdgeOnMobile?: boolean;
   compactMobileControls?: boolean;
   immersiveMobileControls?: boolean;
-  mobileBelowMap?: ReactNode;
   referencePoints?: Array<{
     point: TargetPoint;
     label: string;
@@ -62,7 +61,6 @@ export default function CourseMap({
   edgeToEdgeOnMobile = false,
   compactMobileControls = false,
   immersiveMobileControls = false,
-  mobileBelowMap,
   referencePoints = [],
 }: CourseMapProps) {
   const interactive = Boolean(onChange);
@@ -315,15 +313,58 @@ export default function CourseMap({
             Tap the map to place
           </div>
           )}
-      </div>
 
-      {mobileBelowMap}
+        {interactive && point && onChange && immersiveMobileControls ? (
+          <div
+            className="absolute bottom-2 left-2 z-30 grid grid-cols-3 gap-1.5 rounded-2xl border border-white/15 bg-[#071d14]/80 p-1.5 shadow-xl backdrop-blur-md sm:hidden"
+            aria-label={`Fine ${markerTerm} adjustment`}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <span
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-black/20 px-1 text-center text-[9px] font-black leading-3 text-[#f4df9d]"
+              aria-live="polite"
+            >
+              {finishYards} yd
+            </span>
+            <NudgeButton
+              label={`Move ${markerTerm} up`}
+              glyph="↑"
+              overlay
+              onClick={() => onChange(moveTargetPoint(point, 0, -250))}
+            />
+            <NudgeButton
+              label={`Clear ${markerTerm}`}
+              glyph="×"
+              overlay
+              onClick={() => onChange(null)}
+            />
+            <NudgeButton
+              label={`Move ${markerTerm} left`}
+              glyph="←"
+              overlay
+              onClick={() => onChange(moveTargetPoint(point, -250, 0))}
+            />
+            <NudgeButton
+              label={`Move ${markerTerm} down`}
+              glyph="↓"
+              overlay
+              onClick={() => onChange(moveTargetPoint(point, 0, 250))}
+            />
+            <NudgeButton
+              label={`Move ${markerTerm} right`}
+              glyph="→"
+              overlay
+              onClick={() => onChange(moveTargetPoint(point, 250, 0))}
+            />
+          </div>
+        ) : null}
+      </div>
 
       {interactive && point && onChange && (
         <div
           className={`flex flex-wrap items-center justify-between ${
             immersiveMobileControls
-              ? "gap-2 border-t border-white/10 bg-[#071f16] px-3 py-2 sm:mt-3 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0"
+              ? "hidden gap-2 sm:mt-3 sm:flex"
               : compactMobileControls
                 ? "mt-2 gap-2 sm:mt-3 sm:gap-3"
                 : "mt-3 gap-3"
@@ -721,17 +762,23 @@ function NudgeButton({
   label,
   glyph,
   onClick,
+  overlay = false,
 }: {
   label: string;
   glyph: string;
   onClick: () => void;
+  overlay?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 bg-white text-lg font-bold text-[#0a3d2a] shadow-sm transition hover:border-[#c8a951] hover:bg-[#fffaf0] dark:border-zinc-700 dark:bg-zinc-900 dark:text-green-400 dark:hover:border-[#c8a951]"
+      className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg font-bold shadow-sm transition ${
+        overlay
+          ? "border-white/20 bg-zinc-950/85 text-green-300 hover:border-[#c8a951] hover:bg-zinc-900"
+          : "border-zinc-200 bg-white text-[#0a3d2a] hover:border-[#c8a951] hover:bg-[#fffaf0] dark:border-zinc-700 dark:bg-zinc-900 dark:text-green-400 dark:hover:border-[#c8a951]"
+      }`}
     >
       {glyph}
     </button>

@@ -25,7 +25,6 @@ import {
   TARGET_V2_PRACTICE,
   TARGET_V2_SCENARIOS,
   estimateTargetFinishYards,
-  targetV2EssentialFacts,
   type TargetV2Metric,
   type TargetV2Scenario,
 } from "@/lib/target-v2";
@@ -438,8 +437,6 @@ function PlayingStage({
   onDismissBrief: () => void;
   onContinue: () => void;
 }) {
-  const essentialFacts = targetV2EssentialFacts(scenario);
-
   return (
     <section className="target-attempt-shell fixed inset-0 z-[80] flex h-[100dvh] flex-col overflow-hidden bg-white dark:bg-[#0d0f0e] sm:static sm:h-auto sm:overflow-hidden sm:rounded-3xl sm:border sm:border-zinc-200 sm:bg-white sm:shadow-xl sm:shadow-[#0a3d2a]/5 sm:dark:border-zinc-800 sm:dark:bg-zinc-900">
       <header className="relative shrink-0 bg-[#071f16] text-white sm:hidden safe-area-top">
@@ -520,37 +517,56 @@ function PlayingStage({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col sm:grid sm:flex-none lg:grid-cols-[minmax(0,1.45fr)_minmax(330px,.8fr)]">
-        <div className="w-full shrink-0 bg-[#071f16] sm:p-5">
-          <CourseMap
-            scenario={scenario}
-            point={point}
-            onChange={onChange}
-            edgeToEdgeOnMobile
-            immersiveMobileControls
-            mobileBelowMap={
+        <div className="flex min-h-0 w-full flex-1 flex-col bg-[#071f16] sm:block sm:flex-none sm:p-5">
+          <div className="shrink-0">
+            <CourseMap
+              scenario={scenario}
+              point={point}
+              onChange={onChange}
+              edgeToEdgeOnMobile
+              immersiveMobileControls
+            />
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-white/10 bg-[#10231c] px-4 py-3 text-white sm:hidden">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#d7bc6a]">
+                  {scenario.eyebrow}
+                </p>
+                <h2 className="mt-0.5 text-sm font-black">{scenario.title}</h2>
+                <p className="mt-0.5 text-[11px] font-semibold text-green-300">
+                  {scenario.hole}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={onOpenBrief}
-                className="w-full border-b border-white/10 bg-[#10231c] px-4 py-3 text-left sm:hidden"
+                className="min-h-11 shrink-0 rounded-xl border border-white/15 bg-white/5 px-3 text-[10px] font-black uppercase tracking-wide text-green-300"
                 aria-haspopup="dialog"
               >
-                <span className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-black text-white">
-                    {scenario.title}
-                  </span>
-                  <span className="shrink-0 text-[10px] font-black uppercase tracking-wide text-green-300">
-                    Full details
-                  </span>
-                </span>
-                <span className="mt-1 block truncate text-[11px] font-bold text-[#e4cc85]">
-                  {essentialFacts.map((metric) => metric.value).join(" · ")}
-                </span>
-                <span className="mt-1 block text-xs leading-4 text-white/70">
-                  {scenario.summary}
-                </span>
+                Open brief
               </button>
-            }
-          />
+            </div>
+
+            <p className="mt-3 rounded-xl bg-white/7 px-3 py-2.5 text-xs font-black leading-4">
+              {scenario.question}
+            </p>
+
+            <MetricGrid metrics={scenario.metrics} compact />
+
+            <p className="mt-3 text-xs font-semibold leading-5 text-white/85">
+              {scenario.summary}
+            </p>
+            <ul className="mt-2 space-y-2 pb-1 text-xs leading-5 text-white/70">
+              {scenario.details.map((detail) => (
+                <li key={detail} className="flex items-start gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c8a951]" />
+                  <span>{detail}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="hidden p-7 sm:block">

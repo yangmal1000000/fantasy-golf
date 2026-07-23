@@ -11,10 +11,10 @@ const courseMapSource = readFileSync(
   "utf8",
 );
 
-test("immersive mobile map wrapper explicitly fills Safari viewport width", () => {
+test("immersive mobile map and detail column explicitly fill the Safari viewport", () => {
   assert.match(
     previewSource,
-    /className="w-full shrink-0 bg-\[#071f16\] sm:p-5"/,
+    /className="flex min-h-0 w-full flex-1 flex-col bg-\[#071f16\]/,
   );
   assert.doesNotMatch(
     previewSource,
@@ -22,12 +22,25 @@ test("immersive mobile map wrapper explicitly fills Safari viewport width", () =
   );
 });
 
-test("folded shot facts render directly below the map and before controls", () => {
-  const belowMap = courseMapSource.indexOf("{mobileBelowMap}");
-  const controls = courseMapSource.indexOf("interactive && point && onChange");
-
-  assert.ok(belowMap > 0);
-  assert.ok(controls > belowMap);
-  assert.match(previewSource, /Full details/);
+test("full shot information uses the remaining mobile height and scrolls internally", () => {
+  assert.match(
+    previewSource,
+    /min-h-0 flex-1 overflow-y-auto overscroll-contain/,
+  );
+  assert.match(previewSource, /\{scenario\.question\}/);
+  assert.match(previewSource, /MetricGrid metrics=\{scenario\.metrics\} compact/);
   assert.match(previewSource, /\{scenario\.summary\}/);
+  assert.match(previewSource, /scenario\.details\.map/);
+});
+
+test("immersive fine adjustment is overlaid in the map's lower-left corner", () => {
+  assert.match(
+    courseMapSource,
+    /absolute bottom-2 left-2 z-30 grid grid-cols-3/,
+  );
+  assert.match(courseMapSource, /onPointerDown=\{\(event\) => event\.stopPropagation\(\)\}/);
+  assert.match(courseMapSource, /overlay[\s\S]*Move \$\{markerTerm\} up/);
+  assert.match(courseMapSource, /Move \$\{markerTerm\} left[\s\S]*overlay/);
+  assert.match(courseMapSource, /Move \$\{markerTerm\} down[\s\S]*overlay/);
+  assert.match(courseMapSource, /Move \$\{markerTerm\} right[\s\S]*overlay/);
 });
