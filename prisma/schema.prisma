@@ -341,3 +341,72 @@ model TargetJudgeAudit {
 
   @@index([roundId, createdAt])
 }
+
+// ===== Rocket Classic invitation-only beta =====
+// Test passes are account-bound entitlements, not payments or cash-value vouchers.
+
+model RocketBetaCampaign {
+  id              String             @id @default(cuid())
+  slug            String             @unique
+  name            String
+  tournamentId    String             @unique
+  targetRoundId   String             @unique
+  status          String             @default("OPEN")
+  entryOpensAt    DateTime?
+  entryClosesAt   DateTime?
+  fieldVersion    String?
+  fieldHash       String?
+  fieldFrozenAt   DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  members         RocketBetaMember[]
+  passes          RocketBetaPass[]
+  auditEvents     RocketBetaAudit[]
+}
+
+model RocketBetaMember {
+  id          String             @id @default(cuid())
+  campaignId  String
+  email       String
+  userId      String?
+  displayName String?
+  active      Boolean            @default(true)
+  invitedAt   DateTime           @default(now())
+  acceptedAt  DateTime?
+  campaign    RocketBetaCampaign @relation(references: [id], fields: [campaignId], onDelete: Cascade)
+  passes      RocketBetaPass[]
+
+  @@unique([campaignId, email])
+  @@unique([campaignId, userId])
+  @@index([email])
+}
+
+model RocketBetaPass {
+  id                  String             @id @default(cuid())
+  campaignId          String
+  memberId            String
+  userId              String
+  sourceTargetEntryId String             @unique
+  status              String             @default("UNLOCKED")
+  unlockedAt          DateTime           @default(now())
+  redeemedAt          DateTime?
+  teamId              String?            @unique
+  campaign            RocketBetaCampaign @relation(references: [id], fields: [campaignId], onDelete: Cascade)
+  member              RocketBetaMember   @relation(references: [id], fields: [memberId], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@index([userId])
+}
+
+model RocketBetaAudit {
+  id          String             @id @default(cuid())
+  campaignId  String
+  actorUserId String?
+  actorEmail  String?
+  action      String
+  payload     Json?
+  createdAt   DateTime           @default(now())
+  campaign    RocketBetaCampaign @relation(references: [id], fields: [campaignId], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
+}

@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { getRocketBetaStateForUser } from "@/lib/rocket-beta";
 import { calculateTeamScore } from "@/lib/scoring";
 import { calculateUserWinnings } from "@/lib/winnings";
 import { formatGBP, STATUS_CONFIG } from "@/lib/ui";
-import TierBadge from "@/components/TierBadge";
 import PlayerAvatar from "@/components/PlayerAvatar";
-import Flag from "@/components/Flag";
 import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
 import SignInPrompt from "@/components/SignInPrompt";
@@ -20,11 +19,11 @@ import {
   BoltIcon,
   UsersIcon,
   TargetIcon,
-  TrendingUpIcon,
   TicketIcon,
 } from "@/components/icons";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Dashboard — Fantasy Golf",
@@ -44,6 +43,7 @@ export default async function DashboardPage() {
       </Suspense>
     );
   }
+  const rocketBeta = await getRocketBetaStateForUser(user);
 
   // Fetch everything in parallel
   const [teams, leagueMembers, earnedAchievements, savedTeamCount, winnings] = await Promise.all([
@@ -90,7 +90,6 @@ export default async function DashboardPage() {
   const liveTeams = teamData.filter((t) => t.score && t.team.tournament.status === "in_progress");
   const upcomingTeams = teamData.filter((t) => t.team.tournament.status === "entries_open" || t.team.tournament.status === "upcoming");
 
-  const totalSpent = teams.reduce((sum, t) => sum + (t.tournament.entryFee ?? 0), 0);
   const totalWon = winnings.totalWon;
   const netProfit = winnings.netProfit;
 
@@ -121,12 +120,6 @@ export default async function DashboardPage() {
     }
   }
   const topPlayers = [...pickCount.values()].sort((a, b) => b.count - a.count).slice(0, 5);
-
-  // Recent activity (last 5 teams)
-  const recentTeams = teamData.slice(0, 5);
-
-  // Achievements
-  const earnedSet = new Set(earnedAchievements.map((a) => a.type));
 
   return (
     <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
@@ -173,6 +166,64 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {rocketBeta.approved && (
+        <section className="mt-4 overflow-hidden rounded-2xl border border-[#c8a951]/40 bg-white shadow-sm dark:bg-zinc-900">
+          <div className="bg-[radial-gradient(circle_at_90%_10%,rgba(221,199,127,.25),transparent_28%),linear-gradient(120deg,#071f16,#0a3d2a)] p-5 text-white">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#e4cc85]">
+                  Rocket Classic · closed test flight
+                </p>
+                <h2 className="mt-2 text-xl font-black">
+                  {rocketBeta.passState === "REDEEMED"
+                    ? "Your team is confirmed"
+                    : rocketBeta.passState === "UNLOCKED"
+                      ? "Your Test Pass is ready"
+                      : "Complete Target to unlock your pass"}
+                </h2>
+                <p className="mt-1 text-sm text-white/65">
+                  Detroit Golf Club · 30 July–2 August · no payment or prize
+                </p>
+              </div>
+              <Link
+                href={
+                  rocketBeta.passState === "REDEEMED" && rocketBeta.teamId
+                    ? `/tournaments/rocket-classic/teams/${rocketBeta.teamId}`
+                    : rocketBeta.passState === "UNLOCKED"
+                      ? rocketBeta.enterHref
+                      : rocketBeta.targetHref
+                }
+                className="rounded-xl bg-[#c8a951] px-4 py-2.5 text-sm font-black text-[#17251d]"
+              >
+                {rocketBeta.passState === "REDEEMED"
+                  ? "View my team →"
+                  : rocketBeta.passState === "UNLOCKED"
+                    ? "Build my team →"
+                    : "Start Target →"}
+              </Link>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 divide-x divide-zinc-100 dark:divide-zinc-800">
+            <div className="p-4">
+              <p className="text-[10px] font-black uppercase tracking-wide text-zinc-400">
+                1 · Target
+              </p>
+              <p className="mt-1 text-sm font-bold text-zinc-800 dark:text-zinc-100">
+                {rocketBeta.passState === "LOCKED" ? "Not completed" : "Completed"}
+              </p>
+            </div>
+            <div className="p-4">
+              <p className="text-[10px] font-black uppercase tracking-wide text-zinc-400">
+                2 · Rocket team
+              </p>
+              <p className="mt-1 text-sm font-bold text-zinc-800 dark:text-zinc-100">
+                {rocketBeta.passState === "REDEEMED" ? "Confirmed" : "Waiting"}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ===== Stats Grid ===== */}
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
         <StatCard
@@ -196,13 +247,29 @@ export default async function DashboardPage() {
           sub={positions.length > 0 ? `from ${positions.length} events` : undefined}
           accent="text-[#0a3d2a] dark:text-green-400"
         />
-        <StatCard
-          icon={<PoundIcon className="h-4 w-4" />}
-          label="Net P/L"
-          value={netProfit === 0 ? formatGBP(0) : `${netProfit < 0 ? "-" : "+"}${formatGBP(Math.abs(netProfit))}`}
-          sub={`${formatGBP(totalWon)} won`}
-          accent={netProfit > 0 ? "text-green-600" : netProfit < 0 ? "text-red-500" : "text-[#c8a951]"}
-        />
+        {rocketBeta.approved ? (
+          <StatCard
+            icon={<TicketIcon className="h-4 w-4" />}
+            label="Test Pass"
+            value={
+              rocketBeta.passState === "REDEEMED"
+                ? "Used"
+                : rocketBeta.passState === "UNLOCKED"
+                  ? "Ready"
+                  : "Locked"
+            }
+            sub="Rocket Classic beta"
+            accent="text-[#c8a951]"
+          />
+        ) : (
+          <StatCard
+            icon={<PoundIcon className="h-4 w-4" />}
+            label="Net P/L"
+            value={netProfit === 0 ? formatGBP(0) : `${netProfit < 0 ? "-" : "+"}${formatGBP(Math.abs(netProfit))}`}
+            sub={`${formatGBP(totalWon)} won`}
+            accent={netProfit > 0 ? "text-green-600" : netProfit < 0 ? "text-red-500" : "text-[#c8a951]"}
+          />
+        )}
         <StatCard
           icon={<StarIcon className="h-4 w-4" />}
           label="Templates"

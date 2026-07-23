@@ -8,6 +8,7 @@ import { formatGBP } from "@/lib/ui";
 import { getCurrentUserId } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ROCKET_BETA_TOURNAMENT_ID } from "@/lib/rocket-beta";
 import DarkHorseEntry from "./DarkHorseEntry";
 
 export const metadata = {
@@ -20,6 +21,7 @@ export default async function DarkHorsePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (id === ROCKET_BETA_TOURNAMENT_ID) notFound();
 
   const tournament = await prisma.tournament.findUnique({
     where: { id },

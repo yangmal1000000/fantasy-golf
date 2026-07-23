@@ -3,6 +3,7 @@ import { ensureDefaultSidePots, getSideBetCount } from "@/lib/sidegames";
 import { formatGBP } from "@/lib/ui";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ROCKET_BETA_TOURNAMENT_ID } from "@/lib/rocket-beta";
 
 export const metadata = {
   title: "Side Games · Fantasy Golf",
@@ -47,6 +48,7 @@ export default async function SideGamesHubPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (id === ROCKET_BETA_TOURNAMENT_ID) notFound();
 
   const tournament = await prisma.tournament.findUnique({
     where: { id },

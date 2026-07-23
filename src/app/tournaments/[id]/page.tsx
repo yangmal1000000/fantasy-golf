@@ -2,13 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
+import {
+  ROCKET_BETA_ENTRY_CLOSES_AT,
+  ROCKET_BETA_TOURNAMENT_ID,
+  getRocketBetaStateForUser,
+} from "@/lib/rocket-beta";
 import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP, majorTheme, majorKey } from "@/lib/ui";
 import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
 import { calculateLeaderboard, type TeamScoreResult } from "@/lib/scoring";
 import MajorScoreboard from "@/components/MajorScoreboard";
-import { MapPinIcon, UsersIcon, PoundIcon, ChartBarIcon, GolfFlagIcon, TrophyIcon, TargetIcon, BoltIcon, FlagIcon } from "@/components/icons";
+import { MapPinIcon, UsersIcon, ChartBarIcon, GolfFlagIcon, TrophyIcon, TargetIcon, BoltIcon, FlagIcon } from "@/components/icons";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -19,18 +26,24 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const isRocketBeta = id === ROCKET_BETA_TOURNAMENT_ID;
 
-  const tournament = await prisma.tournament.findUnique({
-    where: { id },
-    include: {
-      players: {
-        include: { player: { select: { id: true, name: true, country: true, dataGolfRank: true } } },
+  const [tournament, betaUser] = await Promise.all([
+    prisma.tournament.findUnique({
+      where: { id },
+      include: {
+        players: {
+          include: { player: { select: { id: true, name: true, country: true, dataGolfRank: true } } },
+        },
+        _count: { select: { teams: true, players: true } },
       },
-      _count: { select: { teams: true, players: true } },
-    },
-  });
+    }),
+    isRocketBeta ? getCurrentUser() : Promise.resolve(null),
+  ]);
 
   if (!tournament) notFound();
+  const betaState =
+    isRocketBeta && betaUser ? await getRocketBetaStateForUser(betaUser) : null;
 
   // Fetch scores for this tournament
   const scores = await prisma.score.findMany({
@@ -46,7 +59,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     const entry = scoreMap.get(s.playerId)!;
     entry.rounds[s.round - 1] = s.strokes;
   }
-  for (const [pid, entry] of scoreMap) {
+  for (const [, entry] of scoreMap) {
     entry.roundsPlayed = entry.rounds.filter(r => r !== null).length;
     entry.total = entry.rounds.filter((r): r is number => r !== null).reduce((a,b) => a+b, 0);
     entry.toPar = entry.total - par * entry.roundsPlayed;
@@ -81,8 +94,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
   // Cut line info: count players who made the cut (played R3) vs total
   const totalScorers = sortedScorers.length;
-  const madeCutCount = sortedScorers.filter(([, s]) => s.madeCut).length;
-  const missedCutCount = totalScorers - madeCutCount;
   const showCutInfo = hasScores && (tournament.status === "completed" || tournament.status === "in_progress") && totalScorers > 0;
   // R2 leader score (top score after 2 rounds) for cut context
   const r2Scores = sortedScorers
@@ -92,11 +103,11 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   const cutScore = r2Scores.length > 0 ? r2Scores[Math.min(64, r2Scores.length - 1)]?.r2Total : null;
 
   const status = STATUS_CONFIG[tournament.status] ?? STATUS_CONFIG.upcoming;
-  const theme = majorTheme(tournament.id);
+  const theme = isRocketBeta ? null : majorTheme(tournament.id);
   const winnerCardClass = theme
     ? theme.winnerCardClass
     : "border-[#c8a951]/40 bg-gradient-to-br from-[#c8a951]/10 to-transparent";
-  const cat = CATEGORY_CONFIG[tournament.category];
+  const cat = isRocketBeta ? null : CATEGORY_CONFIG[tournament.category];
   const canEnter = tournament.status === "entries_open" || tournament.status === "upcoming";
   const isLive = tournament.status === "in_progress";
   const potValue = tournament.entryFee * tournament._count.teams;
@@ -122,8 +133,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     }
   }
 
-  const daysUntil = Math.ceil((tournament.startDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-
   // Fetch fantasy team leaderboard for mini-leaderboard
   let fantasyLeaderboard: TeamScoreResult[] = [];
   try {
@@ -133,7 +142,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   const topTeams = fantasyLeaderboard.slice(0, 5);
 
   // Detect major for skeuomorphic scoreboard
-  const mk = majorKey(id);
+  const mk = isRocketBeta ? null : majorKey(id);
 
   return (
     <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
@@ -142,12 +151,22 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
       {/* Header banner */}
       <div className={`relative mt-2 overflow-hidden rounded-xl ${theme ? `ring-1 ${theme.borderAccent}` : ""}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={courseImage(tournament.id, tournament.course)} alt={tournament.course || tournament.name} className="h-40 w-full object-cover sm:h-48" />
-        <div className={`absolute inset-0 bg-gradient-to-t ${theme ? theme.headerOverlay : "from-[#0a3d2a]/95 via-[#0a3d2a]/40 to-transparent"}`} />
+        {isRocketBeta ? (
+          <div className="h-52 bg-[radial-gradient(circle_at_82%_18%,rgba(221,199,127,.30),transparent_26%),radial-gradient(circle_at_18%_82%,rgba(76,155,103,.35),transparent_28%),linear-gradient(125deg,#061f16_0%,#0a3d2a_52%,#142d22_100%)] sm:h-60">
+            <div className="absolute right-5 top-5 rounded-full border border-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-white/45">
+              Detroit · 2026
+            </div>
+          </div>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={courseImage(tournament.id, tournament.course)} alt={tournament.course || tournament.name} className="h-40 w-full object-cover sm:h-48" />
+        )}
+        <div className={`absolute inset-0 bg-gradient-to-t ${theme ? theme.headerOverlay : "from-[#071f16]/95 via-[#0a3d2a]/35 to-transparent"}`} />
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white sm:p-5">
           <div className="flex items-center gap-2">
-            <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${status.badgeClass}`}>{status.label}</span>
+            <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${isRocketBeta ? "border border-[#e4cc85]/40 bg-[#e4cc85]/15 text-[#f0d986]" : status.badgeClass}`}>
+              {isRocketBeta ? "CLOSED TEST FLIGHT" : status.label}
+            </span>
             {cat && <span className="rounded-md bg-white/15 px-2 py-0.5 text-[10px] font-semibold">{cat.label}</span>}
             {theme && <span className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${theme.badgeClass}`}>{theme.name}</span>}
             {isLive && tournament.currentRound > 0 && (
@@ -175,8 +194,16 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           <p className="text-[10px] text-zinc-500">Players</p>
         </div>
         <div className={`rounded-lg border bg-white dark:bg-zinc-900 p-2.5 text-center ${theme ? theme.borderAccent : "border-zinc-200 dark:border-zinc-800"}`}>
-          <p className="text-lg font-bold tabular" style={theme ? { color: theme.accentHex } : { color: "#c8a951" }}>{formatGBP(tournament.entryFee)}</p>
-          <p className="text-[10px] text-zinc-500">Entry</p>
+          <p className="text-lg font-bold tabular" style={theme ? { color: theme.accentHex } : { color: "#c8a951" }}>
+            {isRocketBeta
+              ? betaState?.passState === "REDEEMED"
+                ? "Used"
+                : betaState?.passState === "UNLOCKED"
+                  ? "Ready"
+                  : "Locked"
+              : formatGBP(tournament.entryFee)}
+          </p>
+          <p className="text-[10px] text-zinc-500">{isRocketBeta ? "Test Pass" : "Entry"}</p>
         </div>
         <div className={`rounded-lg border bg-white dark:bg-zinc-900 p-2.5 text-center ${theme ? theme.borderAccent : "border-zinc-200 dark:border-zinc-800"}`}>
           <p className={`text-lg font-bold tabular ${theme ? theme.statsAccent : "text-[#0a3d2a] dark:text-green-400"}`}>{tournament.par}</p>
@@ -184,8 +211,52 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </div>
       </div>
 
+      {isRocketBeta && (
+        <section className="mt-3 overflow-hidden rounded-xl border border-[#c8a951]/35 bg-white shadow-sm dark:bg-zinc-900">
+          <div className="grid gap-px bg-zinc-100 dark:bg-zinc-800 sm:grid-cols-[1.2fr_1fr]">
+            <div className="bg-white p-4 dark:bg-zinc-900 sm:p-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">
+                Your beta route
+              </p>
+              <div className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-3 text-sm">
+                <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${betaState?.passState !== "LOCKED" ? "bg-[#0a3d2a] text-white" : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800"}`}>1</span>
+                <div>
+                  <p className="font-black text-zinc-900 dark:text-white">Complete Target</p>
+                  <p className="text-xs leading-5 text-zinc-500">
+                    {betaState?.passState !== "LOCKED" ? "Complete · pass unlocked" : "Three decisions · one locked submission"}
+                  </p>
+                </div>
+                <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${betaState?.passState === "REDEEMED" ? "bg-[#0a3d2a] text-white" : "bg-[#c8a951]/25 text-[#7a5e16]"}`}>2</span>
+                <div>
+                  <p className="font-black text-zinc-900 dark:text-white">Confirm five-player team</p>
+                  <p className="text-xs leading-5 text-zinc-500">
+                    {betaState?.passState === "REDEEMED"
+                      ? "Confirmed · follow your live standing here"
+                      : "One golfer from each frozen tier"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-[#f7f4eb] p-4 dark:bg-[#17251d] sm:p-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">
+                Event brief
+              </p>
+              <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                <div><dt className="text-zinc-500">Dates</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">30 Jul–2 Aug</dd></div>
+                <div><dt className="text-zinc-500">Venue</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">Detroit Golf Club</dd></div>
+                <div><dt className="text-zinc-500">Course</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">7,328 yds · Par 70</dd></div>
+                <div><dt className="text-zinc-500">Beta lock</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">{ROCKET_BETA_ENTRY_CLOSES_AT.toLocaleString("en-GB", { timeZone: "Europe/London", weekday: "short", hour: "2-digit", minute: "2-digit" })}</dd></div>
+              </dl>
+              <p className="mt-3 text-[11px] leading-5 text-zinc-500">
+                Invitation-only rehearsal. No payment, cash value or prize.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Prize pool + countdown */}
-      {potValue > 0 && (
+      {!isRocketBeta && potValue > 0 && (
         <div className={`mt-2 flex items-center justify-between rounded-lg border p-3 ${theme ? theme.potCardClass : "border-[#c8a951]/30 bg-gradient-to-r from-[#c8a951]/10 to-transparent"}`}>
           <div className="flex items-center gap-2">
             <TrophyIcon className="h-5 w-5" style={{ color: theme ? theme.accentHex : "#c8a951" }} />
@@ -194,18 +265,44 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               <p className="text-lg font-bold tabular" style={{ color: theme ? theme.accentHex : "#c8a951" }}>{formatGBP(potValue)}</p>
             </div>
           </div>
-          {canEnter && daysUntil > 0 && (
+          {canEnter && (
             <div className="text-right">
-              <p className="text-xs text-zinc-500">Starts in</p>
-              <p className={`text-lg font-bold tabular ${theme ? theme.statsAccent : "text-[#0a3d2a] dark:text-green-400"}`}>{daysUntil} day{daysUntil === 1 ? "" : "s"}</p>
+              <p className="text-xs text-zinc-500">Starts</p>
+              <p className={`text-sm font-bold tabular ${theme ? theme.statsAccent : "text-[#0a3d2a] dark:text-green-400"}`}>
+                {tournament.startDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+              </p>
             </div>
           )}
         </div>
       )}
 
       {/* Action buttons */}
-      <div className={`mt-4 grid grid-cols-2 gap-2 ${tournament._count.teams > 0 ? "sm:grid-cols-4" : "sm:grid-cols-2"} `}>
-          {canEnter && tournament._count.players > 0 ? (
+      <div className={`mt-4 grid grid-cols-2 gap-2 ${tournament._count.teams > 0 && !isRocketBeta ? "sm:grid-cols-4" : "sm:grid-cols-2"} `}>
+        {isRocketBeta ? (
+          betaState?.approved ? (
+            betaState.passState === "REDEEMED" && betaState.teamId ? (
+              <Link href={`/tournaments/${tournament.id}/teams/${betaState.teamId}`} className="flex items-center justify-center gap-1.5 rounded-lg bg-[#0a3d2a] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1a5c3e]">
+                <GolfFlagIcon className="h-4 w-4" /> View My Team
+              </Link>
+            ) : betaState.passState === "LOCKED" ? (
+              <Link href="/target" className="flex items-center justify-center gap-1.5 rounded-lg bg-[#0a3d2a] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1a5c3e]">
+                <TargetIcon className="h-4 w-4" /> Complete Target
+              </Link>
+            ) : tournament._count.players > 0 ? (
+              <Link href={`/tournaments/${tournament.id}/enter`} className="flex items-center justify-center gap-1.5 rounded-lg bg-[#0a3d2a] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1a5c3e]">
+                <GolfFlagIcon className="h-4 w-4" /> Build My Team
+              </Link>
+            ) : (
+              <div className="flex items-center justify-center gap-1.5 rounded-lg bg-[#c8a951]/20 px-4 py-2.5 text-sm font-bold text-[#7a5e16] dark:text-[#e4cc85]">
+                Test Pass Ready · Field Preparing
+              </div>
+            )
+          ) : (
+            <div className="flex items-center justify-center gap-1.5 rounded-lg bg-zinc-100 px-4 py-2.5 text-sm font-bold text-zinc-500 dark:bg-zinc-800">
+              Invite-only beta
+            </div>
+          )
+        ) : canEnter && tournament._count.players > 0 ? (
           <Link href={`/tournaments/${tournament.id}/enter`} className="flex items-center justify-center gap-1.5 rounded-lg bg-[#0a3d2a] dark:bg-green-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1a5c3e]">
             <GolfFlagIcon className="h-4 w-4" /> Enter Team
           </Link>
@@ -221,12 +318,12 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         <Link href={`/tournaments/${tournament.id}/leaderboard`} className="flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:border-zinc-300">
           <ChartBarIcon className="h-4 w-4" /> Leaderboard
         </Link>
-        {tournament._count.teams > 0 && (
+        {tournament._count.teams > 0 && !isRocketBeta && (
           <Link href={`/tournaments/${tournament.id}/draft-board`} className="flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:border-zinc-300">
             <UsersIcon className="h-4 w-4" /> Draft Board
           </Link>
         )}
-        {tournament._count.teams > 0 && (
+        {tournament._count.teams > 0 && !isRocketBeta && (
           <Link href={`/tournaments/${tournament.id}/side-games`} className="flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:border-zinc-300">
             <TargetIcon className="h-4 w-4" /> Side Games
           </Link>
@@ -289,7 +386,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                   <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-3 pb-2.5">
                     {team.players.map((p) => {
                       const pScore = p.roundScores.filter((s) => s != null).reduce((a, b) => a + (b as number), 0);
-                      const pRounds = p.roundScores.filter((s) => s != null).length;
                       return (
                         <Link
                           key={p.playerId}
