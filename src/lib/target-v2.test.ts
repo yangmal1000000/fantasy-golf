@@ -6,6 +6,7 @@ import {
   TARGET_V2_VERSION,
   buildTargetYardageGuidePoints,
   estimateTargetFinishYards,
+  targetV2EssentialFacts,
   targetFinishDistanceYards,
   targetPointAtViewBox,
 } from "./target-v2";
@@ -105,4 +106,17 @@ test("every generated yardage guide follows the same proportional distance model
 
 test("v2 preview has a distinct version identifier", () => {
   assert.equal(TARGET_V2_VERSION, "hawthorn-vale-finish-position-preview-2.2");
+});
+
+test("each folded shot brief retains three essential facts including wind", () => {
+  assert.deepEqual(
+    TARGET_V2_SCENARIOS.map((scenario) =>
+      targetV2EssentialFacts(scenario).map((metric) => metric.value),
+    ),
+    [
+      ["270 yd", "14 mph L→R", "Firm"],
+      ["181 yd", "5 ft uphill", "11 mph R→L"],
+      ["336 yd", "235–250 yd", "13 mph behind/right"],
+    ],
+  );
 });

@@ -24,6 +24,7 @@ interface CourseMapProps {
   compact?: boolean;
   edgeToEdgeOnMobile?: boolean;
   compactMobileControls?: boolean;
+  immersiveMobileControls?: boolean;
   referencePoints?: Array<{
     point: TargetPoint;
     label: string;
@@ -59,6 +60,7 @@ export default function CourseMap({
   compact = false,
   edgeToEdgeOnMobile = false,
   compactMobileControls = false,
+  immersiveMobileControls = false,
   referencePoints = [],
 }: CourseMapProps) {
   const interactive = Boolean(onChange);
@@ -305,17 +307,22 @@ export default function CourseMap({
           ) : null}
         </svg>
 
-        {interactive && !scenario.yardage && (
+        {interactive &&
+          (!scenario.yardage || (immersiveMobileControls && !point)) && (
           <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-full bg-[#071d14]/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#f4df9d] backdrop-blur">
-            Tap anywhere to place
+            Tap the map to place
           </div>
-        )}
+          )}
       </div>
 
       {interactive && point && onChange && (
         <div
           className={`flex flex-wrap items-center justify-between ${
-            compactMobileControls ? "mt-2 gap-2 sm:mt-3 sm:gap-3" : "mt-3 gap-3"
+            immersiveMobileControls
+              ? "gap-2 border-t border-white/10 bg-[#071f16] px-3 py-2 sm:mt-3 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0"
+              : compactMobileControls
+                ? "mt-2 gap-2 sm:mt-3 sm:gap-3"
+                : "mt-3 gap-3"
           } ${edgeToEdgeOnMobile ? "px-4 sm:px-0" : ""}`}
         >
           <div>
@@ -324,10 +331,19 @@ export default function CourseMap({
                 className="text-sm font-black text-[#0a3d2a] dark:text-green-300"
                 aria-live="polite"
               >
-                Approx. finishing distance: {finishYards} yards
+                <span className={immersiveMobileControls ? "sm:hidden" : "hidden"}>
+                  Approx. {finishYards} yd
+                </span>
+                <span className={immersiveMobileControls ? "hidden sm:inline" : ""}>
+                  Approx. finishing distance: {finishYards} yards
+                </span>
               </p>
             ) : null}
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <p
+              className={`mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 ${
+                immersiveMobileControls ? "hidden sm:block" : ""
+              }`}
+            >
               {compactMobileControls ? (
                 <span className="sm:hidden">Use the arrows to fine tune.</span>
               ) : null}
@@ -337,9 +353,11 @@ export default function CourseMap({
               </span>
             </p>
           </div>
-          {compactMobileControls ? (
+          {compactMobileControls || immersiveMobileControls ? (
             <div
-              className="grid w-full grid-cols-5 justify-items-center gap-1.5 sm:hidden"
+              className={`grid grid-cols-5 justify-items-center gap-1.5 sm:hidden ${
+                immersiveMobileControls ? "w-[244px] shrink-0" : "w-full"
+              }`}
               aria-label={`Fine ${markerTerm} adjustment`}
             >
               <NudgeButton
@@ -371,7 +389,9 @@ export default function CourseMap({
           ) : null}
           <div
             className={`grid grid-cols-3 gap-1.5 ${
-              compactMobileControls ? "hidden sm:grid" : ""
+              compactMobileControls || immersiveMobileControls
+                ? "hidden sm:grid"
+                : ""
             }`}
             aria-label={`Fine ${markerTerm} adjustment`}
           >
