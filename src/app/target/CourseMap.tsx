@@ -216,7 +216,7 @@ export default function CourseMap({
           ) : null}
         </svg>
 
-        {interactive && (
+        {interactive && !scenario.yardage && (
           <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-full bg-[#071d14]/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#f4df9d] backdrop-blur">
             Tap anywhere to place
           </div>
