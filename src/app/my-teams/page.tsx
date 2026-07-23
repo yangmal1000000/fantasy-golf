@@ -8,6 +8,10 @@ import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
 import SignInPrompt from "@/components/SignInPrompt";
 import {
+  ROCKET_BETA_CAMPAIGN_SLUG,
+  ROCKET_BETA_TOURNAMENT_ID,
+} from "@/lib/rocket-beta";
+import {
   SavedTeamsSection,
   SaveAsTemplateButton,
 } from "./SavedTeamsClient";
@@ -35,7 +39,7 @@ export default async function MyTeamsPage() {
   }
 
   // Fetch saved teams and entered teams in parallel
-  const [savedTeams, teams] = await Promise.all([
+  const [savedTeams, teams, rocketPass] = await Promise.all([
     prisma.savedTeam.findMany({
       where: { userId: user.id },
       include: {
@@ -70,7 +74,31 @@ export default async function MyTeamsPage() {
       },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.rocketBetaPass.findFirst({
+      where: {
+        userId: user.id,
+        campaign: { slug: ROCKET_BETA_CAMPAIGN_SLUG },
+      },
+      select: {
+        status: true,
+        teamId: true,
+        campaign: {
+          select: {
+            fieldFrozenAt: true,
+            fieldHash: true,
+          },
+        },
+      },
+    }),
   ]);
+  const hasRocketTeam = teams.some(
+    (team) => team.tournamentId === ROCKET_BETA_TOURNAMENT_ID,
+  );
+  const showRocketPassCard =
+    rocketPass?.status === "UNLOCKED" && !hasRocketTeam;
+  const rocketFieldReady = Boolean(
+    rocketPass?.campaign.fieldFrozenAt && rocketPass.campaign.fieldHash,
+  );
 
   // Serialize saved teams for client component
   const savedTeamsData = savedTeams.map((st) => ({
@@ -104,9 +132,35 @@ export default async function MyTeamsPage() {
         {/* Saved Teams Section */}
         <SavedTeamsSection initialSavedTeams={savedTeamsData} />
 
+        {showRocketPassCard ? (
+          <div className="mt-6 rounded-2xl border border-[#c8a951]/60 bg-[#fffaf0] p-5 dark:border-[#c8a951]/30 dark:bg-[#c8a951]/10 sm:p-6">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#9b7b25] dark:text-[#d7bc6a]">
+              Rocket Test Pass ready
+            </p>
+            <h2 className="mt-2 text-lg font-black text-[#0a3d2a] dark:text-green-400">
+              {rocketFieldReady
+                ? "Build your real Rocket team"
+                : "Your real team will appear here after confirmation"}
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+              {rocketFieldReady
+                ? "The reviewed field is open. Confirm one golfer from every tier to add the team to My Teams and the Rocket standings."
+                : "The final field is still being reviewed. Dry-run teams are deliberately not saved, and your Test Pass remains unlocked."}
+            </p>
+            <Link
+              href="/tournaments/rocket-classic/enter"
+              className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white transition hover:bg-[#12563c]"
+            >
+              {rocketFieldReady
+                ? "Build Rocket team →"
+                : "View entry status →"}
+            </Link>
+          </div>
+        ) : null}
+
         {/* Entered Teams */}
         {teams.length === 0 ? (
-          savedTeams.length === 0 ? (
+          savedTeams.length === 0 && !showRocketPassCard ? (
             /* Empty state — only show if no saved teams either */
             <div className="mt-6 rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 p-8 text-center sm:p-12">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#0a3d2a]/10 text-3xl">

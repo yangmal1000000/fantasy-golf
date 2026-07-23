@@ -665,7 +665,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                 <div className={`flex items-center justify-between border-b px-3 py-2 ${theme ? theme.tierHeaderClass : "border-zinc-100 dark:border-zinc-800"}`}>
                   <div>
                     <h3 className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{tierLabels[tier]}</h3>
-                    <p className="text-[10px] text-zinc-400">{players.length} players</p>
+                    <p className="text-[10px] text-zinc-400">
+                      {players.length} {players.length === 1 ? "player" : "players"}
+                    </p>
                   </div>
                   {hasScores && (
                     <div className="flex items-center gap-1.5 tabular text-[9px] font-bold uppercase text-zinc-400">

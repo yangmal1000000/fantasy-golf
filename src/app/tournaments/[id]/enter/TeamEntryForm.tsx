@@ -79,8 +79,14 @@ export default function TeamEntryForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [openTiers, setOpenTiers] = useState<Set<string>>(
-    new Set(TEAM_ENTRY_TIERS),
+  const [openTiers, setOpenTiers] = useState<Set<string>>(() => {
+    const firstIncompleteTier = TEAM_ENTRY_TIERS.find(
+      (tier) => !initialTeam?.selections[tier],
+    );
+    return new Set(firstIncompleteTier ? [firstIncompleteTier] : []);
+  });
+  const [playerSearches, setPlayerSearches] = useState<Record<string, string>>(
+    {},
   );
   const [mode, setMode] = useState<"fresh" | "saved">(
     !initialTeam && savedTeams.length > 0 ? "saved" : "fresh",
@@ -147,14 +153,38 @@ export default function TeamEntryForm({
     setAppliedTeamName(team.name);
     // Switch to fresh mode so user can review/tweak picks
     setMode("fresh");
-    // Expand all tiers so the user can see filled picks and pick replacements
-    setOpenTiers(new Set(TEAM_ENTRY_TIERS));
+    const firstMissingTier = TEAM_ENTRY_TIERS.find(
+      (tier) => !newSelections[tier],
+    );
+    setOpenTiers(new Set(firstMissingTier ? [firstMissingTier] : []));
   }
 
   // Clear missing slots warning when user manually selects a replacement
   function handleTierSelect(tier: string, tournamentPlayerId: string) {
+    const isRemovingSelection = selections[tier] === tournamentPlayerId;
     toggleSelect(tier, tournamentPlayerId);
     setMissingSlots((prev) => prev.filter((s) => s.tier !== tier));
+    setPlayerSearches((current) => ({ ...current, [tier]: "" }));
+
+    if (isRemovingSelection) return;
+
+    const nextIncompleteTier = TEAM_ENTRY_TIERS.find(
+      (candidate) => candidate !== tier && !selections[candidate],
+    );
+    setOpenTiers(new Set(nextIncompleteTier ? [nextIncompleteTier] : []));
+
+    if (
+      nextIncompleteTier &&
+      window.matchMedia("(max-width: 639px)").matches
+    ) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document
+            .getElementById(`team-tier-${nextIncompleteTier}`)
+            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      });
+    }
   }
 
   const [submittedTeamId, setSubmittedTeamId] = useState<string | null>(null);
@@ -620,6 +650,13 @@ export default function TeamEntryForm({
               const selectedPlayer = players.find(
                 (p) => p.tournamentPlayerId === selectedId,
               );
+              const playerSearch = playerSearches[tier] ?? "";
+              const normalizedSearch = playerSearch.trim().toLowerCase();
+              const filteredPlayers = normalizedSearch
+                ? players.filter((player) =>
+                    player.name.toLowerCase().includes(normalizedSearch),
+                  )
+                : players;
               const needsReplacement = missingSlots.some(
                 (s) => s.tier === tier,
               );
@@ -628,7 +665,7 @@ export default function TeamEntryForm({
                 <div
                   key={tier}
                   id={`team-tier-${tier}`}
-                  className={`overflow-hidden rounded-xl border sm:border-0 sm:overflow-visible ${
+                  className={`scroll-mt-28 overflow-hidden rounded-xl border sm:border-0 sm:overflow-visible ${
                     needsReplacement
                       ? "border-orange-300 ring-1 ring-orange-200"
                       : "border-zinc-200 dark:border-zinc-700"
@@ -697,8 +734,28 @@ export default function TeamEntryForm({
                   <div
                     className={`${isOpen ? "block" : "hidden"} sm:block sm:pt-1`}
                   >
+                    {players.length > 10 ? (
+                      <div className="border-b border-zinc-100 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900 sm:mb-3 sm:border-0 sm:p-0">
+                        <label className="sr-only" htmlFor={`player-search-${tier}`}>
+                          Search {config.label} golfers
+                        </label>
+                        <input
+                          id={`player-search-${tier}`}
+                          type="search"
+                          value={playerSearch}
+                          onChange={(event) =>
+                            setPlayerSearches((current) => ({
+                              ...current,
+                              [tier]: event.target.value,
+                            }))
+                          }
+                          placeholder={`Search ${config.short} golfers`}
+                          className="min-h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 outline-none focus:border-[#0a3d2a] focus:ring-2 focus:ring-[#0a3d2a]/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                        />
+                      </div>
+                    ) : null}
                     <div className="grid gap-2 sm:grid-cols-2">
-                      {players.map((p) => {
+                      {filteredPlayers.map((p) => {
                         const isSelected = selectedId === p.tournamentPlayerId;
                         return (
                           <button
@@ -741,6 +798,11 @@ export default function TeamEntryForm({
                           </button>
                         );
                       })}
+                      {filteredPlayers.length === 0 ? (
+                        <p className="rounded-xl border border-dashed border-zinc-300 p-4 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400 sm:col-span-2">
+                          No golfers match “{playerSearch.trim()}”.
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 </div>
