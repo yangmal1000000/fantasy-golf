@@ -47,6 +47,8 @@ test("par-five decision makes the green unreachable without prescribing a club",
   const secondShotCopy = visibleScenarioText(2);
   assert.match(secondShotCopy, /336 yards to the pin/i);
   assert.match(secondShotCopy, /green is out of range from this lie/i);
+  assert.match(secondShotCopy, /235–250 yards from the ball/i);
+  assert.match(secondShotCopy, /26 yards wide by 20 yards deep/i);
   assert.doesNotMatch(secondShotCopy, /wood|hybrid|iron|supplied shot/i);
 });
 
@@ -64,5 +66,5 @@ test("calibrated finish readout starts at zero and reaches the stated shot regio
 });
 
 test("v2 preview has a distinct version identifier", () => {
-  assert.equal(TARGET_V2_VERSION, "hawthorn-vale-finish-position-preview-2.0");
+  assert.equal(TARGET_V2_VERSION, "hawthorn-vale-finish-position-preview-2.1");
 });

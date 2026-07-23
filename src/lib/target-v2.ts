@@ -7,7 +7,7 @@ import {
   type TargetYardageCalibration,
 } from "./target-challenge";
 
-export const TARGET_V2_VERSION = "hawthorn-vale-finish-position-preview-2.0";
+export const TARGET_V2_VERSION = "hawthorn-vale-finish-position-preview-2.1";
 
 export interface TargetV2Metric {
   label: string;
@@ -152,12 +152,16 @@ export const TARGET_V2_SCENARIOS: readonly TargetV2Scenario[] = [
     conditions: [],
     metrics: [
       { label: "To pin", value: "336 yd" },
+      { label: "Controlled finish", value: "235–250 yd" },
       { label: "Lie", value: "Light rough" },
       { label: "Wind", value: "13 mph behind/right" },
       { label: "Creek", value: "137 yd centre" },
+      { label: "Shot pattern", value: "26 × 20 yd" },
     ],
     details: [
       "The green is out of range from this lie.",
+      "A strongest controlled shot from this lie normally finishes 235–250 yards from the ball.",
+      "The typical finish pattern is 26 yards wide by 20 yards deep.",
       "The creek requires about 154 yards on the left, 137 through the centre and 121 on the right.",
       "The fairway opens widest beyond the creek, centre-left.",
       "Right rough and trees can partially block the third-shot angle.",
@@ -167,6 +171,7 @@ export const TARGET_V2_SCENARIOS: readonly TargetV2Scenario[] = [
     windArrowDegrees: -135,
     ballPoint: SECOND_SHOT_BALL,
     yardage: SECOND_SHOT_YARDAGE,
+    pinSheetLabel: "PIN · 336 YDS",
     hardest: true,
   },
 ] as const;

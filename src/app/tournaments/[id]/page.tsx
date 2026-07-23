@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import {
-  ROCKET_BETA_ENTRY_CLOSES_AT,
   ROCKET_BETA_TOURNAMENT_ID,
   ensureRocketBetaCampaign,
   getRocketBetaStateForUser,
@@ -249,10 +248,10 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                 <div><dt className="text-zinc-500">Dates</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">30 Jul–2 Aug</dd></div>
                 <div><dt className="text-zinc-500">Venue</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">Detroit Golf Club</dd></div>
                 <div><dt className="text-zinc-500">Course</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">7,328 yds · Par 70</dd></div>
-                <div><dt className="text-zinc-500">Beta lock</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">{ROCKET_BETA_ENTRY_CLOSES_AT.toLocaleString("en-GB", { timeZone: "Europe/London", weekday: "short", hour: "2-digit", minute: "2-digit" })}</dd></div>
+                <div><dt className="text-zinc-500">Beta lock</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">At first tee</dd></div>
               </dl>
               <p className="mt-3 text-[11px] leading-5 text-zinc-500">
-                Open to verified signed-up users. No payment, cash value or prize.
+                Exact lock time will be shown once the official tee sheet is verified. Open to verified signed-up users. No payment, cash value or prize.
               </p>
             </div>
           </div>

@@ -90,6 +90,7 @@ export default function CourseMap({
   const ballMarker = ballPoint ? pointToViewBox(ballPoint) : null;
   const finishYards = estimateTargetFinishYards(scenario, point);
   const prefix = `course-${scenario.mapKind}`;
+  const markerTerm = scenario.yardage ? "finishing marker" : "target";
 
   return (
     <div>
@@ -107,8 +108,8 @@ export default function CourseMap({
         tabIndex={interactive ? 0 : undefined}
         aria-label={
           interactive
-            ? `${scenario.title} course map. Tap or click to place a target. Use arrow keys for fine adjustment.`
-            : `${scenario.title} submitted target map`
+            ? `${scenario.title} course map. Tap or click to place a ${markerTerm}. Use arrow keys for fine adjustment.`
+            : `${scenario.title} submitted ${markerTerm} map`
         }
       >
         <Image
@@ -236,18 +237,18 @@ export default function CourseMap({
               </p>
             ) : null}
             <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-              Fine tune with the arrows or your keyboard. Hold Shift for larger steps.
+              Fine tune the {markerTerm} with the arrows or your keyboard. Hold Shift for larger steps.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-1" aria-label="Fine target adjustment">
+          <div className="grid grid-cols-3 gap-1.5" aria-label={`Fine ${markerTerm} adjustment`}>
             <span />
-            <NudgeButton label="Move target up" glyph="↑" onClick={() => onChange(moveTargetPoint(point, 0, -250))} />
+            <NudgeButton label={`Move ${markerTerm} up`} glyph="↑" onClick={() => onChange(moveTargetPoint(point, 0, -250))} />
             <span />
-            <NudgeButton label="Move target left" glyph="←" onClick={() => onChange(moveTargetPoint(point, -250, 0))} />
-            <NudgeButton label="Clear target" glyph="×" onClick={() => onChange(null)} />
-            <NudgeButton label="Move target right" glyph="→" onClick={() => onChange(moveTargetPoint(point, 250, 0))} />
+            <NudgeButton label={`Move ${markerTerm} left`} glyph="←" onClick={() => onChange(moveTargetPoint(point, -250, 0))} />
+            <NudgeButton label={`Clear ${markerTerm}`} glyph="×" onClick={() => onChange(null)} />
+            <NudgeButton label={`Move ${markerTerm} right`} glyph="→" onClick={() => onChange(moveTargetPoint(point, 250, 0))} />
             <span />
-            <NudgeButton label="Move target down" glyph="↓" onClick={() => onChange(moveTargetPoint(point, 0, 250))} />
+            <NudgeButton label={`Move ${markerTerm} down`} glyph="↓" onClick={() => onChange(moveTargetPoint(point, 0, 250))} />
             <span />
           </div>
         </div>
@@ -371,6 +372,10 @@ function CourseGuides({
             <path d="M0 34 V-20" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
             <path d="M3 -19 L42 -7 L3 7Z" fill="#d8b85c" stroke="#fff7dd" strokeWidth="3" />
           </g>
+          <rect x="377" y="8" width="220" height="38" rx="19" fill="rgba(7,29,20,.86)" />
+          <text x="487" y="34" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="800">
+            {scenario.pinSheetLabel ?? "PIN"}
+          </text>
         </g>
       ) : null}
     </g>
@@ -383,7 +388,7 @@ function NudgeButton({ label, glyph, onClick }: { label: string; glyph: string; 
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-lg font-bold text-[#0a3d2a] shadow-sm transition hover:border-[#c8a951] hover:bg-[#fffaf0] dark:border-zinc-700 dark:bg-zinc-900 dark:text-green-400 dark:hover:border-[#c8a951]"
+      className="flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 bg-white text-lg font-bold text-[#0a3d2a] shadow-sm transition hover:border-[#c8a951] hover:bg-[#fffaf0] dark:border-zinc-700 dark:bg-zinc-900 dark:text-green-400 dark:hover:border-[#c8a951]"
     >
       {glyph}
     </button>
