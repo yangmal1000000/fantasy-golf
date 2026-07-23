@@ -285,7 +285,9 @@ function IntroStage({
           <ul className="mt-3 space-y-2 leading-5">
             <li>One individual Target attempt per verified account; no outside assistance.</li>
             <li>The live markers lock on submission and cannot be replaced.</li>
-            <li>Completion unlocks one non-transferable pass for one free Rocket team.</li>
+            <li>Completion—not Target rank—unlocks one non-transferable pass for one free Rocket team. Target never changes the fantasy score.</li>
+            <li>Three final panel markers are combined automatically into one reference position for each decision. The result identifies whether the panel is independent or a coordinator-run rehearsal.</li>
+            <li>Entries rank by combined distance from those references; exact ties use Decision 3, then 2, then 1.</li>
             <li>There is no entry fee, prize, cash value or payout.</li>
             <li>Target and team entry close at the official first tee.</li>
           </ul>
