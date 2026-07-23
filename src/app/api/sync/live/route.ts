@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { syncLiveScores } from "@/lib/data-sync";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 export const maxDuration = 60;
 
@@ -10,6 +11,8 @@ export const maxDuration = 60;
  * Called by cron every 5 minutes during live tournaments — no auth check.
  */
 export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     const { searchParams } = new URL(request.url);
     const tournamentId = searchParams.get("tournamentId") ?? undefined;

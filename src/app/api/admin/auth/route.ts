@@ -1,21 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { adminApiGuard } from "@/lib/admin-auth";
 
-/**
- * Simple admin auth: sets a cookie so the admin layout can gate access.
- * Usage: GET /api/admin/auth → sets cookie, redirects to /admin
- */
-export async function GET(req: NextRequest) {
-  const res = NextResponse.redirect(new URL("/admin", req.url));
-  res.cookies.set("admin_auth", "1", {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  });
-  return res;
+export async function GET(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
+  return NextResponse.redirect(new URL("/admin", request.url));
 }
 
-/** Check auth status */
-export async function HEAD() {
-  return NextResponse.json({ ok: true });
+export async function HEAD(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
+  return new NextResponse(null, { status: 204 });
 }

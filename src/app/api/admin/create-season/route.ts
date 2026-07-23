@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 import {
   TOURNAMENT_TEMPLATES,
   resolveTemplate,
@@ -17,6 +18,8 @@ import {
  * Idempotent: running twice for the same year will upsert (not duplicate).
  */
 export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     const body = await request.json().catch(() => ({}));
     const year: number = Number(body.year);

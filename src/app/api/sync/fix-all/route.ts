@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 export const maxDuration = 55;
 
@@ -8,7 +9,9 @@ export const maxDuration = 55;
  * Fixes all remaining data quality issues in small batches.
  * Call repeatedly until response shows allFixed: true.
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   const report: Record<string, unknown> = {};
   
   // 1. Dedupe players by name — keep highest rank, delete rest

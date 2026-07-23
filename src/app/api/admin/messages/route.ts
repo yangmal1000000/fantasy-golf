@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 // ---------- POST: Send broadcast message ----------
 export async function POST(req: NextRequest) {
+  const denied = await adminApiGuard(req);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { tournamentId, subject, body: messageBody } = body as {
@@ -58,6 +61,8 @@ export async function POST(req: NextRequest) {
 
 // ---------- GET: List messages for a tournament ----------
 export async function GET(req: NextRequest) {
+  const denied = await adminApiGuard(req);
+  if (denied) return denied;
   try {
     const { searchParams } = new URL(req.url);
     const tournamentId = searchParams.get("tournamentId");

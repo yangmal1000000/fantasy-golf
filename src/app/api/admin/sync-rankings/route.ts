@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 import {
   syncRankingsFromOWGR,
   recalculateTiers,
@@ -14,7 +15,9 @@ import {
  *
  * Returns a summary of what changed.
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     // 1. Sync rankings from OWGR
     const syncResult = await syncRankingsFromOWGR();

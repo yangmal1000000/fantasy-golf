@@ -16,21 +16,21 @@ export async function getCurrentUser(): Promise<User | null> {
   const supabase = createClient(cookieStore);
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
 
-  if (!session?.user?.email) return null;
+  if (!authUser?.email) return null;
 
   const user = await prisma.user.upsert({
-    where: { email: session.user.email },
+    where: { email: authUser.email },
     update: {
-      name: session.user.user_metadata?.full_name ?? session.user.email,
-      avatar: session.user.user_metadata?.avatar_url ?? null,
+      name: authUser.user_metadata?.full_name ?? authUser.email,
+      avatar: authUser.user_metadata?.avatar_url ?? null,
     },
     create: {
-      email: session.user.email,
-      name: session.user.user_metadata?.full_name ?? session.user.email,
-      avatar: session.user.user_metadata?.avatar_url ?? null,
+      email: authUser.email,
+      name: authUser.user_metadata?.full_name ?? authUser.email,
+      avatar: authUser.user_metadata?.avatar_url ?? null,
     },
   });
 

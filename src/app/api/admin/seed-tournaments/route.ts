@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     // Add columns via raw SQL
     await prisma.$executeRaw`ALTER TABLE "Tournament" ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'major'`;

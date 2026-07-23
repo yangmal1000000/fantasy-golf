@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 export const maxDuration = 55;
 
@@ -8,7 +9,9 @@ export const maxDuration = 55;
  * Deletes ALL players, scores, and tournament-player links.
  * Use before re-running /api/sync/rankings for a clean OWGR top ~200.
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     const scores = await prisma.score.deleteMany({});
     const links = await prisma.tournamentPlayer.deleteMany({});

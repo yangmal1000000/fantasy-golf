@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 // ---------- PATCH: Update team (toggle paid, etc.) ----------
 export async function PATCH(req: NextRequest) {
+  const denied = await adminApiGuard(req);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { teamId, paid } = body as {
@@ -34,6 +37,8 @@ export async function PATCH(req: NextRequest) {
 
 // ---------- DELETE: Delete team ----------
 export async function DELETE(req: NextRequest) {
+  const denied = await adminApiGuard(req);
+  if (denied) return denied;
   try {
     const { searchParams } = new URL(req.url);
     const teamId = searchParams.get("teamId");

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 // ---------- POST: Add player to tournament ----------
 export async function POST(req: NextRequest) {
+  const denied = await adminApiGuard(req);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { tournamentId, playerId, tier } = body as {
@@ -38,6 +41,8 @@ export async function POST(req: NextRequest) {
 
 // ---------- DELETE: Remove player from tournament ----------
 export async function DELETE(req: NextRequest) {
+  const denied = await adminApiGuard(req);
+  if (denied) return denied;
   try {
     const { searchParams } = new URL(req.url);
     const tournamentPlayerId = searchParams.get("tournamentPlayerId");

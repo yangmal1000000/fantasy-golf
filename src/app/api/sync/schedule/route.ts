@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { syncTournamentSchedule } from "@/lib/data-sync";
+import { adminApiGuard } from "@/lib/admin-auth";
 
 export const maxDuration = 60;
 
@@ -8,7 +9,9 @@ export const maxDuration = 60;
  * Pulls real PGA Tour schedule from ESPN and updates the database.
  * Called by cron or admin — no auth check.
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await adminApiGuard(request);
+  if (denied) return denied;
   try {
     const result = await syncTournamentSchedule();
     return NextResponse.json(result, { status: result.ok ? 200 : 502 });
