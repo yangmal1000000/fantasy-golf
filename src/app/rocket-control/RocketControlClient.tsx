@@ -8,6 +8,7 @@ type ControlData = {
     name: string;
     status: string;
     entryClosesAt: string | null;
+    entryDeadlineConfirmed: boolean;
     fieldVersion: string | null;
     fieldHash: string | null;
     fieldFrozenAt: string | null;
@@ -138,7 +139,9 @@ export default function RocketControlClient() {
                 value={campaign.status}
                 detail={
                   campaign.entryClosesAt
-                    ? `Locks ${new Date(campaign.entryClosesAt).toLocaleString()}`
+                    ? campaign.entryDeadlineConfirmed
+                      ? `Locks ${new Date(campaign.entryClosesAt).toLocaleString("en-GB", { timeZone: "Europe/London" })}`
+                      : `Provisional server lock ${new Date(campaign.entryClosesAt).toLocaleString("en-GB", { timeZone: "Europe/London" })} · official first tee pending`
                     : "No lock configured"
                 }
               />

@@ -8,6 +8,10 @@ import {
   ensureRocketBetaCampaign,
   getRocketBetaStateForUser,
 } from "@/lib/rocket-beta";
+import {
+  ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED,
+  formatRocketBetaEntryDeadline,
+} from "@/lib/rocket-beta-config";
 import { formatDateRange, STATUS_CONFIG, CATEGORY_CONFIG, courseImage, formatGBP, majorTheme, majorKey } from "@/lib/ui";
 import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
 import { calculateLeaderboard, type TeamScoreResult } from "@/lib/scoring";
@@ -248,10 +252,13 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                 <div><dt className="text-zinc-500">Dates</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">30 Jul–2 Aug</dd></div>
                 <div><dt className="text-zinc-500">Venue</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">Detroit Golf Club</dd></div>
                 <div><dt className="text-zinc-500">Course</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">7,328 yds · Par 70</dd></div>
-                <div><dt className="text-zinc-500">Beta lock</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">At first tee</dd></div>
+                <div><dt className="text-zinc-500">Beta lock</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">{formatRocketBetaEntryDeadline({ closesAt: betaCampaign?.entryClosesAt ?? "", confirmed: ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED })}</dd></div>
               </dl>
               <p className="mt-3 text-[11px] leading-5 text-zinc-500">
-                Exact lock time will be shown once the official tee sheet is verified. Open to verified signed-up users. No payment, cash value or prize.
+                {!ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED
+                  ? "Exact lock time will be shown once the official tee sheet is verified. "
+                  : null}
+                Open to verified signed-up users. No payment, cash value or prize.
               </p>
             </div>
           </div>
