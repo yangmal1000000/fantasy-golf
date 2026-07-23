@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TIER_CONFIG, TIER_ORDER, formatGBP } from "@/lib/ui";
+import { TEAM_ENTRY_TIERS } from "@/lib/team-entry-validation";
 import SelectionWheel from "@/components/SelectionWheel";
 import Confetti from "@/components/Confetti";
 import PlayerAvatar from "@/components/PlayerAvatar";
@@ -35,14 +36,31 @@ interface TeamEntryFormProps {
   tournamentId: string;
   entryFee: number;
   betaMode?: boolean;
+  dryRunMode?: boolean;
   playersByTier: Record<string, TierPlayer[]>;
   savedTeams?: SavedTeamPreview[];
+}
+
+interface DryRunResult {
+  dryRun: true;
+  passState: "UNLOCKED";
+  team: {
+    name: string;
+    players: Array<{
+      tournamentPlayerId: string;
+      tier: string;
+      name: string;
+      country: string | null;
+      dataGolfRank: number | null;
+    }>;
+  };
 }
 
 export default function TeamEntryForm({
   tournamentId,
   entryFee,
   betaMode = false,
+  dryRunMode = false,
   playersByTier,
   savedTeams = [],
 }: TeamEntryFormProps) {
@@ -52,7 +70,9 @@ export default function TeamEntryForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [openTiers, setOpenTiers] = useState<Set<string>>(new Set(TIER_ORDER));
+  const [openTiers, setOpenTiers] = useState<Set<string>>(
+    new Set(TEAM_ENTRY_TIERS),
+  );
   const [mode, setMode] = useState<"fresh" | "saved">(
     savedTeams.length > 0 ? "saved" : "fresh",
   );
@@ -60,9 +80,18 @@ export default function TeamEntryForm({
     { tier: string; playerName: string }[]
   >([]);
   const [appliedTeamName, setAppliedTeamName] = useState<string | null>(null);
+  const [dryRunReviewOpen, setDryRunReviewOpen] = useState(false);
+  const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
 
   const selectedCount = Object.keys(selections).length;
-  const allTiersFilled = TIER_ORDER.every((t) => selections[t]);
+  const allTiersFilled = TEAM_ENTRY_TIERS.every((tier) => selections[tier]);
+  const selectedPlayers = TEAM_ENTRY_TIERS
+    .map((tier) =>
+      (playersByTier[tier] || []).find(
+        (player) => player.tournamentPlayerId === selections[tier],
+      ),
+    )
+    .filter((player): player is TierPlayer => Boolean(player));
 
   function toggleSelect(tier: string, tournamentPlayerId: string) {
     setSelections((prev) => {
@@ -109,7 +138,7 @@ export default function TeamEntryForm({
     // Switch to fresh mode so user can review/tweak picks
     setMode("fresh");
     // Expand all tiers so the user can see filled picks and pick replacements
-    setOpenTiers(new Set(TIER_ORDER));
+    setOpenTiers(new Set(TEAM_ENTRY_TIERS));
   }
 
   // Clear missing slots warning when user manually selects a replacement
@@ -124,7 +153,7 @@ export default function TeamEntryForm({
   >("idle");
 
   // Build player data for template saving
-  const submittedPlayers = TIER_ORDER.filter((t) => t !== "UNRANKED").map(
+  const submittedPlayers = TEAM_ENTRY_TIERS.map(
     (tier) => {
       const tpId = selections[tier];
       const tierPlayers = playersByTier[tier] || [];
@@ -171,6 +200,11 @@ export default function TeamEntryForm({
       return;
     }
 
+    if (dryRunMode) {
+      setDryRunReviewOpen(true);
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -198,12 +232,67 @@ export default function TeamEntryForm({
     }
   }
 
+  async function confirmDryRun() {
+    setError(null);
+    setSubmitting(true);
+    try {
+      const response = await fetch(
+        `/api/tournaments/${tournamentId}/teams/preview`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teamName: teamName.trim(),
+            selections: Object.values(selections),
+          }),
+        },
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to validate the dry-run team");
+      }
+      setDryRunResult(data as DryRunResult);
+      setDryRunReviewOpen(false);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to validate the dry run",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const hasSavedTeams = savedTeams.length > 0;
 
   return (
     <div className="pb-24 sm:pb-0">
       {/* Confetti burst on success */}
       {showConfetti && <Confetti />}
+
+      {dryRunReviewOpen && (
+        <DryRunReviewModal
+          teamName={teamName.trim()}
+          players={selectedPlayers}
+          error={error}
+          submitting={submitting}
+          onBack={() => {
+            setError(null);
+            setDryRunReviewOpen(false);
+          }}
+          onConfirm={confirmDryRun}
+        />
+      )}
+
+      {dryRunResult && (
+        <DryRunCompleteModal
+          result={dryRunResult}
+          onEdit={() => {
+            setError(null);
+            setDryRunResult(null);
+          }}
+          onFinish={() => router.push(`/tournaments/${tournamentId}`)}
+        />
+      )}
 
       {/* Success screen with save-as-template prompt */}
       {showConfetti && submittedTeamId && (
@@ -312,9 +401,6 @@ export default function TeamEntryForm({
                   <div className="space-y-1.5">
                     {sortedPlayers.map((slot) => {
                       const config = TIER_CONFIG[slot.tier];
-                      const lastName = slot.player.name
-                        .split(" ")
-                        .slice(-1)[0];
                       // Check if this player is in the tournament field
                       const tierPlayers = playersByTier[slot.tier] || [];
                       const inField = tierPlayers.some(
@@ -379,7 +465,7 @@ export default function TeamEntryForm({
                       : `${selectedCount}/5 Selected`}
                   </p>
                   <div className="mt-1 flex gap-1">
-                    {TIER_ORDER.filter((t) => t !== "UNRANKED").map((t) => (
+                    {TEAM_ENTRY_TIERS.map((t) => (
                       <div
                         key={t}
                         className={`h-2 w-6 rounded-full transition sm:w-8 ${
@@ -402,7 +488,9 @@ export default function TeamEntryForm({
                   ? "Submitting..."
                   : showConfetti
                     ? "✓ Submitted!"
-                    : "Submit Team →"}
+                    : dryRunMode
+                      ? "Review dry run →"
+                      : "Submit Team →"}
               </button>
             </div>
           </div>
@@ -470,7 +558,7 @@ export default function TeamEntryForm({
 
           {/* Tier sections — accordion on mobile */}
           <div className="space-y-3 sm:space-y-8">
-            {TIER_ORDER.filter((t) => t !== "UNRANKED").map((tier) => {
+            {TEAM_ENTRY_TIERS.map((tier) => {
               const config = TIER_CONFIG[tier];
               const players = playersByTier[tier] || [];
               const selectedId = selections[tier];
@@ -610,9 +698,13 @@ export default function TeamEntryForm({
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                  {betaMode ? "Access: " : "Entry: "}
+                  {dryRunMode ? "Dry run: " : betaMode ? "Access: " : "Entry: "}
                   <span className="font-bold text-[#0a3d2a] dark:text-green-400">
-                    {betaMode ? "Test Pass" : formatGBP(entryFee)}
+                    {dryRunMode
+                      ? "Pass stays ready"
+                      : betaMode
+                        ? "Test Pass"
+                        : formatGBP(entryFee)}
                   </span>
                 </p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -630,7 +722,9 @@ export default function TeamEntryForm({
                   ? "..."
                   : showConfetti
                     ? "✓"
-                    : "Submit "}
+                    : dryRunMode
+                      ? "Review"
+                      : "Submit "}
               </button>
             </div>
           </div>
@@ -640,9 +734,17 @@ export default function TeamEntryForm({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {betaMode ? "Beta access: " : "Entry fee: "}
+                  {dryRunMode
+                    ? "Dry run: "
+                    : betaMode
+                      ? "Beta access: "
+                      : "Entry fee: "}
                   <span className="font-bold text-[#0a3d2a] dark:text-green-400">
-                    {betaMode ? "1 Test Pass · no payment" : formatGBP(entryFee)}
+                    {dryRunMode
+                      ? "Test Pass remains unlocked"
+                      : betaMode
+                        ? "1 Test Pass · no payment"
+                        : formatGBP(entryFee)}
                   </span>
                 </p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -660,12 +762,196 @@ export default function TeamEntryForm({
                   ? "Submitting..."
                   : showConfetti
                     ? "✓ Done!"
-                    : "Submit Team "}
+                    : dryRunMode
+                      ? "Review dry run "
+                      : "Submit Team "}
               </button>
             </div>
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function DryRunReviewModal({
+  teamName,
+  players,
+  error,
+  submitting,
+  onBack,
+  onConfirm,
+}: {
+  teamName: string;
+  players: TierPlayer[];
+  error: string | null;
+  submitting: boolean;
+  onBack: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end bg-black/70 p-0 sm:items-center sm:justify-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dry-run-review-title"
+    >
+      <div className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl dark:bg-zinc-900 sm:max-w-lg sm:rounded-3xl sm:p-6">
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-zinc-300 sm:hidden" />
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#9b7b25] dark:text-[#d7bc6a]">
+          Rehearsal only
+        </p>
+        <h2
+          id="dry-run-review-title"
+          className="mt-1 text-2xl font-black text-[#0a3d2a] dark:text-green-400"
+        >
+          Review dry-run team
+        </h2>
+        <p className="mt-1 text-sm leading-5 text-zinc-500 dark:text-zinc-400">
+          This checks the same five-tier rules as a real entry. Nothing will be
+          saved and your Test Pass stays unlocked.
+        </p>
+
+        <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/60">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400">
+            Team name
+          </p>
+          <p className="mt-1 font-black text-zinc-900 dark:text-white">
+            {teamName}
+          </p>
+          <div className="mt-4 space-y-2">
+            {players.map((player) => {
+              const config = TIER_CONFIG[player.tier];
+              return (
+                <div
+                  key={player.tournamentPlayerId}
+                  className="flex min-h-11 items-center gap-3 rounded-xl bg-white px-3 py-2 dark:bg-zinc-900"
+                >
+                  <PlayerAvatar
+                    name={player.name}
+                    country={player.country}
+                    photoUrl={player.photoUrl}
+                    size="sm"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-zinc-900 dark:text-white">
+                      {player.name}
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500">
+                      <Flag countryCode={player.country} size="sm" />
+                      <span>{config?.short ?? player.tier}</span>
+                      {player.dataGolfRank && (
+                        <span>· World #{player.dataGolfRank}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {error && (
+          <div className="mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-5 grid grid-cols-2 gap-3 pb-[env(safe-area-inset-bottom)]">
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={submitting}
+            className="min-h-11 rounded-xl border border-zinc-300 px-4 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            Back to picks
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={submitting}
+            className="min-h-11 rounded-xl bg-[#0a3d2a] px-4 text-sm font-bold text-white transition hover:bg-[#12563c] disabled:opacity-50"
+          >
+            {submitting ? "Checking…" : "Complete dry run"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DryRunCompleteModal({
+  result,
+  onEdit,
+  onFinish,
+}: {
+  result: DryRunResult;
+  onEdit: () => void;
+  onFinish: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end bg-black/70 p-0 sm:items-center sm:justify-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dry-run-complete-title"
+    >
+      <div className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 text-center shadow-2xl dark:bg-zinc-900 sm:max-w-lg sm:rounded-3xl sm:p-6">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl dark:bg-green-900/30">
+          ✓
+        </div>
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#9b7b25] dark:text-[#d7bc6a]">
+          Validation passed
+        </p>
+        <h2
+          id="dry-run-complete-title"
+          className="mt-1 text-2xl font-black text-[#0a3d2a] dark:text-green-400"
+        >
+          Dry run complete
+        </h2>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-5 text-zinc-500 dark:text-zinc-400">
+          No live team was created. Your Test Pass remains unlocked for the
+          official field.
+        </p>
+
+        <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-left dark:border-green-900 dark:bg-green-950/30">
+          <p className="font-black text-zinc-900 dark:text-white">
+            {result.team.name}
+          </p>
+          <div className="mt-3 space-y-1.5">
+            {result.team.players.map((player) => (
+              <div
+                key={player.tournamentPlayerId}
+                className="flex items-center justify-between gap-3 text-sm"
+              >
+                <span className="truncate font-semibold text-zinc-700 dark:text-zinc-200">
+                  {player.name}
+                </span>
+                <span className="shrink-0 text-xs font-bold text-zinc-500">
+                  {TIER_CONFIG[player.tier]?.short ?? player.tier}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3 pb-[env(safe-area-inset-bottom)]">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="min-h-11 rounded-xl border border-zinc-300 px-4 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            Try another team
+          </button>
+          <button
+            type="button"
+            onClick={onFinish}
+            className="min-h-11 rounded-xl bg-[#0a3d2a] px-4 text-sm font-bold text-white transition hover:bg-[#12563c]"
+          >
+            Return to Rocket
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

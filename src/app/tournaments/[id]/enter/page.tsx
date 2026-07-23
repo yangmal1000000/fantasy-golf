@@ -165,6 +165,21 @@ export default async function EnterTeamPage({
             the complete player field and all five tier lists have been reviewed
             and frozen.
           </p>
+          {user.isAdmin && betaState?.passState === "UNLOCKED" && (
+            <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+              <p className="mx-auto mb-3 max-w-md text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                Coordinator preview: use the provisional field to rehearse all
+                five picks and confirmation. Nothing is saved and the Test Pass
+                remains unlocked.
+              </p>
+              <a
+                href={`/tournaments/${tournament.id}/enter-preview`}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white transition hover:bg-[#12563c]"
+              >
+                Rehearse team entry →
+              </a>
+            </div>
+          )}
         </div>
       ) : (
         <TeamEntryForm
