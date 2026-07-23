@@ -342,7 +342,7 @@ model TargetJudgeAudit {
   @@index([roundId, createdAt])
 }
 
-// ===== Rocket Classic invitation-only beta =====
+// ===== Rocket Classic open-registration test flight =====
 // Test passes are account-bound entitlements, not payments or cash-value vouchers.
 
 model RocketBetaCampaign {

@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { isRocketBetaEmailApproved } from "@/lib/rocket-beta";
-import { createClient } from "@/utils/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
+import { getRocketBetaStateForUser } from "@/lib/rocket-beta";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
+  const allowed = user
+    ? (await getRocketBetaStateForUser(user)).approved
+    : false;
 
   return NextResponse.json(
-    { allowed: await isRocketBetaEmailApproved(user?.email) },
+    { allowed },
     {
       headers: {
         "Cache-Control": "private, no-store, max-age=0",

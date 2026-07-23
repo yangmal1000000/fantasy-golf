@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Fantasy Golf",
-    description: "Target judgement meets live fantasy golf in the Rocket Classic closed test flight.",
+    description: "Target judgement meets live fantasy golf in the free Rocket Classic test flight.",
     url: "https://fantasy-golf-phi.vercel.app",
     siteName: "Fantasy Golf",
     type: "website",
@@ -41,14 +41,14 @@ export const metadata: Metadata = {
         url: "https://fantasy-golf-phi.vercel.app/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Fantasy Golf — Rocket Classic closed test flight",
+        alt: "Fantasy Golf — Rocket Classic free test flight",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Fantasy Golf",
-    description: "Target judgement meets live fantasy golf in the Rocket Classic closed test flight.",
+    description: "Target judgement meets live fantasy golf in the free Rocket Classic test flight.",
     images: ["https://fantasy-golf-phi.vercel.app/opengraph-image"],
   },
 };
@@ -107,7 +107,7 @@ function Footer() {
           <span className="text-white/30">·</span>
           <Link href="/contact" className="transition hover:text-[#c8a951]">Contact</Link>
         </div>
-        <p className="mt-3 text-xs">Fantasy Golf &middot; Rocket Classic closed test flight</p>
+        <p className="mt-3 text-xs">Fantasy Golf &middot; Rocket Classic free test flight</p>
         <p className="mt-1 text-xs text-white/65">For entertainment purposes only. Not affiliated with the R&amp;A, PGA Tour, or DP World Tour.</p>
         <p className="mt-1 text-xs text-white/60">Course images are artistic impressions, not actual photographs.</p>
       </div>

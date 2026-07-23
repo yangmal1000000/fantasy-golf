@@ -16,6 +16,7 @@ export async function POST(
 ) {
   try {
     assertSameOrigin(req);
+    assertJsonRequest(req);
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
@@ -34,11 +35,27 @@ export async function POST(
     };
 
     // Validate
-    if (!teamName?.trim()) {
-      return NextResponse.json({ error: "Team name required" }, { status: 400 });
+    if (
+      typeof teamName !== "string" ||
+      !teamName.trim() ||
+      teamName.trim().length > 80
+    ) {
+      return NextResponse.json(
+        { error: "Team name must be between 1 and 80 characters" },
+        { status: 400 },
+      );
     }
 
-    if (!selections || selections.length !== 5) {
+    if (
+      !Array.isArray(selections) ||
+      selections.length !== 5 ||
+      !selections.every(
+        (selection) =>
+          typeof selection === "string" &&
+          selection.length > 0 &&
+          selection.length <= 100,
+      )
+    ) {
       return NextResponse.json(
         { error: "Must select exactly 5 players (one per tier)" },
         { status: 400 }
@@ -68,7 +85,10 @@ export async function POST(
       await ensureRocketBetaCampaign();
       const state = await getRocketBetaStateForUser(user);
       if (!state.approved) {
-        return NextResponse.json({ error: "Beta access required" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Test flight access unavailable" },
+          { status: 403 },
+        );
       }
       if (state.passState === "LOCKED") {
         return NextResponse.json(
@@ -186,5 +206,15 @@ function assertSameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) {
     throw new RocketBetaError("Cross-site request blocked", 403);
+  }
+}
+
+function assertJsonRequest(request: NextRequest) {
+  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+    throw new RocketBetaError("Content-Type must be application/json", 415);
+  }
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (!Number.isFinite(contentLength) || contentLength > 32_768) {
+    throw new RocketBetaError("Request body is too large", 413);
   }
 }

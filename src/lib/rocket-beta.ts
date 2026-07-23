@@ -1,18 +1,19 @@
 import "server-only";
 
-import { Prisma, type User } from "@prisma/client";
+import {
+  Prisma,
+  type RocketBetaCampaign,
+  type RocketBetaMember,
+  type User,
+} from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isRocketBetaRegistrationOpen } from "@/lib/rocket-beta-access";
 import { ensureRocketBetaSchema } from "@/lib/rocket-beta-schema";
 import { TARGET_JUDGE_ROUND_SLUG } from "@/lib/target-judge-core";
 
 export const ROCKET_BETA_CAMPAIGN_SLUG = "rocket-classic-2026-beta";
 export const ROCKET_BETA_TOURNAMENT_ID = "rocket-classic";
 export const ROCKET_BETA_ENTRY_CLOSES_AT = new Date("2026-07-30T10:45:00.000Z");
-
-const INITIAL_INVITES = [
-  { email: "yangmal1000000@gmail.com", displayName: "Harry" },
-  { email: "russglenn2@gmail.com", displayName: "Russ" },
-] as const;
 
 export type RocketBetaPassState = "LOCKED" | "UNLOCKED" | "REDEEMED";
 
@@ -61,56 +62,22 @@ export async function ensureRocketBetaCampaign() {
     const campaign = await tx.rocketBetaCampaign.upsert({
       where: { slug: ROCKET_BETA_CAMPAIGN_SLUG },
       update: {
+        name: "Rocket Classic Test Flight",
         tournamentId: tournament.id,
         targetRoundId: round.id,
         entryClosesAt: ROCKET_BETA_ENTRY_CLOSES_AT,
       },
       create: {
         slug: ROCKET_BETA_CAMPAIGN_SLUG,
-        name: "Rocket Classic Closed Beta",
+        name: "Rocket Classic Test Flight",
         tournamentId: tournament.id,
         targetRoundId: round.id,
         status: "OPEN",
         entryClosesAt: ROCKET_BETA_ENTRY_CLOSES_AT,
       },
     });
-
-    for (const invite of INITIAL_INVITES) {
-      await tx.rocketBetaMember.upsert({
-        where: {
-          campaignId_email: {
-            campaignId: campaign.id,
-            email: normaliseEmail(invite.email),
-          },
-        },
-        update: { displayName: invite.displayName },
-        create: {
-          campaignId: campaign.id,
-          email: normaliseEmail(invite.email),
-          displayName: invite.displayName,
-        },
-      });
-    }
     return campaign;
   });
-}
-
-export async function isRocketBetaEmailApproved(
-  email: string | null | undefined,
-) {
-  if (!email) return false;
-  const campaign = await ensureRocketBetaCampaign();
-  if (!campaign) return false;
-  const member = await prisma.rocketBetaMember.findUnique({
-    where: {
-      campaignId_email: {
-        campaignId: campaign.id,
-        email: normaliseEmail(email),
-      },
-    },
-    select: { active: true },
-  });
-  return member?.active === true;
 }
 
 export async function getRocketBetaStateForUser(
@@ -120,24 +87,8 @@ export async function getRocketBetaStateForUser(
   if (!campaign) return emptyState("NOT_READY");
 
   const email = normaliseEmail(user.email);
-  let member = await prisma.rocketBetaMember.findUnique({
-    where: { campaignId_email: { campaignId: campaign.id, email } },
-  });
-  if (!member?.active) return emptyState(campaign.status, campaign.id);
-  if (member.userId && member.userId !== user.id) {
-    return emptyState(campaign.status, campaign.id);
-  }
-
-  if (!member.userId || !member.acceptedAt) {
-    member = await prisma.rocketBetaMember.update({
-      where: { id: member.id },
-      data: {
-        userId: user.id,
-        acceptedAt: member.acceptedAt ?? new Date(),
-        displayName: member.displayName ?? user.name,
-      },
-    });
-  }
+  const member = await enrolRocketBetaParticipant(campaign, user);
+  if (!member) return emptyState(campaign.status, campaign.id);
 
   let pass = await prisma.rocketBetaPass.findUnique({
     where: { campaignId_userId: { campaignId: campaign.id, userId: user.id } },
@@ -178,6 +129,119 @@ export async function getRocketBetaStateForUser(
     redeemedAt: pass?.redeemedAt?.toISOString() ?? null,
     teamId: pass?.teamId ?? null,
   };
+}
+
+async function enrolRocketBetaParticipant(
+  campaign: RocketBetaCampaign,
+  user: BetaActor,
+): Promise<RocketBetaMember | null> {
+  const email = normaliseEmail(user.email);
+  const [memberByEmail, memberByUser] = await Promise.all([
+    prisma.rocketBetaMember.findUnique({
+      where: { campaignId_email: { campaignId: campaign.id, email } },
+    }),
+    prisma.rocketBetaMember.findUnique({
+      where: {
+        campaignId_userId: { campaignId: campaign.id, userId: user.id },
+      },
+    }),
+  ]);
+  if (memberByEmail && memberByUser && memberByEmail.id !== memberByUser.id) {
+    return null;
+  }
+
+  let member = memberByEmail ?? memberByUser;
+  if (!member) {
+    if (
+      !isRocketBetaRegistrationOpen({
+        status: campaign.status,
+        entryClosesAt: campaign.entryClosesAt,
+      })
+    ) {
+      return null;
+    }
+    try {
+      member = await prisma.$transaction(
+        async (tx) => {
+          const created = await tx.rocketBetaMember.create({
+            data: {
+              campaignId: campaign.id,
+              email,
+              userId: user.id,
+              displayName: user.name,
+              acceptedAt: new Date(),
+            },
+          });
+          await tx.rocketBetaAudit.create({
+            data: {
+              campaignId: campaign.id,
+              actorUserId: user.id,
+              actorEmail: email,
+              action: "participant_joined",
+              payload: { memberId: created.id, accessMode: "open_registration" },
+            },
+          });
+          return created;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (error) {
+      if (
+        !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+        error.code !== "P2002"
+      ) {
+        throw error;
+      }
+      member = await prisma.rocketBetaMember.findFirst({
+        where: {
+          campaignId: campaign.id,
+          OR: [{ email }, { userId: user.id }],
+        },
+      });
+    }
+  }
+
+  if (!member?.active) return null;
+  if (member.userId && member.userId !== user.id) return null;
+  if (
+    (!member.userId || !member.acceptedAt) &&
+    !isRocketBetaRegistrationOpen({
+      status: campaign.status,
+      entryClosesAt: campaign.entryClosesAt,
+    })
+  ) {
+    return null;
+  }
+
+  if (!member.userId || !member.acceptedAt) {
+    const joinedAt = member.acceptedAt ?? new Date();
+    member = await prisma.$transaction(async (tx) => {
+      const accepted = await tx.rocketBetaMember.update({
+        where: { id: member!.id },
+        data: {
+          userId: user.id,
+          acceptedAt: joinedAt,
+          displayName: member!.displayName ?? user.name,
+        },
+      });
+      if (!member!.acceptedAt) {
+        await tx.rocketBetaAudit.create({
+          data: {
+            campaignId: campaign.id,
+            actorUserId: user.id,
+            actorEmail: email,
+            action: "participant_joined",
+            payload: {
+              memberId: accepted.id,
+              accessMode: "open_registration",
+            },
+          },
+        });
+      }
+      return accepted;
+    });
+  }
+  return member;
 }
 
 export async function grantRocketBetaPass(

@@ -47,7 +47,7 @@ export default async function Home() {
           ? beta.tournamentHref
         : beta?.approved
           ? beta.targetHref
-          : beta?.tournamentHref ?? "/tournaments/rocket-classic";
+          : "/target";
   const primaryLabel =
     beta?.passState === "REDEEMED"
       ? "View my Rocket team"
@@ -57,7 +57,7 @@ export default async function Home() {
           : "View field review"
         : beta?.approved
           ? "Start Target"
-          : "View the test flight";
+          : "Join the free test flight";
   const targetComplete = beta?.passState === "UNLOCKED" || beta?.passState === "REDEEMED";
   const teamComplete = beta?.passState === "REDEEMED";
 
@@ -68,7 +68,7 @@ export default async function Home() {
         <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:py-20 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-[#e4cc85]/30 bg-[#e4cc85]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-[#f0d986]">
-              <ShieldIcon className="h-3.5 w-3.5" /> Closed test flight · Detroit
+              <ShieldIcon className="h-3.5 w-3.5" /> Free test flight · Detroit
             </div>
             <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[1.02] tracking-tight sm:text-6xl">
               Read the target.
@@ -76,7 +76,7 @@ export default async function Home() {
               Build the team.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/68 sm:text-lg">
-              Invited testers complete three Target decisions, unlock one
+              Join with Google, complete three Target decisions, unlock one
               account-bound Test Pass and choose a five-player Rocket Classic
               team for the full live rehearsal.
             </p>
@@ -95,7 +95,7 @@ export default async function Home() {
               </Link>
             </div>
             <p className="mt-4 text-xs font-semibold text-white/45">
-              Invitation only · no payment · no cash value · no prize
+              Open to signed-up users · no payment · no cash value · no prize
             </p>
           </div>
 
@@ -192,7 +192,7 @@ export default async function Home() {
               icon={<TicketIcon className="h-6 w-6" />}
               number="02"
               title="Receive one Test Pass"
-              text="The pass is created atomically against the same approved account. It cannot be transferred, copied or used twice."
+              text="The pass is created atomically against the same verified account. It cannot be transferred, copied or used twice."
             />
             <JourneyCard
               icon={<UsersIcon className="h-6 w-6" />}
@@ -229,7 +229,7 @@ export default async function Home() {
               What this beta proves
             </h2>
             <ul className="mt-4 space-y-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-              <li>Verified invited-account access</li>
+              <li>Open verified-account registration</li>
               <li>One Target, one Test Pass, one team</li>
               <li>Mobile team selection and confirmation</li>
               <li>Live provisional standings and final result</li>

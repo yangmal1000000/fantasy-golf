@@ -7,10 +7,10 @@ export const maxDuration = 60;
 /**
  * POST /api/sync/schedule
  * Pulls real PGA Tour schedule from ESPN and updates the database.
- * Called by cron or admin — no auth check.
+ * Called by a signed Vercel cron or an authenticated admin.
  */
-export async function POST(request: Request) {
-  const denied = await adminApiGuard(request);
+async function syncSchedule(request: Request) {
+  const denied = await adminApiGuard(request, { allowCron: true });
   if (denied) return denied;
   try {
     const result = await syncTournamentSchedule();
@@ -23,3 +23,6 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const GET = syncSchedule;
+export const POST = syncSchedule;

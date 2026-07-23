@@ -7,8 +7,8 @@ import {
   ensureRocketBetaCampaign,
   getRocketBetaStateForUser,
   grantRocketBetaPass,
-  isRocketBetaEmailApproved,
 } from "@/lib/rocket-beta";
+import { isRocketBetaRegistrationOpen } from "@/lib/rocket-beta-access";
 import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import { TARGET_JUDGE_ROUND_SLUG } from "@/lib/target-judge-core";
 import {
@@ -37,9 +37,9 @@ class TargetPilotRequestError extends Error {
 
 export async function GET() {
   try {
-    const user = await requireApprovedPilotUser();
+    const { user, state } = await requirePilotUser();
     await ensureTargetJudgeSchema();
-    return privateJson(await readPilotStatus(user));
+    return privateJson(await readPilotStatus(user, state));
   } catch (error) {
     return handleError(error);
   }
@@ -48,12 +48,21 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
-    const user = await requireApprovedPilotUser();
+    assertJsonRequest(request);
+    const { user } = await requirePilotUser();
     const email = user.email.trim().toLowerCase();
     await ensureTargetJudgeSchema();
     const campaign = await ensureRocketBetaCampaign();
     if (!campaign) {
       throw new TargetPilotRequestError("The Rocket Classic beta is not ready", 404);
+    }
+    if (
+      !isRocketBetaRegistrationOpen({
+        status: campaign.status,
+        entryClosesAt: campaign.entryClosesAt,
+      })
+    ) {
+      throw new TargetPilotRequestError("Rocket Classic registration is closed", 409);
     }
     const body = (await request.json()) as { submission?: unknown };
     const submission = validateTargetPilotSubmission(body.submission);
@@ -71,19 +80,13 @@ export async function POST(request: NextRequest) {
         throw new TargetPilotRequestError("The pilot scenario version has changed", 409);
       }
       const member = await tx.rocketBetaMember.findUnique({
-        where: { campaignId_email: { campaignId: campaign.id, email } },
-      });
-      if (!member?.active || (member.userId && member.userId !== user.id)) {
-        throw new TargetJudgeAccessError("Pilot access required", 404);
-      }
-      const acceptedMember = await tx.rocketBetaMember.update({
-        where: { id: member.id },
-        data: {
-          userId: user.id,
-          acceptedAt: member.acceptedAt ?? new Date(),
-          displayName: member.displayName ?? user.name,
+        where: {
+          campaignId_userId: { campaignId: campaign.id, userId: user.id },
         },
       });
+      if (!member?.active) {
+        throw new TargetJudgeAccessError("Test flight access unavailable", 403);
+      }
 
       const submissionHash = targetPilotSubmissionHash({
         scenarioHash: round.scenarioHash,
@@ -112,7 +115,7 @@ export async function POST(request: NextRequest) {
       });
       await grantRocketBetaPass(tx, {
         campaignId: campaign.id,
-        memberId: acceptedMember.id,
+        memberId: member.id,
         user,
         sourceTargetEntryId: entry.id,
       });
@@ -126,9 +129,10 @@ export async function POST(request: NextRequest) {
 
 async function readPilotStatus(
   user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+  existingState?: Awaited<ReturnType<typeof getRocketBetaStateForUser>>,
 ): Promise<TargetPilotStatusDto> {
   const email = user.email.trim().toLowerCase();
-  const rocketBeta = await getRocketBetaStateForUser(user);
+  const rocketBeta = existingState ?? await getRocketBetaStateForUser(user);
   const round = await prisma.targetJudgingRound.findUnique({
     where: { slug: TARGET_JUDGE_ROUND_SLUG },
     include: { pilotEntries: { where: { email }, take: 1 } },
@@ -145,7 +149,13 @@ async function readPilotStatus(
   const entry = round.pilotEntries[0];
   return {
     roundStatus: round.status,
-    entryOpen: round.status === "DRAFT" && !round.pilotEntriesSealedAt,
+    entryOpen:
+      round.status === "DRAFT" &&
+      !round.pilotEntriesSealedAt &&
+      isRocketBetaRegistrationOpen({
+        status: rocketBeta.campaignStatus,
+        entryClosesAt: rocketBeta.entryClosesAt,
+      }),
     sealedAt: round.pilotEntriesSealedAt?.toISOString() ?? null,
     entry: entry
       ? {
@@ -160,13 +170,14 @@ async function readPilotStatus(
   };
 }
 
-async function requireApprovedPilotUser() {
+async function requirePilotUser() {
   const user = await getCurrentUser();
   if (!user) throw new TargetJudgeAccessError("Sign in required", 401);
-  if (!(await isRocketBetaEmailApproved(user.email))) {
-    throw new TargetJudgeAccessError("Pilot access required", 404);
+  const state = await getRocketBetaStateForUser(user);
+  if (!state.approved) {
+    throw new TargetJudgeAccessError("Test flight access unavailable", 403);
   }
-  return user;
+  return { user, state };
 }
 
 function rocketPassDto(
@@ -189,6 +200,16 @@ function assertSameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) {
     throw new TargetJudgeAccessError("Cross-site request blocked", 403);
+  }
+}
+
+function assertJsonRequest(request: NextRequest) {
+  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+    throw new TargetPilotRequestError("Content-Type must be application/json", 415);
+  }
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (!Number.isFinite(contentLength) || contentLength > 32_768) {
+    throw new TargetPilotRequestError("Request body is too large", 413);
   }
 }
 

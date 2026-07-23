@@ -169,7 +169,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white sm:p-5">
           <div className="flex items-center gap-2">
             <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${isRocketBeta ? "border border-[#e4cc85]/40 bg-[#e4cc85]/15 text-[#f0d986]" : status.badgeClass}`}>
-              {isRocketBeta ? "CLOSED TEST FLIGHT" : status.label}
+              {isRocketBeta ? "OPEN TEST FLIGHT" : status.label}
             </span>
             {cat && <span className="rounded-md bg-white/15 px-2 py-0.5 text-[10px] font-semibold">{cat.label}</span>}
             {theme && <span className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${theme.badgeClass}`}>{theme.name}</span>}
@@ -252,7 +252,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                 <div><dt className="text-zinc-500">Beta lock</dt><dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">{ROCKET_BETA_ENTRY_CLOSES_AT.toLocaleString("en-GB", { timeZone: "Europe/London", weekday: "short", hour: "2-digit", minute: "2-digit" })}</dd></div>
               </dl>
               <p className="mt-3 text-[11px] leading-5 text-zinc-500">
-                Invitation-only rehearsal. No payment, cash value or prize.
+                Open to verified signed-up users. No payment, cash value or prize.
               </p>
             </div>
           </div>
@@ -284,7 +284,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             </div>
           </div>
           <p className="mt-3 border-t border-[#c8a951]/20 pt-3 text-[11px] leading-5 text-zinc-500">
-            Closed-test result only. No payment, cash value or prize.
+            Test-flight result only. No payment, cash value or prize.
           </p>
         </section>
       )}
@@ -332,9 +332,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               </div>
             )
           ) : (
-            <div className="flex items-center justify-center gap-1.5 rounded-lg bg-zinc-100 px-4 py-2.5 text-sm font-bold text-zinc-500 dark:bg-zinc-800">
-              Invite-only beta
-            </div>
+            <Link href="/target" className="flex items-center justify-center gap-1.5 rounded-lg bg-[#0a3d2a] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1a5c3e]">
+              <TargetIcon className="h-4 w-4" /> Sign in to Join
+            </Link>
           )
         ) : canEnter && tournament._count.players > 0 ? (
           <Link href={`/tournaments/${tournament.id}/enter`} className="flex items-center justify-center gap-1.5 rounded-lg bg-[#0a3d2a] dark:bg-green-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1a5c3e]">
