@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import type { KeyboardEvent, PointerEvent } from "react";
+import type { KeyboardEvent, PointerEvent, ReactNode } from "react";
 import {
   APPROACH_FLAG_GROUND_VIEWBOX,
   TARGET_COORDINATE_MAX,
@@ -25,6 +25,7 @@ interface CourseMapProps {
   edgeToEdgeOnMobile?: boolean;
   compactMobileControls?: boolean;
   immersiveMobileControls?: boolean;
+  mobileBelowMap?: ReactNode;
   referencePoints?: Array<{
     point: TargetPoint;
     label: string;
@@ -61,6 +62,7 @@ export default function CourseMap({
   edgeToEdgeOnMobile = false,
   compactMobileControls = false,
   immersiveMobileControls = false,
+  mobileBelowMap,
   referencePoints = [],
 }: CourseMapProps) {
   const interactive = Boolean(onChange);
@@ -314,6 +316,8 @@ export default function CourseMap({
           </div>
           )}
       </div>
+
+      {mobileBelowMap}
 
       {interactive && point && onChange && (
         <div
