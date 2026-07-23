@@ -35,9 +35,11 @@ export default function TargetChallengeClient() {
   const [secondsRemaining, setSecondsRemaining] = useState(TARGET_ATTEMPT_SECONDS);
   const [deadline, setDeadline] = useState<number | null>(null);
   const [entryReference, setEntryReference] = useState<string | null>(null);
-  const [ageConfirmed, setAgeConfirmed] = useState(false);
-  const [territoryConfirmed, setTerritoryConfirmed] = useState(false);
+  const [accountConfirmed, setAccountConfirmed] = useState(false);
+  const [betaConfirmed, setBetaConfirmed] = useState(false);
   const [rulesConfirmed, setRulesConfirmed] = useState(false);
+  const [rocketPass, setRocketPass] =
+    useState<TargetPilotStatusDto["rocketPass"] | null>(null);
   const [pilotChecking, setPilotChecking] = useState(true);
   const [submissionBusy, setSubmissionBusy] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
@@ -72,6 +74,7 @@ export default function TargetChallengeClient() {
       })
       .then((status) => {
         if (!active) return;
+        setRocketPass(status.rocketPass);
         if (status.entry?.submission) {
           setPoints(status.entry.submission.points.map((item) => item.point));
           setEntryReference(status.entry.reference);
@@ -147,6 +150,7 @@ export default function TargetChallengeClient() {
       if (!status.entry) throw new Error("The saved pilot entry could not be confirmed");
       setEntryReference(status.entry.reference);
       setSubmittedAt(status.entry.submittedAt);
+      setRocketPass(status.rocketPass);
       setDeadline(null);
       setStage("submitted");
     } catch (caught) {
@@ -166,8 +170,8 @@ export default function TargetChallengeClient() {
     setEntryReference(null);
     setSubmittedAt(null);
     setSubmissionError(null);
-    setAgeConfirmed(false);
-    setTerritoryConfirmed(false);
+    setAccountConfirmed(false);
+    setBetaConfirmed(false);
     setRulesConfirmed(false);
   }
 
@@ -176,9 +180,9 @@ export default function TargetChallengeClient() {
       <div className="border-b border-[#c8a951]/25 bg-[#071f16] text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5 text-xs">
           <span className="inline-flex items-center gap-2 font-bold uppercase tracking-[0.16em] text-[#e4cc85]">
-            <ShieldIcon className="h-4 w-4" /> Prototype mode
+            <ShieldIcon className="h-4 w-4" /> Closed beta gateway
           </span>
-          <span className="text-right text-white/65">No payment · Closed development pilot · No live prize</span>
+          <span className="text-right text-white/65">Invite only · No payment · No prize</span>
         </div>
       </div>
 
@@ -188,15 +192,15 @@ export default function TargetChallengeClient() {
         <div className="relative mx-auto max-w-6xl px-4 py-8 sm:py-12">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#d7bc6a]">Hawthorn Vale · Monthly skill challenge</p>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#d7bc6a]">Target · Rocket Classic test flight</p>
               <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Read the hole. Place the target.</h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/75 sm:text-base">
-                Three demanding golf decisions. Your pins are judged against targets independently established by qualified golf professionals after entries close.
+                Complete three demanding golf decisions to unlock one account-bound Rocket Classic Test Pass. Your Target score never changes your fantasy score.
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              <HeroStat label="Planned entry" value="£10" />
-              <HeroStat label="Guaranteed prize" value="£100" />
+              <HeroStat label="Beta entry" value="£0" />
+              <HeroStat label="Test Pass" value="1" />
               <HeroStat label="Decisions" value="3" />
             </div>
           </div>
@@ -213,7 +217,7 @@ export default function TargetChallengeClient() {
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">{statusLabel}</p>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Skill decides the result. No future tournament and no random draw.</p>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Finish once to unlock your pass. No purchase, prize or random draw.</p>
           </div>
           {(stage === "playing" || stage === "review") && (
             <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black tabular ${secondsRemaining <= 120 ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300" : "bg-white text-[#0a3d2a] shadow-sm dark:bg-zinc-900 dark:text-green-400"}`}>
@@ -232,11 +236,11 @@ export default function TargetChallengeClient() {
 
         {stage === "eligibility" && (
           <EligibilityStage
-            ageConfirmed={ageConfirmed}
-            territoryConfirmed={territoryConfirmed}
+            accountConfirmed={accountConfirmed}
+            betaConfirmed={betaConfirmed}
             rulesConfirmed={rulesConfirmed}
-            setAgeConfirmed={setAgeConfirmed}
-            setTerritoryConfirmed={setTerritoryConfirmed}
+            setAccountConfirmed={setAccountConfirmed}
+            setBetaConfirmed={setBetaConfirmed}
             setRulesConfirmed={setRulesConfirmed}
             onBack={() => setStage("intro")}
             onStart={beginPrototype}
@@ -332,7 +336,12 @@ export default function TargetChallengeClient() {
         )}
 
         {stage === "submitted" && (
-          <SubmittedStage points={points} entryReference={entryReference} submittedAt={submittedAt} />
+          <SubmittedStage
+            points={points}
+            entryReference={entryReference}
+            submittedAt={submittedAt}
+            rocketPass={rocketPass}
+          />
         )}
 
         {stage === "closed" && (
@@ -347,7 +356,7 @@ export default function TargetChallengeClient() {
           <section className="mx-auto max-w-xl rounded-3xl border border-red-200 bg-white p-8 text-center shadow-lg dark:border-red-900/50 dark:bg-zinc-900">
             <ClockIcon className="mx-auto h-12 w-12 text-red-500" />
             <h2 className="mt-4 text-2xl font-black text-zinc-900 dark:text-white">Prototype time expired</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">No entry was created and no payment was taken. In production, the published interruption and refund rules would apply.</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">No entry was created and no Test Pass was issued. You can restart while beta entries remain open.</p>
             <button type="button" onClick={resetPrototype} className="mt-6 rounded-xl bg-[#0a3d2a] px-6 py-3 text-sm font-black text-white">Restart prototype</button>
           </section>
         )}
@@ -398,8 +407,8 @@ function IntroStage({
         <ul className="mt-6 space-y-3 text-sm">
           <IntroBullet icon={<MapPinIcon className="h-4 w-4" />} text="One precise pin for each of three course situations" />
           <IntroBullet icon={<ClockIcon className="h-4 w-4" />} text="20 minutes; completion speed never changes your score" />
-          <IntroBullet icon={<ShieldIcon className="h-4 w-4" />} text="Blind independent judging with no random selection" />
-          <IntroBullet icon={<TrophyIcon className="h-4 w-4" />} text="Planned £100 fixed, guaranteed Target prize" />
+          <IntroBullet icon={<ShieldIcon className="h-4 w-4" />} text="One locked Target submission per approved account" />
+          <IntroBullet icon={<TrophyIcon className="h-4 w-4" />} text="Completion unlocks one Rocket Classic Test Pass" />
         </ul>
         <button
           type="button"
@@ -424,44 +433,44 @@ function IntroBullet({ icon, text }: { icon: React.ReactNode; text: string }) {
 }
 
 function EligibilityStage({
-  ageConfirmed,
-  territoryConfirmed,
+  accountConfirmed,
+  betaConfirmed,
   rulesConfirmed,
-  setAgeConfirmed,
-  setTerritoryConfirmed,
+  setAccountConfirmed,
+  setBetaConfirmed,
   setRulesConfirmed,
   onBack,
   onStart,
 }: {
-  ageConfirmed: boolean;
-  territoryConfirmed: boolean;
+  accountConfirmed: boolean;
+  betaConfirmed: boolean;
   rulesConfirmed: boolean;
-  setAgeConfirmed: (value: boolean) => void;
-  setTerritoryConfirmed: (value: boolean) => void;
+  setAccountConfirmed: (value: boolean) => void;
+  setBetaConfirmed: (value: boolean) => void;
   setRulesConfirmed: (value: boolean) => void;
   onBack: () => void;
   onStart: () => void;
 }) {
-  const ready = ageConfirmed && territoryConfirmed && rulesConfirmed;
+  const ready = accountConfirmed && betaConfirmed && rulesConfirmed;
   return (
     <section className="mx-auto max-w-2xl overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
       <div className="border-b border-zinc-100 bg-[#0a3d2a] p-6 text-white dark:border-zinc-800 sm:p-8">
         <LockIcon className="h-9 w-9 text-[#d7bc6a]" />
         <h2 className="mt-4 text-2xl font-black">Before the attempt begins</h2>
-        <p className="mt-2 text-sm leading-6 text-white/70">This build is a free prototype. The production checkout remains disabled until legal and payment-provider approval.</p>
+        <p className="mt-2 text-sm leading-6 text-white/70">This free test flight uses your approved account. Completing it unlocks a non-transferable Test Pass, not a cash-value voucher.</p>
       </div>
       <div className="space-y-3 p-6 sm:p-8">
-        <ConfirmRow checked={ageConfirmed} onChange={setAgeConfirmed} label="I am 18 or older." />
-        <ConfirmRow checked={territoryConfirmed} onChange={setTerritoryConfirmed} label="I am resident in Great Britain for this prototype." />
+        <ConfirmRow checked={accountConfirmed} onChange={setAccountConfirmed} label="I am using my own approved beta account." />
+        <ConfirmRow checked={betaConfirmed} onChange={setBetaConfirmed} label="I understand this test flight has no payment, cash value or prize." />
         <ConfirmRow checked={rulesConfirmed} onChange={setRulesConfirmed} label="I understand this is one individual skill attempt and external assistance is not allowed." />
 
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
-          <strong>Prototype safeguard:</strong> pressing start takes no money and creates no claim to the planned £100 prize.
+          <strong>Beta safeguard:</strong> pressing start takes no money. A completed submission only unlocks entry to the private Rocket Classic rehearsal.
         </div>
 
         <div className="flex items-center justify-between gap-3 pt-4">
           <button type="button" onClick={onBack} className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">Back</button>
-          <button type="button" onClick={onStart} disabled={!ready} className="rounded-xl bg-[#0a3d2a] px-6 py-3 text-sm font-black text-white transition hover:bg-[#15543b] disabled:cursor-not-allowed disabled:opacity-35">Start 20-minute prototype →</button>
+          <button type="button" onClick={onStart} disabled={!ready} className="rounded-xl bg-[#0a3d2a] px-6 py-3 text-sm font-black text-white transition hover:bg-[#15543b] disabled:cursor-not-allowed disabled:opacity-35">Start 20-minute Target →</button>
         </div>
       </div>
     </section>
@@ -535,11 +544,11 @@ function ReviewStage({
       </div>
 
       <div className="mx-4 mt-7 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200 sm:mx-0">
-        <strong>Closed-pilot confirmation:</strong> submitting stores one no-payment rehearsal entry against your verified account. It cannot be edited after submission and creates no paid or prize-eligible claim.
+        <strong>Test Pass confirmation:</strong> submitting stores one no-payment Target entry against your verified account and unlocks one Rocket Classic Test Pass. Neither can be transferred or exchanged for cash.
       </div>
 
       <div className="mx-4 mb-6 mt-6 flex justify-end sm:mx-0 sm:mb-0">
-        <button type="button" disabled={submitting} onClick={() => void onSubmit()} className="rounded-xl bg-[#0a3d2a] px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-[#0a3d2a]/15 transition hover:bg-[#15543b] disabled:cursor-not-allowed disabled:opacity-50">{submitting ? "Locking pilot entry…" : "Submit and lock pilot entry"}</button>
+        <button type="button" disabled={submitting} onClick={() => void onSubmit()} className="rounded-xl bg-[#0a3d2a] px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-[#0a3d2a]/15 transition hover:bg-[#15543b] disabled:cursor-not-allowed disabled:opacity-50">{submitting ? "Locking Target and pass…" : "Submit Target and unlock pass"}</button>
       </div>
     </section>
   );
@@ -549,16 +558,18 @@ function SubmittedStage({
   points,
   entryReference,
   submittedAt,
+  rocketPass,
 }: {
   points: Array<TargetPoint | null>;
   entryReference: string | null;
   submittedAt: string | null;
+  rocketPass: TargetPilotStatusDto["rocketPass"] | null;
 }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
       <div className="bg-[#0a3d2a] px-6 py-9 text-center text-white sm:px-10">
         <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#c8a951] text-[#0a3d2a] shadow-lg"><CheckCircleIcon className="h-9 w-9" /></span>
-        <h2 className="mt-5 text-3xl font-black">Pilot targets locked</h2>
+        <h2 className="mt-5 text-3xl font-black">Target locked. Test Pass ready.</h2>
         <p className="mt-2 text-sm text-white/70">Reference <span className="font-mono font-bold text-[#f0d986]">{entryReference}</span></p>
         {submittedAt ? <p className="mt-1 text-xs text-white/50">Saved {new Date(submittedAt).toLocaleString()}</p> : null}
       </div>
@@ -577,15 +588,31 @@ function SubmittedStage({
             <div className="flex items-start gap-3">
               <InfoIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#9b7b25]" />
               <div>
-                <h3 className="font-black text-zinc-900 dark:text-white">What this pilot records</h3>
-                <p className="mt-1 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Your verified account, frozen scenario version, three coordinates, submission time and integrity hash. There is still no checkout, live prize or payout.</p>
+                <h3 className="font-black text-zinc-900 dark:text-white">Your Target record</h3>
+                <p className="mt-1 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Your approved account, frozen scenario version, three coordinates, submission time and integrity hash. There is no checkout, live prize or payout.</p>
               </div>
             </div>
           </div>
-          <div className="rounded-2xl bg-[#eef5f0] p-5 dark:bg-green-950/25">
-            <h3 className="font-black text-[#0a3d2a] dark:text-green-300">The fantasy competition stays separate</h3>
-            <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">You can visit the existing team experience independently. No Target purchase is required and no Target result changes a fantasy score.</p>
-            <Link href="/tournaments" className="mt-4 inline-flex rounded-xl bg-[#0a3d2a] px-4 py-2.5 text-sm font-black text-white">Explore free fantasy events →</Link>
+          <div className="rounded-2xl border-2 border-[#c8a951]/40 bg-[#eef5f0] p-5 dark:bg-green-950/25">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#9b7b25] dark:text-[#d7bc6a]">Account-bound Test Pass</p>
+            <h3 className="mt-2 font-black text-[#0a3d2a] dark:text-green-300">
+              {rocketPass?.status === "REDEEMED" ? "Rocket team confirmed" : "Rocket Classic entry unlocked"}
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+              {rocketPass?.status === "REDEEMED"
+                ? "Your pass has been used for one confirmed five-player beta team."
+                : "Choose one golfer from each of five tiers, review the team and use this pass once before entries close."}
+            </p>
+            <Link
+              href={
+                rocketPass?.status === "REDEEMED" && rocketPass.teamId
+                  ? `/tournaments/rocket-classic/teams/${rocketPass.teamId}`
+                  : rocketPass?.enterHref ?? "/tournaments/rocket-classic/enter"
+              }
+              className="mt-4 inline-flex rounded-xl bg-[#0a3d2a] px-4 py-2.5 text-sm font-black text-white"
+            >
+              {rocketPass?.status === "REDEEMED" ? "View confirmed team →" : "Build my Rocket team →"}
+            </Link>
           </div>
         </div>
 

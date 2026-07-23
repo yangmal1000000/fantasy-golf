@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { ROCKET_BETA_TOURNAMENT_ID } from "@/lib/rocket-beta";
 
 export async function POST(request: NextRequest) {
   try {
+    const origin = request.headers.get("origin");
+    if (origin && origin !== new URL(request.url).origin) {
+      return NextResponse.json({ error: "Cross-site request blocked" }, { status: 403 });
+    }
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
@@ -21,6 +26,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Missing required fields: tournamentId, type" },
         { status: 400 }
+      );
+    }
+    if (tournamentId === ROCKET_BETA_TOURNAMENT_ID) {
+      return NextResponse.json(
+        { error: "Side games are disabled for the Rocket Classic test flight" },
+        { status: 404 },
       );
     }
 

@@ -34,7 +34,7 @@ interface SavedTeamPreview {
 interface TeamEntryFormProps {
   tournamentId: string;
   entryFee: number;
-  userId: string;
+  betaMode?: boolean;
   playersByTier: Record<string, TierPlayer[]>;
   savedTeams?: SavedTeamPreview[];
 }
@@ -42,7 +42,7 @@ interface TeamEntryFormProps {
 export default function TeamEntryForm({
   tournamentId,
   entryFee,
-  userId,
+  betaMode = false,
   playersByTier,
   savedTeams = [],
 }: TeamEntryFormProps) {
@@ -179,7 +179,6 @@ export default function TeamEntryForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           teamName: teamName.trim(),
-          userId,
           selections: Object.values(selections),
         }),
       });
@@ -214,10 +213,12 @@ export default function TeamEntryForm({
               <span className="text-3xl">✅</span>
             </div>
             <h2 className="text-xl font-bold text-[#0a3d2a] dark:text-green-400">
-              Team Submitted!
+              {betaMode ? "Rocket Team Confirmed!" : "Team Submitted!"}
             </h2>
             <p className="mt-1 text-sm text-zinc-500">
-              Good luck out there!
+              {betaMode
+                ? "Your Test Pass is now locked to this five-player team."
+                : "Good luck out there!"}
             </p>
 
             {/* Save as template prompt */}
@@ -609,9 +610,9 @@ export default function TeamEntryForm({
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                  Entry:{" "}
+                  {betaMode ? "Access: " : "Entry: "}
                   <span className="font-bold text-[#0a3d2a] dark:text-green-400">
-                    {formatGBP(entryFee)}
+                    {betaMode ? "Test Pass" : formatGBP(entryFee)}
                   </span>
                 </p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -639,9 +640,9 @@ export default function TeamEntryForm({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Entry fee:{" "}
+                  {betaMode ? "Beta access: " : "Entry fee: "}
                   <span className="font-bold text-[#0a3d2a] dark:text-green-400">
-                    {formatGBP(entryFee)}
+                    {betaMode ? "1 Test Pass · no payment" : formatGBP(entryFee)}
                   </span>
                 </p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">

@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { formatDateRange } from "@/lib/ui";
+import {
+  ROCKET_BETA_TOURNAMENT_ID,
+  getRocketBetaStateForUser,
+} from "@/lib/rocket-beta";
 import TeamEntryForm from "./TeamEntryForm";
 
 export const metadata: Metadata = {
@@ -32,6 +36,7 @@ export default async function EnterTeamPage({
   ]);
 
   if (!tournament) notFound();
+  const isRocketBeta = tournament.id === ROCKET_BETA_TOURNAMENT_ID;
 
   // Check if entries are still open
   const canEnter =
@@ -60,6 +65,14 @@ export default async function EnterTeamPage({
         />
       </div>
     );
+  }
+
+  const betaState = isRocketBeta
+    ? await getRocketBetaStateForUser(user)
+    : null;
+  if (betaState && !betaState.approved) notFound();
+  if (betaState?.passState === "REDEEMED" && betaState.teamId) {
+    redirect(`/tournaments/${tournament.id}/teams/${betaState.teamId}`);
   }
 
   // Fetch user's saved team templates
@@ -110,11 +123,49 @@ export default async function EnterTeamPage({
             Status: {tournament.status.replace("_", " ")}
           </p>
         </div>
+      ) : betaState?.passState === "LOCKED" ? (
+        <div className="overflow-hidden rounded-3xl border border-[#c8a951]/40 bg-white shadow-xl dark:border-[#c8a951]/30 dark:bg-zinc-900">
+          <div className="bg-[#0a3d2a] p-6 text-white sm:p-8">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#e4cc85]">
+              Step 1 of 2
+            </p>
+            <h2 className="mt-2 text-2xl font-black">Unlock your Test Pass first</h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">
+              Complete the three Target decisions once. Your score does not affect
+              your fantasy team; completion simply unlocks one account-bound pass.
+            </p>
+          </div>
+          <div className="p-6 sm:p-8">
+            <a
+              href="/target"
+              className="inline-flex rounded-xl bg-[#c8a951] px-5 py-3 text-sm font-black text-[#17251d]"
+            >
+              Complete Target →
+            </a>
+          </div>
+        </div>
+      ) : tournament.players.length < 5 ||
+        ["T1_10", "T11_20", "T21_30", "T31_50", "T51_PLUS"].some(
+          (tier) => !playersByTier[tier]?.length,
+        ) ? (
+        <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-center shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">
+            Test Pass ready
+          </p>
+          <h2 className="mt-3 text-2xl font-black text-zinc-900 dark:text-white">
+            The Rocket field is being prepared
+          </h2>
+          <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+            Your pass is safely linked to this account. Team selection opens after
+            the complete player field and all five tier lists have been reviewed
+            and frozen.
+          </p>
+        </div>
       ) : (
         <TeamEntryForm
           tournamentId={tournament.id}
           entryFee={tournament.entryFee}
-          userId={user.id}
+          betaMode={isRocketBeta}
           playersByTier={Object.fromEntries(
             Object.entries(playersByTier).map(([tier, players]) => [
               tier,

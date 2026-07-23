@@ -1,343 +1,296 @@
 import Link from "next/link";
-import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { formatGBP, formatDateRange, STATUS_CONFIG, courseImage } from "@/lib/ui";
-import CountdownTimer from "@/components/CountdownTimer";
-import { TrophyIcon, MapPinIcon, UsersIcon, PoundIcon, FlagIcon } from "@/components/icons";
+import { getCurrentUser } from "@/lib/auth";
+import {
+  ROCKET_BETA_ENTRY_CLOSES_AT,
+  ROCKET_BETA_TOURNAMENT_ID,
+  getRocketBetaStateForUser,
+} from "@/lib/rocket-beta";
+import {
+  CheckCircleIcon,
+  GolfFlagIcon,
+  MapPinIcon,
+  ShieldIcon,
+  TargetIcon,
+  TicketIcon,
+  UsersIcon,
+} from "@/components/icons";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function Home() {
-  let tournament: {
-    id: string;
-    name: string;
-    course: string | null;
-    startDate: Date;
-    endDate: Date;
-    status: string;
-    par: number;
-    entryFee: number;
-    _count: { teams: number; players: number };
-  } | null = null;
+  const [tournament, user] = await Promise.all([
+    prisma.tournament.findUnique({
+      where: { id: ROCKET_BETA_TOURNAMENT_ID },
+      include: { _count: { select: { players: true, teams: true } } },
+    }),
+    getCurrentUser(),
+  ]);
+  const beta = user ? await getRocketBetaStateForUser(user) : null;
 
-  let liveTournament: {
-    id: string;
-    name: string;
-    course: string | null;
-    status: string;
-    currentRound: number;
-    _count: { teams: number };
-  } | null = null;
-
-  let upcomingTournaments: {
-    id: string;
-    name: string;
-    course: string | null;
-    startDate: Date;
-    endDate: Date;
-    status: string;
-    par: number;
-    entryFee: number;
-    category: string;
-    _count: { teams: number };
-  }[] = [];
-
-  let lastCompleted: {
-    id: string;
-    name: string;
-    course: string | null;
-    _count: { teams: number };
-    entryFee: number;
-  } | null = null;
-
-  // Real stats for trust bar
-  let tournamentCount = 0;
-  let playerCount = 0;
-  let totalPot = 0;
-  let entriesOpenCount = 0;
-
-  try {
-    tournament = await prisma.tournament.findFirst({
-      where: {
-        status: { in: ["entries_open", "upcoming"] },
-      },
-      orderBy: { startDate: "asc" },
-      include: {
-        _count: { select: { teams: true, players: true } },
-      },
-    });
-
-    liveTournament = await prisma.tournament.findFirst({
-      where: { status: "in_progress" },
-      include: {
-        _count: { select: { teams: true } },
-      },
-    });
-
-    upcomingTournaments = (await prisma.tournament.findMany({
-      where: {
-        status: { in: ["entries_open", "upcoming"] },
-        startDate: { gte: new Date() },
-      },
-      orderBy: { startDate: "asc" },
-      take: 4,
-      include: {
-        _count: { select: { teams: true } },
-      },
-    })) as typeof upcomingTournaments;
-
-    lastCompleted = await prisma.tournament.findFirst({
-      where: { status: "completed" },
-      orderBy: { endDate: "desc" },
-      include: {
-        _count: { select: { teams: true } },
-      },
-    });
-
-    // Real aggregate stats
-    tournamentCount = await prisma.tournament.count();
-    playerCount = await prisma.player.count();
-    const teams = await prisma.team.findMany({
-      select: { tournament: { select: { entryFee: true } } },
-    });
-    totalPot = teams.reduce((sum, t) => sum + (t.tournament?.entryFee ?? 0), 0);
-    entriesOpenCount = await prisma.tournament.count({ where: { status: "entries_open" } });
-  } catch {
-    // DB might not be seeded yet — render with null
+  if (!tournament) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-20 text-center">
+        <h1 className="text-3xl font-black text-[#0a3d2a]">Fantasy Golf</h1>
+        <p className="mt-3 text-zinc-500">The next test flight is being prepared.</p>
+      </main>
+    );
   }
 
-  const statusInfo = tournament
-    ? STATUS_CONFIG[tournament.status] ?? STATUS_CONFIG.upcoming
-    : null;
+  const primaryHref =
+    beta?.passState === "REDEEMED" && beta.teamId
+      ? `/tournaments/rocket-classic/teams/${beta.teamId}`
+      : beta?.passState === "UNLOCKED"
+        ? beta.enterHref
+        : beta?.approved
+          ? beta.targetHref
+          : beta?.tournamentHref ?? "/tournaments/rocket-classic";
+  const primaryLabel =
+    beta?.passState === "REDEEMED"
+      ? "View my Rocket team"
+      : beta?.passState === "UNLOCKED"
+        ? tournament._count.players > 0
+          ? "Build my Rocket team"
+          : "View field status"
+        : beta?.approved
+          ? "Start Target"
+          : "View the test flight";
+  const targetComplete = beta?.passState === "UNLOCKED" || beta?.passState === "REDEEMED";
+  const teamComplete = beta?.passState === "REDEEMED";
 
   return (
-    <div className="flex flex-col">
-      {/* ===== Hero — Compact dashboard header ===== */}
-      <section className="relative overflow-hidden bg-[#0a3d2a] py-6 sm:py-8">
-        <div className="absolute inset-0 opacity-20">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/hero-main.jpg" alt="" className="h-full w-full object-cover" />
-        </div>
-        <div className="relative mx-auto max-w-5xl px-4">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c8a951]">Major Sweepstake</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Fantasy Golf</h1>
-          <p className="mt-1 text-sm text-white/80">Pick 5 pros across 5 tiers. Beat your mates.</p>
-          <div className="mt-3 flex gap-2">
-            {tournament && (
-              <Link href={`/tournaments/${tournament.id}/enter`} className="rounded-lg bg-[#c8a951] px-5 py-2 text-sm font-bold text-[#1a1a1a] transition hover:bg-[#d4b76a]">Build Your Team →</Link>
-            )}
-            <Link href="/tournaments" className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white border border-white/20 transition hover:bg-white/20">Browse</Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== Trust Bar — Inline (real numbers from DB) ===== */}
-      <section className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1d1c] py-2">
-        <div className="mx-auto flex max-w-5xl items-center justify-center gap-4 px-4 text-xs font-medium text-zinc-500">
-          <span className="inline-flex items-center gap-1"><TrophyIcon className="h-3 w-3 text-[#c8a951]" />{tournamentCount} Events</span>
-          <span className="text-zinc-300">{"\u00b7"}</span>
-          {totalPot > 0 ? (
-            <span className="inline-flex items-center gap-1"><PoundIcon className="h-3 w-3 text-[#c8a951]" />{formatGBP(totalPot)} Prize Pot</span>
-          ) : (
-            <span className="inline-flex items-center gap-1"><PoundIcon className="h-3 w-3 text-[#c8a951]" />{entriesOpenCount > 0 ? `${entriesOpenCount} Open to Enter` : "Free to Preview"}</span>
-          )}
-          <span className="text-zinc-300">{"\u00b7"}</span>
-          <span className="inline-flex items-center gap-1"><FlagIcon className="h-3 w-3 text-[#c8a951]" />{playerCount} Pros</span>
-        </div>
-      </section>
-
-      {/* ===== Live Tournament Widget ===== */}
-      {liveTournament && liveTournament._count.teams > 0 && (
-        <section className="mx-auto mt-6 w-full max-w-5xl px-4 sm:mt-8">
-          <Link
-            href={`/tournaments/${liveTournament.id}/leaderboard`}
-            className="flex items-center justify-between rounded-2xl border border-[#c44545]/30 bg-gradient-to-r from-[#c44545]/10 to-transparent p-4 shadow-sm transition card-hover dark:border-[#c44545]/20"
-          >
-            <div className="flex items-center gap-3">
-              <span className="relative flex h-3 w-3">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#c44545] opacity-75" />
-                <span className="relative inline-flex h-3 w-3 rounded-full bg-[#c44545]" />
-              </span>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-[#c44545]">LIVE NOW</p>
-                <p className="text-sm font-bold text-[#1a1a1a] dark:text-[#f0f0f0]">
-                  {liveTournament.name}
-                </p>
-                <p className="text-xs text-[#6b6b6b] dark:text-[#999999]">
-                  Round {liveTournament.currentRound} · {liveTournament._count.teams} team{liveTournament._count.teams === 1 ? "" : "s"} competing
-                </p>
-              </div>
+    <div className="bg-[#f6f4ee] dark:bg-[#0d0f0e]">
+      <section className="relative overflow-hidden bg-[#071f16] text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_16%,rgba(221,199,127,.24),transparent_25%),radial-gradient(circle_at_13%_90%,rgba(76,155,103,.32),transparent_30%)]" />
+        <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:py-20 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#e4cc85]/30 bg-[#e4cc85]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-[#f0d986]">
+              <ShieldIcon className="h-3.5 w-3.5" /> Closed test flight · Detroit
             </div>
-            <span className="shrink-0 text-sm font-bold text-[#0a3d2a] dark:text-[#3da06a]">
-              View →
-            </span>
-          </Link>
-        </section>
-      )}
-
-      {/* ===== Recent Winner Spotlight ===== */}
-      {lastCompleted && lastCompleted._count.teams > 0 && (
-        <section className="mx-auto mt-4 w-full max-w-5xl px-4 sm:mt-6">
-          <div className="flex items-center gap-3 rounded-2xl border border-[#c8a951]/20 bg-gradient-to-r from-[#c8a951]/10 to-transparent p-4 shadow-sm dark:border-[#c8a951]/15">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#c8a951]">
-              <TrophyIcon className="h-5 w-5 text-[#1a1a1a]" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b6b6b] dark:text-[#999999]">
-                Last Winner
-              </p>
-              <p className="truncate text-sm font-bold text-[#1a1a1a] dark:text-[#f0f0f0]">
-                {lastCompleted._count.teams} teams entered ·{" "}
-                <span className="text-[#c8a951]">
-                  {formatGBP(lastCompleted.entryFee * lastCompleted._count.teams)} pot
-                </span>{" "}
-                at {lastCompleted.name}
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ===== How It Works — Compact inline ===== */}
-      <section className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 text-center">
-            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-[#0a3d2a]">
-              <UsersIcon className="h-4 w-4 text-white" />
-            </div>
-            <h3 className="mt-2 text-xs font-bold text-[#0a3d2a] dark:text-green-400 sm:text-sm">Pick 5</h3>
-            <p className="mt-1 text-[11px] text-zinc-500">One from each tier</p>
-          </div>
-          <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 text-center">
-            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-[#c8a951]">
-              <PoundIcon className="h-4 w-4 text-[#1a1a1a]" />
-            </div>
-            <h3 className="mt-2 text-xs font-bold text-[#0a3d2a] dark:text-green-400 sm:text-sm">Entry £10</h3>
-            <p className="mt-1 text-[11px] text-zinc-500">Winner takes all</p>
-          </div>
-          <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 text-center">
-            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-[#1a5c3e]">
-              <TrophyIcon className="h-4 w-4 text-white" />
-            </div>
-            <h3 className="mt-2 text-xs font-bold text-[#0a3d2a] dark:text-green-400 sm:text-sm">Win</h3>
-            <p className="mt-1 text-[11px] text-zinc-500">Lowest score wins</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== Featured Tournament — Compact ===== */}
-      {tournament && (
-        <section className="mx-auto w-full max-w-5xl px-4 pb-6 sm:pb-8">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-            <div className="relative h-28 overflow-hidden sm:h-36">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={courseImage(tournament.id, tournament.course)} alt={tournament.course || tournament.name} className="h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a3d2a]/90 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                <div className="flex items-center justify-between">
-                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${statusInfo?.badgeClass}`}>{statusInfo?.label}</span>
-                  <span className="text-[11px] text-white/80 tabular">Par {tournament.par}</span>
-                </div>
-                <h3 className="mt-1 text-base font-bold sm:text-lg">{tournament.name}</h3>
-                <p className="text-[11px] text-white/90">{tournament.course} · {formatDateRange(tournament.startDate, tournament.endDate)}</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between p-3">
-              <div className="flex items-center gap-4 text-xs">
-                <span className="inline-flex items-center gap-1"><UsersIcon className="h-3 w-3 text-zinc-400" /><span className="font-bold tabular">{tournament._count.teams}</span><span className="text-zinc-400">teams</span></span>
-                <span className="inline-flex items-center gap-1"><PoundIcon className="h-3 w-3 text-[#c8a951]" /><span className="font-bold tabular text-[#c8a951]">{formatGBP(tournament.entryFee)}</span></span>
-                <span className="text-zinc-400 tabular">{tournament._count.players} players</span>
-              </div>
-              <Link href={`/tournaments/${tournament.id}/enter`} className="rounded-lg bg-[#0a3d2a] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1a5c3e]">Enter →</Link>
-            </div>
-            {(tournament.status === "entries_open" || tournament.status === "upcoming") && (
-              <div className="border-t border-zinc-100 dark:border-zinc-800 px-3 py-2"><CountdownTimer startDate={tournament.startDate} /></div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* ===== Upcoming Tournaments — Compact list ===== */}
-      {upcomingTournaments.length > 0 && (
-        <section className="mx-auto w-full max-w-5xl px-4 pb-6 sm:pb-8">
-          <h2 className="mb-2 text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Coming Up</h2>
-          <div className="space-y-1">
-            {upcomingTournaments.map((t) => (
-              <Link key={t.id} href={`/tournaments/${t.id}/enter`} className="group flex items-center gap-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2 py-1.5 transition hover:border-zinc-300 dark:hover:border-zinc-700">
-                <div className="h-[48px] w-[48px] shrink-0 overflow-hidden rounded-md">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={courseImage(t.id, t.course)} alt={t.course || t.name} loading="lazy" className="h-full w-full object-cover" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-bold text-zinc-900 dark:text-white">{t.name}</p>
-                  <div className="flex items-center gap-2 text-[11px] text-zinc-500">
-                    <span className="truncate">{t.course ?? "TBD"}</span>
-                    <span className="text-zinc-300">·</span>
-                    <span className="whitespace-nowrap tabular">{formatDateRange(t.startDate, t.endDate)}</span>
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-[11px] font-bold tabular text-[#c8a951]">{formatGBP(t.entryFee)}</p>
-                  <p className="text-[10px] text-zinc-400 tabular">{t._count.teams} teams</p>
-                </div>
+            <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[1.02] tracking-tight sm:text-6xl">
+              Read the target.
+              <br />
+              Build the team.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-white/68 sm:text-lg">
+              Invited testers complete three Target decisions, unlock one
+              account-bound Test Pass and choose a five-player Rocket Classic
+              team for the full live rehearsal.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link
+                href={primaryHref}
+                className="rounded-xl bg-[#c8a951] px-5 py-3 text-sm font-black text-[#17251d] transition hover:bg-[#ddc77f]"
+              >
+                {primaryLabel} →
               </Link>
-            ))}
+              <Link
+                href="/tournaments/rocket-classic"
+                className="rounded-xl border border-white/20 bg-white/8 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/15"
+              >
+                Rocket Classic hub
+              </Link>
+            </div>
+            <p className="mt-4 text-xs font-semibold text-white/45">
+              Invitation only · no payment · no cash value · no prize
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-white/12 bg-white/8 p-5 backdrop-blur sm:p-6">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#e4cc85]">
+              Event brief
+            </p>
+            <h2 className="mt-3 text-2xl font-black">{tournament.name}</h2>
+            <p className="mt-2 inline-flex items-center gap-2 text-sm text-white/65">
+              <MapPinIcon className="h-4 w-4 text-[#d7bc6a]" />
+              Detroit Golf Club · Detroit, Michigan
+            </p>
+            <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-white/10 pt-5">
+              <EventFact label="Dates" value="30 Jul–2 Aug" />
+              <EventFact label="Course" value="7,328 yds" />
+              <EventFact label="Par" value="70" />
+              <EventFact
+                label="Team lock"
+                value={ROCKET_BETA_ENTRY_CLOSES_AT.toLocaleString("en-GB", {
+                  timeZone: "Europe/London",
+                  weekday: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              />
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <main className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
+        {beta?.approved && (
+          <section className="mb-8 overflow-hidden rounded-3xl border border-[#c8a951]/40 bg-white shadow-sm dark:bg-zinc-900">
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-[#0a3d2a] p-5 text-white sm:p-6">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#e4cc85]">
+                  Your beta status
+                </p>
+                <h2 className="mt-2 text-xl font-black">
+                  {teamComplete
+                    ? "Team confirmed"
+                    : targetComplete
+                      ? "Test Pass unlocked"
+                      : "Target ready"}
+                </h2>
+              </div>
+              <Link
+                href={primaryHref}
+                className="rounded-xl bg-[#c8a951] px-4 py-2.5 text-sm font-black text-[#17251d]"
+              >
+                Continue →
+              </Link>
+            </div>
+            <div className="grid gap-px bg-zinc-100 dark:bg-zinc-800 sm:grid-cols-3">
+              <StatusStep
+                number="1"
+                title="Complete Target"
+                detail={targetComplete ? "Locked to your account" : "Three decisions · 20 minutes"}
+                complete={targetComplete}
+              />
+              <StatusStep
+                number="2"
+                title="Use Test Pass"
+                detail={teamComplete ? "Redeemed once" : targetComplete ? "Ready for Rocket" : "Unlocks after Target"}
+                complete={teamComplete}
+              />
+              <StatusStep
+                number="3"
+                title="Follow live"
+                detail={teamComplete ? "Team and standing ready" : "Starts after team confirmation"}
+                complete={false}
+              />
+            </div>
+          </section>
+        )}
+
+        <section>
+          <div className="max-w-2xl">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">
+              The rehearsal journey
+            </p>
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
+              One smooth route from judgement to live golf
+            </h2>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <JourneyCard
+              icon={<TargetIcon className="h-6 w-6" />}
+              number="01"
+              title="Place three targets"
+              text="Read each supplied golf situation and place the intended landing centre. Completion—not score—unlocks beta access."
+            />
+            <JourneyCard
+              icon={<TicketIcon className="h-6 w-6" />}
+              number="02"
+              title="Receive one Test Pass"
+              text="The pass is created atomically against the same approved account. It cannot be transferred, copied or used twice."
+            />
+            <JourneyCard
+              icon={<UsersIcon className="h-6 w-6" />}
+              number="03"
+              title="Choose five golfers"
+              text="Pick one player from each frozen tier, confirm the team before lock and follow its standing through all four rounds."
+            />
           </div>
         </section>
-      )}
 
-      {/* ===== How It Works — FAQ-style instead of fake testimonials ===== */}
-      <section className="bg-[#f3f1ee] py-6 dark:bg-[#252827] sm:py-8">
-        <div className="mx-auto max-w-5xl px-4">
-          <h2 className="mb-3 text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">How It Works</h2>
-          <div className="grid gap-2 sm:gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white p-3 dark:bg-[#1a1d1c]">
-              <h3 className="text-xs font-bold text-[#0a3d2a] dark:text-green-400">Tier-Based Picking</h3>
-              <p className="mt-1 text-[11px] text-zinc-500">Pros split into 5 tiers by OWGR rank. Pick one from each.</p>
-            </div>
-            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white p-3 dark:bg-[#1a1d1c]">
-              <h3 className="text-xs font-bold text-[#0a3d2a] dark:text-green-400">Real Scoring</h3>
-              <p className="mt-1 text-[11px] text-zinc-500">Live scores from ESPN. Combined stroke total decides your rank.</p>
-            </div>
-            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white p-3 dark:bg-[#1a1d1c]">
-              <h3 className="text-xs font-bold text-[#0a3d2a] dark:text-green-400">Leagues &amp; Pots</h3>
-              <p className="mt-1 text-[11px] text-zinc-500">Create a private league, invite mates. Winner takes the pot.</p>
+        <section className="mt-10 grid gap-5 lg:grid-cols-[1.15fr_.85fr]">
+          <div className="rounded-3xl bg-[#0a3d2a] p-6 text-white sm:p-8">
+            <GolfFlagIcon className="h-9 w-9 text-[#d7bc6a]" />
+            <h2 className="mt-5 text-2xl font-black">Rocket field preparation</h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-white/68">
+              The full field and all five tiers are reviewed as one frozen
+              snapshot before team entry opens. Withdrawals, the cut and final
+              scoring then follow one published beta rule set.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2 text-xs font-bold">
+              <span className="rounded-full bg-white/10 px-3 py-1.5">
+                {tournament._count.players > 0
+                  ? `${tournament._count.players} players staged`
+                  : "Field staging in progress"}
+              </span>
+              <span className="rounded-full bg-white/10 px-3 py-1.5">
+                {tournament._count.teams} confirmed team{tournament._count.teams === 1 ? "" : "s"}
+              </span>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ===== Final CTA — Compact ===== */}
-      <section className="bg-gradient-to-r from-[#0a3d2a] to-[#1a5c3e] py-8 text-center text-white sm:py-10">
-        <div className="mx-auto max-w-2xl px-4">
-          <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Ready to play?</h2>
-          <p className="mt-1 text-sm text-white/80">Build your dream team across PGA Tour events.</p>
-          <Link href="/tournaments" className="mt-4 inline-block rounded-lg bg-[#c8a951] px-8 py-2.5 text-sm font-bold text-[#1a1a1a] transition hover:bg-[#d4b76a]">Get Started →</Link>
-        </div>
-      </section>
-
-      {/* Footer is rendered globally by RootLayout */}
-
-      {/* JSON-LD structured data for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "SportsActivityLocation",
-            name: "Fantasy Golf",
-            description: "Pick 5 pros across 5 tiers. Beat your mates across PGA Tour events.",
-            url: "https://fantasy-golf-phi.vercel.app",
-            sport: "Golf",
-            offers: {
-              "@type": "Offer",
-              price: "10",
-              priceCurrency: "GBP",
-              availability: "https://schema.org/InStock",
-            },
-          }),
-        }}
-      />
+          <div className="rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+            <CheckCircleIcon className="h-9 w-9 text-[#0a3d2a] dark:text-green-400" />
+            <h2 className="mt-5 text-xl font-black text-zinc-900 dark:text-white">
+              What this beta proves
+            </h2>
+            <ul className="mt-4 space-y-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+              <li>Verified invited-account access</li>
+              <li>One Target, one Test Pass, one team</li>
+              <li>Mobile team selection and confirmation</li>
+              <li>Live provisional standings and final result</li>
+            </ul>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
 
-// Testimonials removed — was fabricated content.
+function EventFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-[10px] font-bold uppercase tracking-wide text-white/40">{label}</dt>
+      <dd className="mt-1 text-sm font-black text-white">{value}</dd>
+    </div>
+  );
+}
+
+function StatusStep({
+  number,
+  title,
+  detail,
+  complete,
+}: {
+  number: string;
+  title: string;
+  detail: string;
+  complete: boolean;
+}) {
+  return (
+    <div className="bg-white p-5 dark:bg-zinc-900">
+      <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black ${complete ? "bg-[#0a3d2a] text-white" : "bg-[#c8a951]/20 text-[#7a5e16]"}`}>
+        {complete ? "✓" : number}
+      </span>
+      <p className="mt-3 font-black text-zinc-900 dark:text-white">{title}</p>
+      <p className="mt-1 text-xs leading-5 text-zinc-500">{detail}</p>
+    </div>
+  );
+}
+
+function JourneyCard({
+  icon,
+  number,
+  title,
+  text,
+}: {
+  icon: React.ReactNode;
+  number: string;
+  title: string;
+  text: string;
+}) {
+  return (
+    <article className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex items-center justify-between">
+        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#0a3d2a] text-[#e4cc85]">
+          {icon}
+        </span>
+        <span className="font-mono text-xs font-black text-zinc-300 dark:text-zinc-700">{number}</span>
+      </div>
+      <h3 className="mt-5 text-xl font-black text-zinc-900 dark:text-white">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{text}</p>
+    </article>
+  );
+}

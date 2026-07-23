@@ -32,6 +32,17 @@ export interface TargetPilotStatusDto {
   entryOpen: boolean;
   sealedAt: string | null;
   entry: TargetPilotEntryDto | null;
+  rocketPass: {
+    approved: boolean;
+    status: "LOCKED" | "UNLOCKED" | "REDEEMED";
+    tournamentId: "rocket-classic";
+    tournamentHref: "/tournaments/rocket-classic";
+    enterHref: "/tournaments/rocket-classic/enter";
+    entryClosesAt: string;
+    unlockedAt: string | null;
+    redeemedAt: string | null;
+    teamId: string | null;
+  };
 }
 
 export interface TargetPilotRankedResult {
