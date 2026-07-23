@@ -20,3 +20,10 @@ test("mobile team review action sits above the persistent bottom navigation", ()
     /className="fixed bottom-0 left-0 right-0 z-40/,
   );
 });
+
+test("team-entry review dialogs stack above the persistent mobile navigation", () => {
+  assert.equal(
+    teamEntrySource.match(/fixed inset-0 z-\[60\]/g)?.length,
+    2,
+  );
+});

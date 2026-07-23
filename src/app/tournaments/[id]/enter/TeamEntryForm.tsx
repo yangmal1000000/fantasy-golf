@@ -791,7 +791,7 @@ function DryRunReviewModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end bg-black/70 p-0 sm:items-center sm:justify-center sm:p-4"
+      className="fixed inset-0 z-[60] flex items-end bg-black/70 p-0 sm:items-center sm:justify-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="dry-run-review-title"
@@ -891,7 +891,7 @@ function DryRunCompleteModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end bg-black/70 p-0 sm:items-center sm:justify-center sm:p-4"
+      className="fixed inset-0 z-[60] flex items-end bg-black/70 p-0 sm:items-center sm:justify-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="dry-run-complete-title"
