@@ -40,6 +40,8 @@ const nextConfig: NextConfig = {
       { source: "/rankings", destination: "/power-rankings", permanent: true },
       { source: "/how-it-works", destination: "/how-to-play", permanent: true },
       { source: "/events", destination: "/tournaments", permanent: true },
+      { source: "/icon-192.png", destination: "/icon", permanent: true },
+      { source: "/icon-512.png", destination: "/icon", permanent: true },
     ];
   },
 };
