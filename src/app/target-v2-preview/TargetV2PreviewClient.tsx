@@ -1,10 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   CheckCircleIcon,
   ClockIcon,
+  InfoIcon,
   MapPinIcon,
   ShieldIcon,
   TargetIcon,
@@ -18,6 +25,7 @@ import {
   TARGET_V2_PRACTICE,
   TARGET_V2_SCENARIOS,
   estimateTargetFinishYards,
+  targetV2EssentialFacts,
   type TargetV2Metric,
   type TargetV2Scenario,
 } from "@/lib/target-v2";
@@ -39,6 +47,8 @@ export default function TargetV2PreviewClient() {
   const [secondsRemaining, setSecondsRemaining] = useState(
     TARGET_ATTEMPT_SECONDS,
   );
+  const [briefOpen, setBriefOpen] = useState(false);
+  const [briefSeen, setBriefSeen] = useState([false, false, false]);
 
   const completedCount = points.filter(Boolean).length;
   const allComplete = completedCount === TARGET_V2_SCENARIOS.length;
@@ -61,6 +71,13 @@ export default function TargetV2PreviewClient() {
     return () => window.clearInterval(interval);
   }, [deadline, stage]);
 
+  useEffect(() => {
+    const attemptActive = stage === "playing" || stage === "review";
+    if (!attemptActive) return;
+    document.body.classList.add("target-attempt-active");
+    return () => document.body.classList.remove("target-attempt-active");
+  }, [stage]);
+
   const statusLabel = useMemo(() => {
     if (stage === "playing")
       return `Decision ${currentScenario + 1} of ${TARGET_V2_SCENARIOS.length}`;
@@ -74,6 +91,8 @@ export default function TargetV2PreviewClient() {
     setCurrentScenario(0);
     setSecondsRemaining(TARGET_ATTEMPT_SECONDS);
     setDeadline(Date.now() + TARGET_ATTEMPT_SECONDS * 1_000);
+    setBriefSeen([false, false, false]);
+    setBriefOpen(true);
     setStage("playing");
   }
 
@@ -87,11 +106,29 @@ export default function TargetV2PreviewClient() {
 
   function continueFromScenario() {
     if (!currentPoint) return;
+    setBriefSeen((seen) =>
+      seen.map((value, index) => (index === currentScenario ? true : value)),
+    );
     if (currentScenario < TARGET_V2_SCENARIOS.length - 1) {
-      setCurrentScenario((index) => index + 1);
+      const nextScenario = currentScenario + 1;
+      setCurrentScenario(nextScenario);
+      setBriefOpen(!briefSeen[nextScenario]);
       return;
     }
+    setBriefOpen(false);
     setStage("review");
+  }
+
+  function selectScenario(index: number) {
+    setCurrentScenario(index);
+    setBriefOpen(!briefSeen[index]);
+  }
+
+  function dismissBrief() {
+    setBriefSeen((seen) =>
+      seen.map((value, index) => (index === currentScenario ? true : value)),
+    );
+    setBriefOpen(false);
   }
 
   function restartPreview() {
@@ -102,11 +139,17 @@ export default function TargetV2PreviewClient() {
     setRulesConfirmed(false);
     setDeadline(null);
     setSecondsRemaining(TARGET_ATTEMPT_SECONDS);
+    setBriefOpen(false);
+    setBriefSeen([false, false, false]);
   }
 
   return (
     <div className="min-h-screen bg-[#f6f4ee] pb-10 dark:bg-[#0d0f0e] sm:pb-16">
-      <div className="border-b border-[#c8a951]/25 bg-[#071f16] text-white">
+      <div
+        className={`border-b border-[#c8a951]/25 bg-[#071f16] text-white ${
+          stage === "playing" || stage === "review" ? "hidden sm:block" : ""
+        }`}
+      >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2 text-[11px] sm:px-4 sm:py-2.5 sm:text-xs">
           <span className="inline-flex items-center gap-1.5 font-bold uppercase tracking-[0.13em] text-[#e4cc85] sm:gap-2 sm:tracking-[0.16em]">
             <ShieldIcon className="h-4 w-4" /> Target v2 preview
@@ -144,9 +187,15 @@ export default function TargetV2PreviewClient() {
         </section>
       ) : null}
 
-      <main className="mx-auto max-w-6xl px-4 py-3 sm:py-9">
+      <main
+        className={`mx-auto max-w-6xl px-4 py-3 sm:py-9 ${
+          stage === "playing" || stage === "review"
+            ? "max-sm:h-[100dvh] max-sm:w-full max-sm:max-w-none max-sm:p-0"
+            : ""
+        }`}
+      >
         {stage !== "intro" ? (
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 sm:mb-5 sm:gap-3">
+          <div className="mb-2 hidden flex-wrap items-center justify-between gap-2 sm:mb-5 sm:flex sm:gap-3">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a] sm:text-xs">
               {statusLabel}
             </p>
@@ -182,9 +231,13 @@ export default function TargetV2PreviewClient() {
             currentScenario={currentScenario}
             completedCount={completedCount}
             points={points}
-            onSelectScenario={setCurrentScenario}
+            secondsRemaining={secondsRemaining}
+            briefOpen={briefOpen}
+            onSelectScenario={selectScenario}
             onChange={(point) => updatePoint(currentScenario, point)}
             onBack={() => setCurrentScenario((index) => Math.max(0, index - 1))}
+            onOpenBrief={() => setBriefOpen(true)}
+            onDismissBrief={dismissBrief}
             onContinue={continueFromScenario}
           />
         ) : null}
@@ -194,6 +247,7 @@ export default function TargetV2PreviewClient() {
             points={points}
             onEdit={(index) => {
               setCurrentScenario(index);
+              setBriefOpen(false);
               setStage("playing");
             }}
             onComplete={() => {
@@ -201,6 +255,7 @@ export default function TargetV2PreviewClient() {
               setStage("complete");
             }}
             allComplete={allComplete}
+            secondsRemaining={secondsRemaining}
           />
         ) : null}
 
@@ -360,9 +415,13 @@ function PlayingStage({
   currentScenario,
   completedCount,
   points,
+  secondsRemaining,
+  briefOpen,
   onSelectScenario,
   onChange,
   onBack,
+  onOpenBrief,
+  onDismissBrief,
   onContinue,
 }: {
   scenario: TargetV2Scenario;
@@ -370,14 +429,61 @@ function PlayingStage({
   currentScenario: number;
   completedCount: number;
   points: Array<TargetPoint | null>;
+  secondsRemaining: number;
+  briefOpen: boolean;
   onSelectScenario: (index: number) => void;
   onChange: (point: TargetPoint | null) => void;
   onBack: () => void;
+  onOpenBrief: () => void;
+  onDismissBrief: () => void;
   onContinue: () => void;
 }) {
+  const essentialFacts = targetV2EssentialFacts(scenario);
+
   return (
-    <section className="-mx-4 overflow-hidden border-y border-zinc-200 bg-white shadow-xl shadow-[#0a3d2a]/5 dark:border-zinc-800 dark:bg-zinc-900 sm:mx-0 sm:rounded-3xl sm:border-x">
-      <div className="border-b border-zinc-100 px-4 py-2.5 dark:border-zinc-800 sm:px-6 sm:py-4">
+    <section className="target-attempt-shell fixed inset-0 z-[80] flex h-[100dvh] flex-col overflow-hidden bg-white dark:bg-[#0d0f0e] sm:static sm:h-auto sm:overflow-hidden sm:rounded-3xl sm:border sm:border-zinc-200 sm:bg-white sm:shadow-xl sm:shadow-[#0a3d2a]/5 sm:dark:border-zinc-800 sm:dark:bg-zinc-900">
+      <header className="relative shrink-0 bg-[#071f16] text-white sm:hidden safe-area-top">
+        <div className="flex min-h-14 items-center gap-2 px-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#d7bc6a]">
+              Target v2 preview
+            </p>
+            <p className="mt-0.5 text-sm font-black">
+              Decision {currentScenario + 1} of {TARGET_V2_SCENARIOS.length}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenBrief}
+            className="flex min-h-11 items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-black text-white"
+            aria-haspopup="dialog"
+          >
+            <InfoIcon className="h-4 w-4 text-[#e4cc85]" />
+            Brief
+          </button>
+          <div
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-black tabular ${
+              secondsRemaining <= 120
+                ? "bg-red-950/70 text-red-200"
+                : "bg-white/10 text-green-300"
+            }`}
+            aria-label={`${formatAttemptTime(secondsRemaining)} remaining`}
+          >
+            <ClockIcon className="h-4 w-4" />
+            {formatAttemptTime(secondsRemaining)}
+          </div>
+        </div>
+        <div className="h-1 bg-white/10">
+          <div
+            className="h-full bg-[#c8a951] transition-all"
+            style={{
+              width: `${((currentScenario + 1) / TARGET_V2_SCENARIOS.length) * 100}%`,
+            }}
+          />
+        </div>
+      </header>
+
+      <div className="hidden border-b border-zinc-100 px-6 py-4 dark:border-zinc-800 sm:block">
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div className="flex gap-1.5 sm:gap-2">
             {TARGET_V2_SCENARIOS.map((item, index) => (
@@ -413,17 +519,32 @@ function PlayingStage({
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[minmax(0,1.45fr)_minmax(330px,.8fr)]">
-        <div className="self-start bg-[#071f16] sm:p-5">
+      <div className="flex min-h-0 flex-1 flex-col sm:grid sm:flex-none lg:grid-cols-[minmax(0,1.45fr)_minmax(330px,.8fr)]">
+        <button
+          type="button"
+          onClick={onOpenBrief}
+          className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-[#f4f0e5] px-3 text-left dark:border-zinc-800 dark:bg-zinc-900 sm:hidden"
+          aria-haspopup="dialog"
+        >
+          <span className="truncate text-[11px] font-black text-zinc-800 dark:text-zinc-100">
+            {essentialFacts.map((metric) => metric.value).join(" · ")}
+          </span>
+          <span className="shrink-0 text-[10px] font-black uppercase tracking-wide text-[#0a3d2a] dark:text-green-300">
+            Details
+          </span>
+        </button>
+
+        <div className="shrink-0 self-start bg-[#071f16] sm:p-5">
           <CourseMap
             scenario={scenario}
             point={point}
             onChange={onChange}
             edgeToEdgeOnMobile
-            compactMobileControls
+            immersiveMobileControls
           />
         </div>
-        <div className="p-4 sm:p-7">
+
+        <div className="hidden p-7 sm:block">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a] sm:text-xs">
             {scenario.eyebrow}
           </p>
@@ -473,8 +594,134 @@ function PlayingStage({
             </button>
           </div>
         </div>
+
+        <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-zinc-200 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-950 sm:hidden safe-area-bottom">
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={currentScenario === 0}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-200 text-xl font-black text-zinc-600 disabled:opacity-25 dark:border-zinc-700 dark:text-zinc-300"
+            aria-label="Previous decision"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            onClick={onContinue}
+            disabled={!point}
+            className="min-h-11 flex-1 rounded-xl bg-[#0a3d2a] px-4 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            {currentScenario === 2 ? "Review decisions" : "Save and continue"}{" "}
+            →
+          </button>
+        </div>
       </div>
+
+      <ShotBriefSheet
+        open={briefOpen}
+        scenario={scenario}
+        onDismiss={onDismissBrief}
+      />
     </section>
+  );
+}
+
+function ShotBriefSheet({
+  open,
+  scenario,
+  onDismiss,
+}: {
+  open: boolean;
+  scenario: TargetV2Scenario;
+  onDismiss: () => void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = `shot-brief-${scenario.id}`;
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const mobile = window.matchMedia("(max-width: 639px)");
+
+    const syncDialog = () => {
+      if (open && mobile.matches && !dialog.open) {
+        dialog.showModal();
+      } else if ((!open || !mobile.matches) && dialog.open) {
+        dialog.close();
+      }
+    };
+
+    syncDialog();
+    mobile.addEventListener("change", syncDialog);
+    return () => {
+      mobile.removeEventListener("change", syncDialog);
+      if (dialog.open) dialog.close();
+    };
+  }, [open]);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      onCancel={(event) => {
+        event.preventDefault();
+        onDismiss();
+      }}
+      onClick={(event) => {
+        if (event.currentTarget === event.target) onDismiss();
+      }}
+      className="target-shot-dialog fixed inset-x-0 bottom-0 top-auto m-0 max-h-[86dvh] w-full max-w-none overflow-y-auto rounded-t-3xl border-0 bg-white p-0 text-zinc-900 shadow-2xl dark:bg-zinc-900 dark:text-white sm:hidden safe-area-bottom"
+    >
+      <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 px-4 pb-3 pt-2 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/95">
+        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">
+              Decision {scenario.number} · Shot brief
+            </p>
+            <h2 id={titleId} className="mt-1 text-xl font-black">
+              {scenario.title}
+            </h2>
+            <p className="mt-0.5 text-xs font-semibold text-[#0a3d2a] dark:text-green-300">
+              {scenario.hole}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xl font-black text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+            aria-label="Close shot brief"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      <div className="p-4">
+        <p className="rounded-2xl bg-[#f4f0e5] p-3 text-sm font-black leading-5 dark:bg-zinc-800">
+          {scenario.question}
+        </p>
+        <MetricGrid metrics={scenario.metrics} />
+        <p className="mt-4 text-sm font-semibold leading-5 text-zinc-700 dark:text-zinc-200">
+          {scenario.summary}
+        </p>
+        <ul className="mt-3 space-y-2 text-sm leading-5 text-zinc-600 dark:text-zinc-300">
+          {scenario.details.map((detail) => (
+            <li key={detail} className="flex items-start gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c8a951]" />
+              <span>{detail}</span>
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="mt-5 min-h-12 w-full rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white"
+        >
+          Choose finishing position
+        </button>
+      </div>
+    </dialog>
   );
 }
 
@@ -483,55 +730,77 @@ function ReviewStage({
   onEdit,
   onComplete,
   allComplete,
+  secondsRemaining,
 }: {
   points: Array<TargetPoint | null>;
   onEdit: (index: number) => void;
   onComplete: () => void;
   allComplete: boolean;
+  secondsRemaining: number;
 }) {
   return (
-    <section className="-mx-4 overflow-hidden border-y border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 sm:mx-0 sm:rounded-3xl sm:border-x sm:p-8">
-      <div className="border-b border-zinc-100 px-4 pb-4 pt-4 dark:border-zinc-800 sm:px-0 sm:pb-6 sm:pt-0">
+    <section className="target-attempt-shell fixed inset-0 z-[80] flex h-[100dvh] flex-col overflow-hidden bg-[#f6f4ee] dark:bg-[#0d0f0e] sm:static sm:h-auto sm:overflow-hidden sm:rounded-3xl sm:border sm:border-zinc-200 sm:bg-white sm:p-8 sm:shadow-xl sm:dark:border-zinc-800 sm:dark:bg-zinc-900">
+      <header className="relative shrink-0 bg-[#071f16] text-white sm:hidden safe-area-top">
+        <div className="flex min-h-14 items-center justify-between gap-3 px-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#d7bc6a]">
+              Target v2 preview
+            </p>
+            <p className="mt-0.5 text-sm font-black">Final review</p>
+          </div>
+          <div
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-black tabular ${
+              secondsRemaining <= 120
+                ? "bg-red-950/70 text-red-200"
+                : "bg-white/10 text-green-300"
+            }`}
+            aria-label={`${formatAttemptTime(secondsRemaining)} remaining`}
+          >
+            <ClockIcon className="h-4 w-4" />
+            {formatAttemptTime(secondsRemaining)}
+          </div>
+        </div>
+        <div className="h-1 bg-[#c8a951]" />
+      </header>
+
+      <div className="shrink-0 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 sm:px-0 sm:pb-6 sm:pt-0">
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a] sm:text-xs">
           Final review
         </p>
-        <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white sm:mt-2 sm:text-3xl">
+        <h2 className="mt-1 text-xl font-black text-zinc-900 dark:text-white sm:mt-2 sm:text-3xl">
           Check your finishing positions
         </h2>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 sm:mt-2">
+        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 sm:mt-2 sm:text-sm">
           In the live version, these markers lock when submitted.
         </p>
       </div>
 
-      <div className="mt-3 grid gap-2 sm:mt-6 sm:gap-4 lg:grid-cols-3">
+      <div className="min-h-0 flex-1 space-y-2 overflow-hidden p-3 sm:mt-6 sm:grid sm:flex-none sm:space-y-0 sm:p-0 sm:gap-4 lg:grid-cols-3">
         {TARGET_V2_SCENARIOS.map((scenario, index) => {
           const point = points[index];
           const yards = estimateTargetFinishYards(scenario, point);
           return (
             <article
               key={scenario.id}
-              className="overflow-hidden border-y border-zinc-200 dark:border-zinc-700 sm:rounded-2xl sm:border-x"
+              className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:block sm:overflow-hidden sm:p-0 sm:shadow-none"
             >
-              <CourseMap
-                scenario={scenario}
-                point={point}
-                compact
-                edgeToEdgeOnMobile
-              />
-              <div className="p-3 sm:p-4">
+              <div className="w-28 shrink-0 overflow-hidden rounded-xl sm:w-auto sm:rounded-none">
+                <CourseMap scenario={scenario} point={point} compact />
+              </div>
+              <div className="min-w-0 flex-1 sm:p-4">
                 <p className="text-[10px] font-black uppercase tracking-wide text-[#9b7b25] dark:text-[#d7bc6a] sm:text-xs">
                   Decision {index + 1}
                 </p>
-                <h3 className="mt-0.5 font-black text-zinc-900 dark:text-white sm:mt-1">
+                <h3 className="mt-0.5 truncate text-sm font-black text-zinc-900 dark:text-white sm:mt-1 sm:text-base">
                   {scenario.title}
                 </h3>
-                <p className="mt-1 text-xs font-bold text-zinc-500 dark:text-zinc-400 sm:mt-2 sm:text-sm">
+                <p className="mt-0.5 text-xs font-bold text-zinc-500 dark:text-zinc-400 sm:mt-2 sm:text-sm">
                   Approx. {yards ?? "—"} yards from the ball
                 </p>
                 <button
                   type="button"
                   onClick={() => onEdit(index)}
-                  className="mt-2 min-h-11 text-sm font-black text-[#0a3d2a] underline decoration-[#c8a951] decoration-2 underline-offset-4 dark:text-green-400 sm:mt-4"
+                  className="mt-1 min-h-11 text-xs font-black text-[#0a3d2a] underline decoration-[#c8a951] decoration-2 underline-offset-4 dark:text-green-400 sm:mt-4 sm:text-sm"
                 >
                   Edit marker
                 </button>
@@ -541,7 +810,7 @@ function ReviewStage({
         })}
       </div>
 
-      <div className="mx-4 my-4 flex justify-end sm:mx-0 sm:my-6 sm:mb-0">
+      <div className="mt-auto shrink-0 border-t border-zinc-200 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-950 sm:mt-6 sm:flex sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:dark:bg-transparent safe-area-bottom">
         <button
           type="button"
           disabled={!allComplete}
