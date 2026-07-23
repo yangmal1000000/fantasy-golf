@@ -17,7 +17,6 @@ import {
 import {
   TARGET_V2_PRACTICE,
   TARGET_V2_SCENARIOS,
-  TARGET_V2_VERSION,
   estimateTargetFinishYards,
   type TargetV2Metric,
   type TargetV2Scenario,
@@ -105,35 +104,34 @@ export default function TargetV2PreviewClient() {
         </div>
       </div>
 
-      <section className="relative overflow-hidden bg-[#0a3d2a] text-white">
-        <div className="absolute -left-24 top-8 h-72 w-72 rounded-full bg-[#c8a951]/10 blur-3xl" />
-        <div className="absolute -right-16 bottom-0 h-64 w-64 rounded-full bg-[#4c9b67]/15 blur-3xl" />
-        <div className="relative mx-auto max-w-6xl px-4 py-8 sm:py-11">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#d7bc6a]">
-            Finish-position prototype
-          </p>
-          <h1 className="mt-3 max-w-3xl text-3xl font-black tracking-tight sm:text-5xl">
-            Read the shot. Choose the finish.
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/75 sm:text-base">
-            Three golf decisions, clearer yardages and one precise finishing marker.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold">
-            <PreviewPill>Free test flight</PreviewPill>
-            <PreviewPill>No payment</PreviewPill>
-            <PreviewPill>No prize</PreviewPill>
+      {stage === "intro" ? (
+        <section className="relative overflow-hidden bg-[#0a3d2a] text-white">
+          <div className="absolute -left-24 top-8 h-72 w-72 rounded-full bg-[#c8a951]/10 blur-3xl" />
+          <div className="absolute -right-16 bottom-0 h-64 w-64 rounded-full bg-[#4c9b67]/15 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-4 py-8 sm:py-11">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#d7bc6a]">
+              Finish-position prototype
+            </p>
+            <h1 className="mt-3 max-w-3xl text-3xl font-black tracking-tight sm:text-5xl">
+              Read the shot. Choose the finish.
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/75 sm:text-base">
+              Three golf decisions, clearer yardages and one precise finishing marker.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold">
+              <PreviewPill>Free test flight</PreviewPill>
+              <PreviewPill>No payment</PreviewPill>
+              <PreviewPill>No prize</PreviewPill>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:py-9">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">
               {statusLabel}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              {TARGET_V2_VERSION}
             </p>
           </div>
           {(stage === "playing" || stage === "review") && (
