@@ -181,7 +181,7 @@ export default function TeamEntryForm({
         requestAnimationFrame(() => {
           document
             .getElementById(`team-tier-${nextIncompleteTier}`)
-            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+            ?.scrollIntoView({ behavior: "auto", block: "center" });
         });
       });
     }
