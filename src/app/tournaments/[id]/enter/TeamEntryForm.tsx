@@ -37,6 +37,11 @@ interface TeamEntryFormProps {
   entryFee: number;
   betaMode?: boolean;
   dryRunMode?: boolean;
+  initialTeam?: {
+    id: string;
+    name: string;
+    selections: Record<string, string>;
+  };
   playersByTier: Record<string, TierPlayer[]>;
   savedTeams?: SavedTeamPreview[];
 }
@@ -61,12 +66,16 @@ export default function TeamEntryForm({
   entryFee,
   betaMode = false,
   dryRunMode = false,
+  initialTeam,
   playersByTier,
   savedTeams = [],
 }: TeamEntryFormProps) {
   const router = useRouter();
-  const [teamName, setTeamName] = useState("");
-  const [selections, setSelections] = useState<Record<string, string>>({});
+  const isEditing = Boolean(initialTeam);
+  const [teamName, setTeamName] = useState(initialTeam?.name ?? "");
+  const [selections, setSelections] = useState<Record<string, string>>(
+    initialTeam?.selections ?? {},
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -74,7 +83,7 @@ export default function TeamEntryForm({
     new Set(TEAM_ENTRY_TIERS),
   );
   const [mode, setMode] = useState<"fresh" | "saved">(
-    savedTeams.length > 0 ? "saved" : "fresh",
+    !initialTeam && savedTeams.length > 0 ? "saved" : "fresh",
   );
   const [missingSlots, setMissingSlots] = useState<
     { tier: string; playerName: string }[]
@@ -219,30 +228,43 @@ export default function TeamEntryForm({
       return;
     }
 
-    if (dryRunMode) {
+    if (dryRunMode || betaMode) {
       setDryRunReviewOpen(true);
       return;
     }
 
+    await submitTeam();
+  }
+
+  async function submitTeam() {
     setSubmitting(true);
 
     try {
-      const res = await fetch(`/api/tournaments/${tournamentId}/teams`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          teamName: teamName.trim(),
-          selections: Object.values(selections),
-        }),
-      });
+      const res = await fetch(
+        initialTeam
+          ? `/api/tournaments/${tournamentId}/teams/${initialTeam.id}`
+          : `/api/tournaments/${tournamentId}/teams`,
+        {
+          method: initialTeam ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teamName: teamName.trim(),
+            selections: Object.values(selections),
+          }),
+        },
+      );
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to create team");
+        throw new Error(
+          data.error ||
+            (initialTeam ? "Failed to update team" : "Failed to create team"),
+        );
       }
 
       const data = await res.json();
       setSubmittedTeamId(data.teamId);
+      setDryRunReviewOpen(false);
       setShowConfetti(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -289,16 +311,18 @@ export default function TeamEntryForm({
       {showConfetti && <Confetti />}
 
       {dryRunReviewOpen && (
-        <DryRunReviewModal
+        <TeamReviewModal
           teamName={teamName.trim()}
           players={selectedPlayers}
           error={error}
           submitting={submitting}
+          dryRunMode={dryRunMode}
+          editMode={isEditing}
           onBack={() => {
             setError(null);
             setDryRunReviewOpen(false);
           }}
-          onConfirm={confirmDryRun}
+          onConfirm={() => void (dryRunMode ? confirmDryRun() : submitTeam())}
         />
       )}
 
@@ -321,10 +345,16 @@ export default function TeamEntryForm({
               <span className="text-3xl">✅</span>
             </div>
             <h2 className="text-xl font-bold text-[#0a3d2a] dark:text-green-400">
-              {betaMode ? "Rocket Team Confirmed!" : "Team Submitted!"}
+              {isEditing
+                ? "Rocket Team Updated!"
+                : betaMode
+                  ? "Rocket Team Confirmed!"
+                  : "Team Submitted!"}
             </h2>
             <p className="mt-1 text-sm text-zinc-500">
-              {betaMode
+              {isEditing
+                ? "Your revised five-player team is confirmed."
+                : betaMode
                 ? "Your Test Pass is now locked to this five-player team."
                 : "Good luck out there!"}
             </p>
@@ -368,7 +398,7 @@ export default function TeamEntryForm({
       )}
 
       {/* Mode toggle: Pick Fresh vs Use Saved Team */}
-      {hasSavedTeams && (
+      {hasSavedTeams && !isEditing && (
         <div className="mb-5">
           <div className="flex gap-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 p-1">
             <button
@@ -509,7 +539,11 @@ export default function TeamEntryForm({
                     ? "✓ Submitted!"
                     : dryRunMode
                       ? "Review dry run →"
-                      : "Submit Team →"}
+                      : isEditing
+                        ? "Review changes →"
+                        : betaMode
+                          ? "Review team →"
+                          : "Submit Team →"}
               </button>
             </div>
           </div>
@@ -743,7 +777,9 @@ export default function TeamEntryForm({
                     ? "✓"
                     : dryRunMode
                       ? "Review"
-                      : "Submit "}
+                      : betaMode
+                        ? "Review"
+                        : "Submit "}
               </button>
             </div>
           </div>
@@ -781,7 +817,11 @@ export default function TeamEntryForm({
                     ? "✓ Done!"
                     : dryRunMode
                       ? "Review dry run "
-                      : "Submit Team "}
+                      : isEditing
+                        ? "Review changes "
+                        : betaMode
+                          ? "Review team "
+                          : "Submit Team "}
               </button>
             </div>
           </div>
@@ -791,11 +831,13 @@ export default function TeamEntryForm({
   );
 }
 
-function DryRunReviewModal({
+function TeamReviewModal({
   teamName,
   players,
   error,
   submitting,
+  dryRunMode,
+  editMode,
   onBack,
   onConfirm,
 }: {
@@ -803,6 +845,8 @@ function DryRunReviewModal({
   players: TierPlayer[];
   error: string | null;
   submitting: boolean;
+  dryRunMode: boolean;
+  editMode: boolean;
   onBack: () => void;
   onConfirm: () => void;
 }) {
@@ -811,22 +855,33 @@ function DryRunReviewModal({
       className="fixed inset-0 z-[60] flex items-end bg-black/70 p-0 sm:items-center sm:justify-center sm:p-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="dry-run-review-title"
+      aria-labelledby="team-review-title"
     >
       <div className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl dark:bg-zinc-900 sm:max-w-lg sm:rounded-3xl sm:p-6">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-zinc-300 sm:hidden" />
         <p className="text-xs font-black uppercase tracking-[0.16em] text-[#9b7b25] dark:text-[#d7bc6a]">
-          Rehearsal only
+          {dryRunMode
+            ? "Rehearsal only"
+            : editMode
+              ? "Before first tee"
+              : "Test Pass entry"}
         </p>
         <h2
-          id="dry-run-review-title"
+          id="team-review-title"
           className="mt-1 text-2xl font-black text-[#0a3d2a] dark:text-green-400"
         >
-          Review dry-run team
+          {dryRunMode
+            ? "Review dry-run team"
+            : editMode
+              ? "Review team changes"
+              : "Review your Rocket team"}
         </h2>
         <p className="mt-1 text-sm leading-5 text-zinc-500 dark:text-zinc-400">
-          This checks the same five-tier rules as a real entry. Nothing will be
-          saved and your Test Pass stays unlocked.
+          {dryRunMode
+            ? "This checks the same five-tier rules as a real entry. Nothing will be saved and your Test Pass stays unlocked."
+            : editMode
+              ? "Confirm all five revised picks. Your Test Pass remains linked to this team."
+              : "Confirm one golfer from every tier. This will redeem your account-bound Test Pass."}
         </p>
 
         <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/60">
@@ -889,7 +944,15 @@ function DryRunReviewModal({
             disabled={submitting}
             className="min-h-11 rounded-xl bg-[#0a3d2a] px-4 text-sm font-bold text-white transition hover:bg-[#12563c] disabled:opacity-50"
           >
-            {submitting ? "Checking…" : "Complete dry run"}
+            {submitting
+              ? dryRunMode
+                ? "Checking…"
+                : "Saving…"
+              : dryRunMode
+                ? "Complete dry run"
+                : editMode
+                  ? "Save team changes"
+                  : "Confirm Rocket team"}
           </button>
         </div>
       </div>
