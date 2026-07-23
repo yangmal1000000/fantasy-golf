@@ -278,6 +278,7 @@ model TargetJudgingRound {
   scenarioVersion     String
   scenarioHash        String
   status              String                  @default("DRAFT")
+  panelMode           String                  @default("OFFICIAL")
   createdByEmail      String
   officialTargets     Json?
   officialTargetsHash String?

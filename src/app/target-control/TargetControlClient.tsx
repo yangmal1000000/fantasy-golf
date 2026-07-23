@@ -7,6 +7,7 @@ import type {
   TargetJudgeControlDto,
   TargetJudgePanelMember,
 } from "@/lib/target-judge-core";
+import { targetPilotWinners } from "@/lib/target-pilot-core";
 
 const EMPTY_PANEL: TargetJudgePanelMember[] = [1, 2, 3].map(() => ({
   email: "",
@@ -97,6 +98,7 @@ export default function TargetControlClient() {
   const pilotEntries = data?.pilotEntries ?? [];
   const auditEvents = data?.auditEvents ?? [];
   const panelReady = panel.every((member) => member.email.trim() && member.displayName.trim() && member.credential.trim().length >= 5);
+  const confirmedWinners = round?.pilotResults ? targetPilotWinners(round.pilotResults) : [];
 
   return (
     <div className="min-h-screen bg-[#f6f4ee] pb-20 dark:bg-[#0d0f0e] sm:pb-10">
@@ -140,6 +142,11 @@ export default function TargetControlClient() {
                 </div>
                 <StatusBadge status={round.status} />
               </div>
+              {round.panelMode === "COORDINATOR_REHEARSAL" ? (
+                <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-200">
+                  <strong>Development panel rehearsal.</strong> The coordinator is operating all three test seats. This validates the software and winner calculation, but it is not an independent PGA panel result.
+                </div>
+              ) : null}
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 {assignments.map((assignment) => (
                   <div key={assignment.id} className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
@@ -220,6 +227,7 @@ export default function TargetControlClient() {
             </section>
 
             {round.status === "DRAFT" ? (
+              <>
               <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-7">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Panel setup</p>
                 <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Assign exactly three judges</h2>
@@ -250,6 +258,24 @@ export default function TargetControlClient() {
                   </button>
                 </div>
               </section>
+              <section className="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20 sm:p-7">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">Two-person development rehearsal</p>
+                <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Operate all three test seats yourself</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+                  After Harry and Russ have both entered and the entry set is sealed, this opens three clearly labelled development seats on the Judge page. It proves the complete target, ranking and winner-confirmation path without claiming an independent PGA panel.
+                </p>
+                <button
+                  type="button"
+                  disabled={!round.pilotEntriesSealedAt || busy}
+                  onClick={() => {
+                    if (window.confirm("Start the coordinator-operated development panel? This permanently freezes the rehearsal as non-independent and opens test seat 1.")) mutate("start_coordinator_rehearsal");
+                  }}
+                  className="mt-5 rounded-xl bg-blue-700 px-5 py-3 text-sm font-black text-white disabled:opacity-35 dark:bg-blue-600"
+                >
+                  {round.pilotEntriesSealedAt ? "Start development panel" : "Seal entries first"}
+                </button>
+              </section>
+              </>
             ) : null}
 
             {round.status === "INITIAL_MARKING" ? (
@@ -283,8 +309,37 @@ export default function TargetControlClient() {
 
             {round.status === "CALCULATED" && round.officialTargets ? (
               <>
-                <ControlCard title="Official targets are locked" detail="The system combined the three final marks automatically. There is no manual target or winner override." tone="success" />
+                <ControlCard
+                  title={round.panelMode === "COORDINATOR_REHEARSAL" ? "Rehearsal targets are locked" : "Official targets are locked"}
+                  detail={round.panelMode === "COORDINATOR_REHEARSAL"
+                    ? "The system combined the three coordinator-operated test seats automatically. This validates the software only and is not an independent-panel result."
+                    : "The system combined the three final marks automatically. There is no manual target or winner override."}
+                  tone="success"
+                />
                 <TargetPanelReview assignments={assignments} phase="final" officialTargets={round.officialTargets} />
+                {round.pilotResults && confirmedWinners.length ? (
+                  <section className="rounded-3xl border border-green-300 bg-green-50 p-6 shadow-sm dark:border-green-800 dark:bg-green-950/25 sm:p-8">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-green-700 dark:text-green-300">Immutable result</p>
+                    <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">
+                      {confirmedWinners.length === 1 ? "Rehearsal winner confirmed" : "Joint rehearsal winners confirmed"}
+                    </h2>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      {confirmedWinners.map((winner) => {
+                        const entry = pilotEntries.find((item) => item.id === winner.entryId);
+                        return (
+                          <div key={winner.entryId} className="rounded-2xl bg-white p-4 dark:bg-zinc-900">
+                            <p className="font-black text-zinc-900 dark:text-white">{entry?.email ?? winner.entryId}</p>
+                            <p className="mt-1 font-mono text-xs text-zinc-500">{entry?.reference}</p>
+                            <p className="mt-2 text-sm font-bold text-green-700 dark:text-green-300">Rank 1 · {formatError(winner.totalError)} total error</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-4 text-xs leading-5 text-green-800 dark:text-green-300">
+                      Confirmed automatically from the sealed entry set and locked panel targets. {round.panelMode === "COORDINATOR_REHEARSAL" ? "Development evidence only—no real prize or independent-panel claim." : "No manual winner override exists."}
+                    </p>
+                  </section>
+                ) : null}
                 <section className="rounded-3xl border border-zinc-200 bg-white p-5 text-xs text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 sm:p-7">
                   <p className="font-black uppercase tracking-wide text-zinc-800 dark:text-zinc-200">Calculation evidence</p>
                   <p className="mt-3 break-all"><strong>Official hash:</strong> {round.officialTargetsHash}</p>

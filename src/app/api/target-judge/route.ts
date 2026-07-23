@@ -3,9 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import { TARGET_SCENARIOS } from "@/lib/target-challenge";
+import { isTargetJudgeCoordinator } from "@/lib/target-judge-access";
 import {
   TARGET_JUDGE_ROUND_SLUG,
   calculateOfficialTargets,
+  isTargetJudgePanelMode,
   isTargetJudgeStatus,
   validateJudgeSubmission,
   validateOfficialTargetsRecord,
@@ -18,6 +20,7 @@ import {
 } from "@/lib/target-judge-core";
 import {
   rankTargetPilotEntries,
+  targetPilotWinners,
   validateTargetPilotSubmission,
 } from "@/lib/target-pilot-core";
 import {
@@ -42,11 +45,17 @@ class TargetJudgeRequestError extends Error {
   }
 }
 
-export async function GET() {
+type TargetJudgeIdentity = {
+  actorEmail: string;
+  coordinatorRehearsal: boolean;
+  rehearsalSeat?: number;
+};
+
+export async function GET(request: NextRequest) {
   try {
-    const email = await requireVerifiedEmail();
+    const identity = await resolveJudgeIdentity(request);
     await ensureTargetJudgeSchema();
-    return privateJson(await readJudgeContext(email));
+    return privateJson(await readJudgeContext(identity));
   } catch (error) {
     return handleError(error);
   }
@@ -55,7 +64,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
-    const email = await requireVerifiedEmail();
+    const identity = await resolveJudgeIdentity(request);
     await ensureTargetJudgeSchema();
     const body = (await request.json()) as {
       phase?: unknown;
@@ -68,7 +77,7 @@ export async function POST(request: NextRequest) {
     const phase: TargetJudgePhase = body.phase;
     const submission = validateJudgeSubmission(body.submission);
 
-    if (phase === "initial") {
+    if (phase === "initial" && !identity.coordinatorRehearsal) {
       const declaration = body.declaration as
         | { qualified?: unknown; independent?: unknown; noConflict?: unknown }
         | undefined;
@@ -79,20 +88,19 @@ export async function POST(request: NextRequest) {
       ) {
         throw new TargetJudgeRequestError("All independence declarations must be confirmed");
       }
-      await lockInitialSubmission(email, submission);
-    } else {
-      await lockFinalSubmission(email, submission);
     }
+    if (phase === "initial") await lockInitialSubmission(identity, submission);
+    else await lockFinalSubmission(identity, submission);
 
-    return privateJson({ ok: true, ...(await readJudgeContext(email)) });
+    return privateJson({ ok: true, ...(await readJudgeContext(identity)) });
   } catch (error) {
     return handleError(error);
   }
 }
 
-async function lockInitialSubmission(email: string, submission: TargetJudgeSubmission) {
+async function lockInitialSubmission(identity: TargetJudgeIdentity, submission: TargetJudgeSubmission) {
   await prisma.$transaction(async (tx) => {
-    const assignment = await findAssignment(tx, email);
+    const assignment = await findAssignment(tx, identity);
     assertScenarioHash(assignment.round.scenarioHash);
     if (assignment.round.status !== "INITIAL_MARKING") {
       throw new TargetJudgeRequestError("Initial marking is not open", 409);
@@ -105,7 +113,7 @@ async function lockInitialSubmission(email: string, submission: TargetJudgeSubmi
     const updated = await tx.targetJudgeAssignment.updateMany({
       where: { id: assignment.id, initialLockedAt: null },
       data: {
-        declarationConfirmedAt: now,
+        declarationConfirmedAt: identity.coordinatorRehearsal ? null : now,
         initialSubmission: submission as unknown as Prisma.InputJsonValue,
         initialLockedAt: now,
       },
@@ -115,9 +123,15 @@ async function lockInitialSubmission(email: string, submission: TargetJudgeSubmi
     await tx.targetJudgeAudit.create({
       data: {
         roundId: assignment.roundId,
-        actorEmail: email,
-        action: "judge_initial_locked",
-        payload: { seat: assignment.seat, scenarioIds: TARGET_SCENARIOS.map((item) => item.id) },
+        actorEmail: identity.actorEmail,
+        action: identity.coordinatorRehearsal
+          ? "coordinator_rehearsal_initial_locked"
+          : "judge_initial_locked",
+        payload: {
+          seat: assignment.seat,
+          panelMode: assignment.round.panelMode,
+          scenarioIds: TARGET_SCENARIOS.map((item) => item.id),
+        },
       },
     });
 
@@ -143,9 +157,9 @@ async function lockInitialSubmission(email: string, submission: TargetJudgeSubmi
   });
 }
 
-async function lockFinalSubmission(email: string, submission: TargetJudgeSubmission) {
+async function lockFinalSubmission(identity: TargetJudgeIdentity, submission: TargetJudgeSubmission) {
   await prisma.$transaction(async (tx) => {
-    const assignment = await findAssignment(tx, email);
+    const assignment = await findAssignment(tx, identity);
     assertScenarioHash(assignment.round.scenarioHash);
     if (assignment.round.status !== "FINAL_MARKING") {
       throw new TargetJudgeRequestError("Final marking is not open", 409);
@@ -170,9 +184,15 @@ async function lockFinalSubmission(email: string, submission: TargetJudgeSubmiss
     await tx.targetJudgeAudit.create({
       data: {
         roundId: assignment.roundId,
-        actorEmail: email,
-        action: "judge_final_locked",
-        payload: { seat: assignment.seat, scenarioIds: TARGET_SCENARIOS.map((item) => item.id) },
+        actorEmail: identity.actorEmail,
+        action: identity.coordinatorRehearsal
+          ? "coordinator_rehearsal_final_locked"
+          : "judge_final_locked",
+        payload: {
+          seat: assignment.seat,
+          panelMode: assignment.round.panelMode,
+          scenarioIds: TARGET_SCENARIOS.map((item) => item.id),
+        },
       },
     });
 
@@ -236,6 +256,7 @@ async function lockFinalSubmission(email: string, submission: TargetJudgeSubmiss
       officialTargetsHash,
       results: pilotResults,
     });
+    const winners = targetPilotWinners(pilotResults);
     const transitioned = await tx.targetJudgingRound.updateMany({
       where: { id: assignment.roundId, status: "FINAL_MARKING" },
       data: {
@@ -253,14 +274,34 @@ async function lockFinalSubmission(email: string, submission: TargetJudgeSubmiss
         data: {
           roundId: assignment.roundId,
           actorEmail: "system",
-          action: "official_targets_calculated",
+          action: assignment.round.panelMode === "COORDINATOR_REHEARSAL"
+            ? "rehearsal_targets_calculated"
+            : "official_targets_calculated",
           payload: {
             algorithm: officialTargets.algorithm,
             officialTargetsHash,
             entrySetHash,
             pilotResultsHash,
             pilotEntryCount: pilotEntries.length,
+            panelMode: assignment.round.panelMode,
             inputSeats: finalSubmissions.map((item) => item.seat),
+          },
+        },
+      });
+      await tx.targetJudgeAudit.create({
+        data: {
+          roundId: assignment.roundId,
+          actorEmail: "system",
+          action: "pilot_winner_confirmed",
+          payload: {
+            panelMode: assignment.round.panelMode,
+            resultType: assignment.round.panelMode === "COORDINATOR_REHEARSAL"
+              ? "development_rehearsal"
+              : "official_pilot",
+            winnerEntryIds: winners.map((winner) => winner.entryId),
+            jointWinner: winners.length > 1,
+            pilotResultsHash,
+            confirmedAt: now.toISOString(),
           },
         },
       });
@@ -268,18 +309,37 @@ async function lockFinalSubmission(email: string, submission: TargetJudgeSubmiss
   });
 }
 
-async function findAssignment(tx: Prisma.TransactionClient, email: string) {
+async function findAssignment(tx: Prisma.TransactionClient, identity: TargetJudgeIdentity) {
   const assignment = await tx.targetJudgeAssignment.findFirst({
-    where: { email, round: { slug: TARGET_JUDGE_ROUND_SLUG } },
+    where: {
+      ...(identity.coordinatorRehearsal
+        ? { seat: identity.rehearsalSeat }
+        : { email: identity.actorEmail }),
+      round: { slug: TARGET_JUDGE_ROUND_SLUG },
+    },
     include: { round: true },
   });
   if (!assignment) throw new TargetJudgeAccessError("Judge assignment not found", 404);
+  if (
+    identity.coordinatorRehearsal &&
+    assignment.round.panelMode !== "COORDINATOR_REHEARSAL"
+  ) {
+    throw new TargetJudgeAccessError("Coordinator rehearsal is not active", 404);
+  }
+  if (!identity.coordinatorRehearsal && assignment.round.panelMode !== "OFFICIAL") {
+    throw new TargetJudgeAccessError("This round is a coordinator rehearsal", 404);
+  }
   return assignment;
 }
 
-async function readJudgeContext(email: string): Promise<TargetJudgeContextDto> {
+async function readJudgeContext(identity: TargetJudgeIdentity): Promise<TargetJudgeContextDto> {
   const assignment = await prisma.targetJudgeAssignment.findFirst({
-    where: { email, round: { slug: TARGET_JUDGE_ROUND_SLUG } },
+    where: {
+      ...(identity.coordinatorRehearsal
+        ? { seat: identity.rehearsalSeat }
+        : { email: identity.actorEmail }),
+      round: { slug: TARGET_JUDGE_ROUND_SLUG },
+    },
     include: {
       round: {
         include: { assignments: { orderBy: { seat: "asc" } } },
@@ -289,6 +349,13 @@ async function readJudgeContext(email: string): Promise<TargetJudgeContextDto> {
   if (!assignment) throw new TargetJudgeAccessError("Judge assignment not found", 404);
   const { round } = assignment;
   if (!isTargetJudgeStatus(round.status)) throw new Error("Unknown judging status");
+  if (!isTargetJudgePanelMode(round.panelMode)) throw new Error("Unknown judging panel mode");
+  if (identity.coordinatorRehearsal && round.panelMode !== "COORDINATOR_REHEARSAL") {
+    throw new TargetJudgeAccessError("Coordinator rehearsal is not active", 404);
+  }
+  if (!identity.coordinatorRehearsal && round.panelMode !== "OFFICIAL") {
+    throw new TargetJudgeAccessError("This round is a coordinator rehearsal", 404);
+  }
 
   const canSeeInitial = ["INITIAL_COMPLETE", "FINAL_MARKING", "CALCULATED"].includes(round.status);
   const canSeeFinal = round.status === "CALCULATED";
@@ -299,6 +366,7 @@ async function readJudgeContext(email: string): Promise<TargetJudgeContextDto> {
     scenarioVersion: round.scenarioVersion,
     scenarioHash: round.scenarioHash,
     status: round.status,
+    panelMode: round.panelMode,
     officialTargets: canSeeFinal && round.officialTargets
       ? validateOfficialTargetsRecord(round.officialTargets)
       : null,
@@ -367,6 +435,20 @@ async function requireVerifiedEmail() {
   const email = await getVerifiedTargetEmail();
   if (!email) throw new TargetJudgeAccessError("Sign in required", 401);
   return email;
+}
+
+async function resolveJudgeIdentity(request: NextRequest): Promise<TargetJudgeIdentity> {
+  const actorEmail = await requireVerifiedEmail();
+  const seatValue = request.nextUrl.searchParams.get("rehearsalSeat");
+  if (!seatValue) return { actorEmail, coordinatorRehearsal: false };
+  if (!isTargetJudgeCoordinator(actorEmail)) {
+    throw new TargetJudgeAccessError("Coordinator access required", 404);
+  }
+  const rehearsalSeat = Number(seatValue);
+  if (!Number.isInteger(rehearsalSeat) || rehearsalSeat < 1 || rehearsalSeat > 3) {
+    throw new TargetJudgeRequestError("Unknown rehearsal seat");
+  }
+  return { actorEmail, coordinatorRehearsal: true, rehearsalSeat };
 }
 
 function assertSameOrigin(request: NextRequest) {

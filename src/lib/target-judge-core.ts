@@ -18,7 +18,13 @@ export const TARGET_JUDGE_STATUSES = [
   "CALCULATED",
 ] as const;
 
+export const TARGET_JUDGE_PANEL_MODES = [
+  "OFFICIAL",
+  "COORDINATOR_REHEARSAL",
+] as const;
+
 export type TargetJudgeStatus = (typeof TARGET_JUDGE_STATUSES)[number];
+export type TargetJudgePanelMode = (typeof TARGET_JUDGE_PANEL_MODES)[number];
 export type TargetJudgePhase = "initial" | "final";
 
 export interface TargetJudgeMark {
@@ -62,6 +68,7 @@ export interface TargetJudgeRoundDto {
   scenarioVersion: string;
   scenarioHash: string;
   status: TargetJudgeStatus;
+  panelMode: TargetJudgePanelMode;
   officialTargets: TargetOfficialTargetsRecord | null;
   officialTargetsHash: string | null;
   calculatedAt: string | null;
@@ -99,6 +106,10 @@ export interface TargetJudgeContextDto {
 
 export function isTargetJudgeStatus(value: string): value is TargetJudgeStatus {
   return TARGET_JUDGE_STATUSES.includes(value as TargetJudgeStatus);
+}
+
+export function isTargetJudgePanelMode(value: string): value is TargetJudgePanelMode {
+  return TARGET_JUDGE_PANEL_MODES.includes(value as TargetJudgePanelMode);
 }
 
 export function validateTargetJudgePanel(value: unknown): TargetJudgePanelMember[] {

@@ -29,6 +29,13 @@ export default async function TargetJudgePage() {
   }
 
   await ensureTargetJudgeSchema();
+  const round = await prisma.targetJudgingRound.findUnique({
+    where: { slug: TARGET_JUDGE_ROUND_SLUG },
+    select: { panelMode: true },
+  });
+  if (isTargetJudgeCoordinator(email) && round?.panelMode === "COORDINATOR_REHEARSAL") {
+    return <TargetJudgeClient rehearsal />;
+  }
   const assignment = await prisma.targetJudgeAssignment.findFirst({
     where: { email, round: { slug: TARGET_JUDGE_ROUND_SLUG } },
     select: { id: true },

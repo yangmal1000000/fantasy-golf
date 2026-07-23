@@ -4,6 +4,7 @@ import { TARGET_SCENARIOS, type TargetPoint } from "./target-challenge";
 import {
   rankTargetPilotEntries,
   targetPilotReference,
+  targetPilotWinners,
   validateTargetPilotResults,
   validateTargetPilotSubmission,
   type TargetPilotSubmission,
@@ -87,4 +88,20 @@ test("gives identical entries the same rank", () => {
 
   assert.deepEqual(results.entries.map((entry) => [entry.rank, entry.tied]), [[1, true], [1, true]]);
   assert.equal(targetPilotReference("cm1234567890"), "HV-PILOT-34567890");
+});
+
+test("identifies the confirmed winner or joint winners from rank one", () => {
+  const official = TARGET_SCENARIOS.map(() => ({ x: 50_000, y: 50_000 }));
+  const singleWinner = rankTargetPilotEntries([
+    { entryId: "near", submission: submission(official) },
+    { entryId: "far", submission: submission(TARGET_SCENARIOS.map(() => ({ x: 70_000, y: 70_000 }))) },
+  ], official);
+  assert.deepEqual(targetPilotWinners(singleWinner).map((entry) => entry.entryId), ["near"]);
+
+  const same = submission(official);
+  const jointWinners = rankTargetPilotEntries([
+    { entryId: "one", submission: same },
+    { entryId: "two", submission: same },
+  ], official);
+  assert.deepEqual(targetPilotWinners(jointWinners).map((entry) => entry.entryId), ["one", "two"]);
 });
