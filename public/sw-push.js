@@ -20,8 +20,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || "Fantasy Golf", {
       body: data.body ?? "",
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      icon: "/icon",
+      badge: "/icon",
       tag: data.tag || "fantasy-golf",
       renotify: true,
       data: { url: data.url || "/" },

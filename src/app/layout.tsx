@@ -21,6 +21,7 @@ const inter = Inter({
 
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://fantasy-golf-phi.vercel.app"),
   title: "Fantasy Golf",
   description: "Complete Target, unlock a Test Pass and build a five-player Rocket Classic beta team.",
   manifest: "/manifest.json",
@@ -28,13 +29,6 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Fantasy Golf",
-  },
-  icons: {
-    icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/icon-192.png", sizes: "192x192" }],
   },
   openGraph: {
     title: "Fantasy Golf",
@@ -44,10 +38,10 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://fantasy-golf-phi.vercel.app/og-image.jpg",
-        width: 1024,
-        height: 1024,
-        alt: "Fantasy Golf — Pick 5 pros. Beat your mates.",
+        url: "https://fantasy-golf-phi.vercel.app/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Fantasy Golf — Rocket Classic closed test flight",
       },
     ],
   },
@@ -55,7 +49,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Fantasy Golf",
     description: "Target judgement meets live fantasy golf in the Rocket Classic closed test flight.",
-    images: ["https://fantasy-golf-phi.vercel.app/og-image.jpg"],
+    images: ["https://fantasy-golf-phi.vercel.app/opengraph-image"],
   },
 };
 
