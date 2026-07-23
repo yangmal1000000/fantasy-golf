@@ -60,8 +60,12 @@ export default async function EnterTeamPage({
           </p>
         </div>
         <SignInPrompt
-          title="Sign in to Enter"
-          message="Create your fantasy golf team by signing in with Google."
+          title={isRocketBeta ? "Join the Rocket test flight" : "Sign in to Enter"}
+          message={
+            isRocketBeta
+              ? "Continue with Google. Complete Target once to unlock your Test Pass, then return here to build your five-player team."
+              : "Create your fantasy golf team by signing in with Google."
+          }
         />
       </div>
     );
