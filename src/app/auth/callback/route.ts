@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { safeRelativeRedirect } from "@/lib/auth-redirect";
 import { createClient } from "@/utils/supabase/server";
 
 export async function GET(request: Request) {
@@ -13,6 +14,6 @@ export async function GET(request: Request) {
   }
 
   // Redirect to the page the user was on, or home
-  const redirectTo = requestUrl.searchParams.get("next") ?? "/";
+  const redirectTo = safeRelativeRedirect(requestUrl.searchParams.get("next"));
   return NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
 }

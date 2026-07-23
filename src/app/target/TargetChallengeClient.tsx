@@ -180,9 +180,9 @@ export default function TargetChallengeClient() {
       <div className="border-b border-[#c8a951]/25 bg-[#071f16] text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5 text-xs">
           <span className="inline-flex items-center gap-2 font-bold uppercase tracking-[0.16em] text-[#e4cc85]">
-            <ShieldIcon className="h-4 w-4" /> Closed beta gateway
+            <ShieldIcon className="h-4 w-4" /> Open test-flight gateway
           </span>
-          <span className="text-right text-white/65">Invite only · No payment · No prize</span>
+          <span className="text-right text-white/65">Open signup · No payment · No prize</span>
         </div>
       </div>
 
@@ -407,7 +407,7 @@ function IntroStage({
         <ul className="mt-6 space-y-3 text-sm">
           <IntroBullet icon={<MapPinIcon className="h-4 w-4" />} text="One precise pin for each of three course situations" />
           <IntroBullet icon={<ClockIcon className="h-4 w-4" />} text="20 minutes; completion speed never changes your score" />
-          <IntroBullet icon={<ShieldIcon className="h-4 w-4" />} text="One locked Target submission per approved account" />
+          <IntroBullet icon={<ShieldIcon className="h-4 w-4" />} text="One locked Target submission per verified account" />
           <IntroBullet icon={<TrophyIcon className="h-4 w-4" />} text="Completion unlocks one Rocket Classic Test Pass" />
         </ul>
         <button
@@ -457,10 +457,10 @@ function EligibilityStage({
       <div className="border-b border-zinc-100 bg-[#0a3d2a] p-6 text-white dark:border-zinc-800 sm:p-8">
         <LockIcon className="h-9 w-9 text-[#d7bc6a]" />
         <h2 className="mt-4 text-2xl font-black">Before the attempt begins</h2>
-        <p className="mt-2 text-sm leading-6 text-white/70">This free test flight uses your approved account. Completing it unlocks a non-transferable Test Pass, not a cash-value voucher.</p>
+        <p className="mt-2 text-sm leading-6 text-white/70">This free test flight uses your verified account. Completing it unlocks a non-transferable Test Pass, not a cash-value voucher.</p>
       </div>
       <div className="space-y-3 p-6 sm:p-8">
-        <ConfirmRow checked={accountConfirmed} onChange={setAccountConfirmed} label="I am using my own approved beta account." />
+        <ConfirmRow checked={accountConfirmed} onChange={setAccountConfirmed} label="I am using my own verified account." />
         <ConfirmRow checked={betaConfirmed} onChange={setBetaConfirmed} label="I understand this test flight has no payment, cash value or prize." />
         <ConfirmRow checked={rulesConfirmed} onChange={setRulesConfirmed} label="I understand this is one individual skill attempt and external assistance is not allowed." />
 
@@ -589,7 +589,7 @@ function SubmittedStage({
               <InfoIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#9b7b25]" />
               <div>
                 <h3 className="font-black text-zinc-900 dark:text-white">Your Target record</h3>
-                <p className="mt-1 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Your approved account, frozen scenario version, three coordinates, submission time and integrity hash. There is no checkout, live prize or payout.</p>
+                <p className="mt-1 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Your verified account, frozen scenario version, three coordinates, submission time and integrity hash. There is no checkout, live prize or payout.</p>
               </div>
             </div>
           </div>

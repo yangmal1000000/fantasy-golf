@@ -10,6 +10,18 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/sync") ||
     pathname === "/api/rocket-beta-control" ||
     pathname === "/api/test-db";
+  const cronSafeApi =
+    pathname === "/api/sync/results" ||
+    pathname === "/api/sync/rankings" ||
+    pathname === "/api/sync/schedule" ||
+    pathname === "/api/sync/live";
+  const cronSecret = process.env.CRON_SECRET;
+  const cronAuthorized = Boolean(
+    cronSafeApi &&
+      cronSecret &&
+      cronSecret.length >= 32 &&
+      request.headers.get("authorization") === `Bearer ${cronSecret}`,
+  );
   const protectedPage =
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||
@@ -25,7 +37,11 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  if ((protectedApi || protectedPage) && !isTargetJudgeCoordinator(verifiedEmail)) {
+  if (
+    (protectedApi || protectedPage) &&
+    !isTargetJudgeCoordinator(verifiedEmail) &&
+    !cronAuthorized
+  ) {
     if (protectedApi) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

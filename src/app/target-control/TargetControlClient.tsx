@@ -173,7 +173,7 @@ export default function TargetControlClient() {
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Closed pilot</p>
                   <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Rehearsal entry set</h2>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">Approved testers receive one no-payment entry each. Seal the complete set before opening official judging.</p>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">Every verified signed-up account may lock one no-payment entry. Seal the complete set before opening official judging.</p>
                 </div>
                 <span className={`rounded-full px-3 py-1.5 text-xs font-black uppercase tracking-wide ${round.pilotEntriesSealedAt ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300" : "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"}`}>
                   {round.pilotEntriesSealedAt ? `Sealed · ${round.pilotEntryCount ?? pilotEntries.length}` : `Open · ${pilotEntries.length}`}

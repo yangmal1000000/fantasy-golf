@@ -2,6 +2,7 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { isAuthorizedCronHeader } from "@/lib/cron-auth";
 
 function sameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
@@ -15,7 +16,11 @@ function sameOrigin(request: Request): boolean {
  */
 export async function adminApiGuard(
   request?: Request,
+  options: { allowCron?: boolean } = {},
 ): Promise<NextResponse | null> {
+  if (request && options.allowCron && isAuthorizedCronRequest(request)) {
+    return null;
+  }
   if (request && !sameOrigin(request)) {
     return NextResponse.json(
       { error: "Request origin rejected" },
@@ -38,4 +43,11 @@ export async function adminApiGuard(
   }
 
   return null;
+}
+
+function isAuthorizedCronRequest(request: Request) {
+  return isAuthorizedCronHeader(
+    request.headers.get("authorization"),
+    process.env.CRON_SECRET,
+  );
 }

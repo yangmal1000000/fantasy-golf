@@ -44,17 +44,12 @@ export async function POST(request: NextRequest) {
     if (!campaign) throw new ControlError("Rocket beta is not ready", 404);
     const body = (await request.json()) as {
       action?: unknown;
-      email?: unknown;
-      displayName?: unknown;
       memberId?: unknown;
       active?: unknown;
       status?: unknown;
     };
 
     switch (body.action) {
-      case "invite":
-        await inviteMember(campaign.id, actor.id, actor.email, body.email, body.displayName);
-        break;
       case "set_member_active":
         await setMemberActive(
           campaign.id,
@@ -85,53 +80,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function inviteMember(
-  campaignId: string,
-  actorUserId: string,
-  actorEmail: string,
-  rawEmail: unknown,
-  rawDisplayName: unknown,
-) {
-  const email =
-    typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 254) {
-    throw new ControlError("Enter a valid tester email");
-  }
-  const displayName =
-    typeof rawDisplayName === "string" && rawDisplayName.trim()
-      ? rawDisplayName.trim().slice(0, 80)
-      : null;
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true, name: true },
-  });
-  const member = await prisma.rocketBetaMember.upsert({
-    where: { campaignId_email: { campaignId, email } },
-    update: {
-      active: true,
-      displayName: displayName ?? existingUser?.name,
-      userId: existingUser?.id,
-    },
-    create: {
-      campaignId,
-      email,
-      active: true,
-      displayName: displayName ?? existingUser?.name,
-      userId: existingUser?.id,
-      acceptedAt: existingUser ? new Date() : null,
-    },
-  });
-  await prisma.rocketBetaAudit.create({
-    data: {
-      campaignId,
-      actorUserId,
-      actorEmail,
-      action: "tester_invited",
-      payload: { memberId: member.id, email },
-    },
-  });
-}
-
 async function setMemberActive(
   campaignId: string,
   actorUserId: string,
@@ -146,9 +94,9 @@ async function setMemberActive(
     where: { id: rawMemberId, campaignId },
     include: { passes: true },
   });
-  if (!member) throw new ControlError("Tester not found", 404);
+  if (!member) throw new ControlError("Participant not found", 404);
   if (!rawActive && member.passes.some((pass) => pass.teamId)) {
-    throw new ControlError("A tester with a confirmed team cannot be deactivated", 409);
+    throw new ControlError("A participant with a confirmed team cannot be deactivated", 409);
   }
   await prisma.$transaction(async (tx) => {
     await tx.rocketBetaMember.update({
@@ -164,7 +112,7 @@ async function setMemberActive(
         campaignId,
         actorUserId,
         actorEmail,
-        action: rawActive ? "tester_reactivated" : "tester_deactivated",
+        action: rawActive ? "participant_reactivated" : "participant_deactivated",
         payload: { memberId: member.id, email: member.email },
       },
     });
@@ -342,7 +290,7 @@ async function readControl() {
         displayName: member.displayName,
         active: member.active,
         linked: Boolean(member.userId),
-        invitedAt: member.invitedAt.toISOString(),
+        joinedAt: (member.acceptedAt ?? member.invitedAt).toISOString(),
         targetSubmittedAt: targetEntry?.submittedAt.toISOString() ?? null,
         passStatus: pass?.status ?? null,
         passUnlockedAt: pass?.unlockedAt.toISOString() ?? null,

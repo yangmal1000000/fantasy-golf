@@ -22,7 +22,7 @@ type ControlData = {
     displayName: string | null;
     active: boolean;
     linked: boolean;
-    invitedAt: string;
+    joinedAt: string;
     targetSubmittedAt: string | null;
     passStatus: string | null;
     passUnlockedAt: string | null;
@@ -49,8 +49,6 @@ export default function RocketControlClient() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState("");
-  const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -99,18 +97,6 @@ export default function RocketControlClient() {
     }
   }
 
-  async function invite() {
-    if (
-      await mutate("invite", {
-        email,
-        displayName,
-      })
-    ) {
-      setEmail("");
-      setDisplayName("");
-    }
-  }
-
   const campaign = data?.campaign;
 
   return (
@@ -122,7 +108,7 @@ export default function RocketControlClient() {
           </p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">Rocket beta control</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65">
-            Manage invited accounts, watch Target → pass → team progression,
+            Watch signed-up accounts move through Target → pass → team,
             pause entry and seal the deterministic final beta result.
           </p>
           <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold">
@@ -208,36 +194,18 @@ export default function RocketControlClient() {
 
             <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-7">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">
-                Approved cohort
+                Participant registry
               </p>
               <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">
-                Invite a tester
+                Open verified-account signup
               </h2>
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="tester@example.com"
-                  className="rounded-xl border border-zinc-300 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                />
-                <input
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  placeholder="Display name (optional)"
-                  className="rounded-xl border border-zinc-300 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                />
-                <button
-                  type="button"
-                  disabled={busy || !email.trim()}
-                  onClick={() => void invite()}
-                  className="rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white disabled:opacity-40"
-                >
-                  Add tester
-                </button>
-              </div>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">
+                Every verified Google account joins automatically on its first
+                Rocket or Target visit. You can still block an account before
+                it confirms a team.
+              </p>
 
-              <div className="mt-6 overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-700">
+              <div className="mt-5 overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-700">
                 <table className="w-full min-w-[820px] text-left text-xs">
                   <thead className="bg-zinc-50 text-zinc-500 dark:bg-zinc-800/70">
                     <tr>
@@ -254,7 +222,7 @@ export default function RocketControlClient() {
                       <tr key={member.id}>
                         <td className="px-4 py-3">
                           <p className="font-black text-zinc-900 dark:text-white">
-                            {member.displayName ?? "Invited tester"}
+                            {member.displayName ?? "Signed-up participant"}
                           </p>
                           <p className="mt-0.5 text-zinc-500">{member.email}</p>
                         </td>

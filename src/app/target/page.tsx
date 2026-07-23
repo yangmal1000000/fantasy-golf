@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import SignInPrompt from "@/components/SignInPrompt";
-import { isRocketBetaEmailApproved } from "@/lib/rocket-beta";
-import { createClient } from "@/utils/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
+import { getRocketBetaStateForUser } from "@/lib/rocket-beta";
 import TargetChallengeClient from "./TargetChallengeClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "Private Target Challenge Preview — Fantasy Golf",
-  description: "Private review build of the Golf Target Challenge prototype.",
+  title: "Target Challenge — Rocket Classic Test Flight",
+  description: "Complete three golf decisions to unlock a free Rocket Classic Test Pass.",
   robots: {
     index: false,
     follow: false,
@@ -20,24 +19,18 @@ export const metadata: Metadata = {
 };
 
 export default async function TargetPreviewPage() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user?.email) {
+  const user = await getCurrentUser();
+  if (!user) {
     return (
       <SignInPrompt
-        title="Private Target Challenge preview"
-        message="Sign in with the approved Google account to open this preview."
+        title="Join the Rocket test flight"
+        message="Continue with Google, complete Target and receive one free account-bound Test Pass."
       />
     );
   }
 
-  if (!(await isRocketBetaEmailApproved(user.email))) {
-    notFound();
-  }
+  const state = await getRocketBetaStateForUser(user);
+  if (!state.approved) notFound();
 
   return <TargetChallengeClient />;
 }

@@ -9,10 +9,10 @@ export const maxDuration = 300;
  * POST /api/sync/rankings
  * Pulls world golf rankings from ESPN and updates all players,
  * then links players to tournaments with proper tiers.
- * Called by cron or admin — no auth check.
+ * Called by a signed Vercel cron or an authenticated admin.
  */
-export async function POST(request: Request) {
-  const denied = await adminApiGuard(request);
+async function syncRankings(request: Request) {
+  const denied = await adminApiGuard(request, { allowCron: true });
   if (denied) return denied;
   try {
     const rankResult = await syncOWGRRankings();
@@ -36,3 +36,6 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const GET = syncRankings;
+export const POST = syncRankings;

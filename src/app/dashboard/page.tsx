@@ -172,7 +172,7 @@ export default async function DashboardPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#e4cc85]">
-                  Rocket Classic · closed test flight
+                  Rocket Classic · free test flight
                 </p>
                 <h2 className="mt-2 text-xl font-black">
                   {rocketBeta.passState === "REDEEMED"

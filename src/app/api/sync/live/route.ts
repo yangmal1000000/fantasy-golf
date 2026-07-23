@@ -8,10 +8,10 @@ export const maxDuration = 60;
  * POST /api/sync/live
  * Pulls current round scores from ESPN for any in-progress tournament.
  * Optionally accepts ?tournamentId=xxx to sync a single tournament.
- * Called by cron every 5 minutes during live tournaments — no auth check.
+ * Called by a signed scheduler during live tournaments or by an authenticated admin.
  */
-export async function POST(request: Request) {
-  const denied = await adminApiGuard(request);
+async function syncLive(request: Request) {
+  const denied = await adminApiGuard(request, { allowCron: true });
   if (denied) return denied;
   try {
     const { searchParams } = new URL(request.url);
@@ -27,3 +27,6 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const GET = syncLive;
+export const POST = syncLive;
