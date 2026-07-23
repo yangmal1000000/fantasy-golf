@@ -109,6 +109,12 @@ body {
   body.target-attempt-active {
     overflow: hidden;
   }
+
+  body.target-attempt-active .site-shell-header,
+  body.target-attempt-active .site-shell-footer,
+  body.target-attempt-active .site-shell-mobile-nav {
+    display: none;
+  }
 }
 
 .target-shot-dialog::backdrop {

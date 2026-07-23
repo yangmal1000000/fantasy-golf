@@ -65,7 +65,7 @@ const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(!t){
 
 function Navbar() {
   return (
-    <header className="sticky top-0 z-50 bg-[#0a3d2a] text-white shadow-lg safe-area-top">
+    <header className="site-shell-header sticky top-0 z-50 bg-[#0a3d2a] text-white shadow-lg safe-area-top">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-2 sm:px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-base tracking-tight shrink-0">
@@ -92,7 +92,7 @@ function Navbar() {
 
 function Footer() {
   return (
-    <footer className="mt-auto bg-[#0a3d2a] py-8 text-center text-sm text-white/70">
+    <footer className="site-shell-footer mt-auto bg-[#0a3d2a] py-8 text-center text-sm text-white/70">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
           <Link href="/how-to-play" className="transition hover:text-[#c8a951]">How to Play</Link>
