@@ -364,6 +364,15 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         )}
       </div>
 
+      {isRocketBeta && !betaCampaign?.fieldFrozenAt && (
+        <div className="mt-3 rounded-xl border border-amber-300/60 bg-amber-50 p-3 text-xs leading-5 text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-200">
+          <strong>Provisional field review.</strong> These 142 commitments are
+          staged for inspection, but team selection remains closed. The final
+          field and five tier lists will be frozen after Monday qualifying is
+          complete.
+        </div>
+      )}
+
       {/* Live tracker link for in-progress */}
       {isLive && (
         <Link href={`/tournaments/${tournament.id}/live`} className="mt-2 flex items-center justify-between rounded-lg border border-[#c44545]/30 bg-gradient-to-r from-[#c44545]/10 to-transparent p-3 transition hover:border-[#c44545]/50">
