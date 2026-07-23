@@ -36,3 +36,29 @@ test("review actions remain actionable and reveal missing entry requirements", (
     /disabled=\{\s*!allTiersFilled/,
   );
 });
+
+test("mobile selection starts with one tier and advances after a pick", () => {
+  assert.match(
+    teamEntrySource,
+    /return new Set\(firstIncompleteTier \? \[firstIncompleteTier\] : \[\]\)/,
+  );
+  assert.match(
+    teamEntrySource,
+    /setOpenTiers\(new Set\(nextIncompleteTier \? \[nextIncompleteTier\] : \[\]\)\)/,
+  );
+  assert.match(
+    teamEntrySource,
+    /team-tier-\$\{nextIncompleteTier\}/,
+  );
+  assert.doesNotMatch(
+    teamEntrySource,
+    /new Set\(TEAM_ENTRY_TIERS\)/,
+  );
+});
+
+test("large tiers have an accessible player search", () => {
+  assert.match(teamEntrySource, /Search \{config\.label\} golfers/);
+  assert.match(teamEntrySource, /type="search"/);
+  assert.match(teamEntrySource, /player\.name\.toLowerCase\(\)\.includes/);
+  assert.match(teamEntrySource, /No golfers match/);
+});
