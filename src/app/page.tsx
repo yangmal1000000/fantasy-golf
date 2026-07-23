@@ -78,7 +78,7 @@ export default async function Home() {
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/68 sm:text-lg">
               Join with Google, complete three Target decisions, unlock one
               account-bound Test Pass and choose a five-player Rocket Classic
-              team for the full live rehearsal.
+              team for the full live test flight.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
@@ -175,7 +175,7 @@ export default async function Home() {
         <section>
           <div className="max-w-2xl">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">
-              The rehearsal journey
+              The test-flight journey
             </p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
               One smooth route from judgement to live golf

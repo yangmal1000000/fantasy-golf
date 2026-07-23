@@ -209,7 +209,7 @@ export default function TargetChallengeClient() {
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
         {pilotChecking ? (
-          <p className="mb-4 rounded-2xl border border-zinc-200 bg-white p-3 text-center text-xs font-bold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">Checking your private pilot status…</p>
+          <p className="mb-4 rounded-2xl border border-zinc-200 bg-white p-3 text-center text-xs font-bold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">Checking your test-flight status…</p>
         ) : null}
         {submissionError ? (
           <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-300">{submissionError}</p>
@@ -347,8 +347,8 @@ export default function TargetChallengeClient() {
         {stage === "closed" && (
           <section className="mx-auto max-w-xl rounded-3xl border border-zinc-200 bg-white p-8 text-center shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
             <LockIcon className="mx-auto h-12 w-12 text-[#9b7b25] dark:text-[#d7bc6a]" />
-            <h2 className="mt-4 text-2xl font-black text-zinc-900 dark:text-white">Pilot entries are closed</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">The coordinator has sealed this rehearsal entry set. No late or replacement target can be added.</p>
+            <h2 className="mt-4 text-2xl font-black text-zinc-900 dark:text-white">Target entries are closed</h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Registration has closed and the Target entry set is sealed. No late or replacement entry can be added.</p>
           </section>
         )}
 
@@ -465,7 +465,7 @@ function EligibilityStage({
         <ConfirmRow checked={rulesConfirmed} onChange={setRulesConfirmed} label="I understand this is one individual skill attempt and external assistance is not allowed." />
 
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
-          <strong>Beta safeguard:</strong> pressing start takes no money. A completed submission only unlocks entry to the private Rocket Classic rehearsal.
+          <strong>Test-flight safeguard:</strong> pressing start takes no money. A completed submission only unlocks free Rocket Classic team selection.
         </div>
 
         <div className="flex items-center justify-between gap-3 pt-4">
@@ -616,7 +616,7 @@ function SubmittedStage({
           </div>
         </div>
 
-        <p className="mt-7 text-center text-sm font-bold text-zinc-500 dark:text-zinc-400">One entry per verified tester. The coordinator may clear all entries only before the rehearsal set is sealed.</p>
+        <p className="mt-7 text-center text-sm font-bold text-zinc-500 dark:text-zinc-400">One entry per verified account. The entry set is sealed after registration closes.</p>
       </div>
     </section>
   );

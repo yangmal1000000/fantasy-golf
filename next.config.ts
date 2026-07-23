@@ -32,6 +32,7 @@ const nextConfig: NextConfig = {
       { source: "/api/target-judge", headers: privateHeaders },
       { source: "/api/target-control", headers: privateHeaders },
       { source: "/api/rocket-beta-control", headers: privateHeaders },
+      { source: "/api/tournaments/:id/teams", headers: privateHeaders },
     ];
   },
   async redirects() {
