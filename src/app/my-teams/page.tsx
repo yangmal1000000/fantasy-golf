@@ -11,6 +11,8 @@ import {
   ROCKET_BETA_CAMPAIGN_SLUG,
   ROCKET_BETA_TOURNAMENT_ID,
 } from "@/lib/rocket-beta";
+import { isRocketBetaFieldOpen } from "@/lib/rocket-beta-access";
+import { ROCKET_BETA_ENTRY_OPENS_AT } from "@/lib/rocket-beta-config";
 import {
   SavedTeamsSection,
   SaveAsTemplateButton,
@@ -84,6 +86,7 @@ export default async function MyTeamsPage() {
         teamId: true,
         campaign: {
           select: {
+            entryOpensAt: true,
             fieldFrozenAt: true,
             fieldHash: true,
           },
@@ -96,9 +99,14 @@ export default async function MyTeamsPage() {
   );
   const showRocketPassCard =
     rocketPass?.status === "UNLOCKED" && !hasRocketTeam;
-  const rocketFieldReady = Boolean(
-    rocketPass?.campaign.fieldFrozenAt && rocketPass.campaign.fieldHash,
-  );
+  const rocketFieldReady = rocketPass
+    ? isRocketBetaFieldOpen({
+        entryOpensAt:
+          rocketPass.campaign.entryOpensAt ?? ROCKET_BETA_ENTRY_OPENS_AT,
+        fieldFrozenAt: rocketPass.campaign.fieldFrozenAt,
+        fieldHash: rocketPass.campaign.fieldHash,
+      })
+    : false;
 
   // Serialize saved teams for client component
   const savedTeamsData = savedTeams.map((st) => ({

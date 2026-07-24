@@ -7,8 +7,14 @@ import {
   type User,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { isRocketBetaRegistrationOpen } from "@/lib/rocket-beta-access";
-import { ROCKET_BETA_ENTRY_CLOSES_AT } from "@/lib/rocket-beta-config";
+import {
+  isRocketBetaFieldOpen,
+  isRocketBetaRegistrationOpen,
+} from "@/lib/rocket-beta-access";
+import {
+  ROCKET_BETA_ENTRY_CLOSES_AT,
+  ROCKET_BETA_ENTRY_OPENS_AT,
+} from "@/lib/rocket-beta-config";
 import { ensureRocketBetaSchema } from "@/lib/rocket-beta-schema";
 import { TARGET_JUDGE_ROUND_SLUG } from "@/lib/target-judge-core";
 
@@ -26,6 +32,7 @@ export interface RocketBetaState {
   targetHref: "/target";
   tournamentHref: "/tournaments/rocket-classic";
   enterHref: "/tournaments/rocket-classic/enter";
+  entryOpensAt: string;
   entryClosesAt: string;
   fieldVersion: string | null;
   fieldFrozenAt: string | null;
@@ -66,6 +73,7 @@ export async function ensureRocketBetaCampaign() {
         name: "Rocket Classic Test Flight",
         tournamentId: tournament.id,
         targetRoundId: round.id,
+        entryOpensAt: ROCKET_BETA_ENTRY_OPENS_AT,
         entryClosesAt: ROCKET_BETA_ENTRY_CLOSES_AT,
       },
       create: {
@@ -74,6 +82,7 @@ export async function ensureRocketBetaCampaign() {
         tournamentId: tournament.id,
         targetRoundId: round.id,
         status: "OPEN",
+        entryOpensAt: ROCKET_BETA_ENTRY_OPENS_AT,
         entryClosesAt: ROCKET_BETA_ENTRY_CLOSES_AT,
       },
     });
@@ -121,10 +130,17 @@ export async function getRocketBetaStateForUser(
     targetHref: "/target",
     tournamentHref: "/tournaments/rocket-classic",
     enterHref: "/tournaments/rocket-classic/enter",
+    entryOpensAt: (
+      campaign.entryOpensAt ?? ROCKET_BETA_ENTRY_OPENS_AT
+    ).toISOString(),
     entryClosesAt: (campaign.entryClosesAt ?? ROCKET_BETA_ENTRY_CLOSES_AT).toISOString(),
     fieldVersion: campaign.fieldVersion,
     fieldFrozenAt: campaign.fieldFrozenAt?.toISOString() ?? null,
-    fieldReady: Boolean(campaign.fieldFrozenAt && campaign.fieldHash),
+    fieldReady: isRocketBetaFieldOpen({
+      entryOpensAt: campaign.entryOpensAt ?? ROCKET_BETA_ENTRY_OPENS_AT,
+      fieldFrozenAt: campaign.fieldFrozenAt,
+      fieldHash: campaign.fieldHash,
+    }),
     passState: pass?.status === "REDEEMED" ? "REDEEMED" : pass ? "UNLOCKED" : "LOCKED",
     unlockedAt: pass?.unlockedAt.toISOString() ?? null,
     redeemedAt: pass?.redeemedAt?.toISOString() ?? null,
@@ -305,7 +321,13 @@ export async function requireRocketBetaEntryPass(
   if (campaign.entryClosesAt && new Date() >= campaign.entryClosesAt) {
     throw new RocketBetaError("Rocket Classic beta entries are closed", 409);
   }
-  if (!campaign.fieldFrozenAt || !campaign.fieldHash) {
+  if (
+    !isRocketBetaFieldOpen({
+      entryOpensAt: campaign.entryOpensAt ?? ROCKET_BETA_ENTRY_OPENS_AT,
+      fieldFrozenAt: campaign.fieldFrozenAt,
+      fieldHash: campaign.fieldHash,
+    })
+  ) {
     throw new RocketBetaError(
       "The reviewed Rocket Classic field is not open for team selection yet",
       409,
@@ -335,6 +357,7 @@ function emptyState(
     targetHref: "/target",
     tournamentHref: "/tournaments/rocket-classic",
     enterHref: "/tournaments/rocket-classic/enter",
+    entryOpensAt: ROCKET_BETA_ENTRY_OPENS_AT.toISOString(),
     entryClosesAt: ROCKET_BETA_ENTRY_CLOSES_AT.toISOString(),
     fieldVersion: null,
     fieldFrozenAt: null,

@@ -8,6 +8,7 @@ import {
   getRocketBetaStateForUser,
 } from "@/lib/rocket-beta";
 import TeamEntryForm from "./TeamEntryForm";
+import RocketFieldOpeningCountdown from "./RocketFieldOpeningCountdown";
 
 export const metadata: Metadata = {
   title: "Enter Team — Fantasy Golf",
@@ -165,6 +166,12 @@ export default async function EnterTeamPage({
             the complete player field and all five tier lists have been reviewed
             and frozen.
           </p>
+          {betaState?.entryOpensAt && (
+            <RocketFieldOpeningCountdown
+              opensAt={betaState.entryOpensAt}
+              serverNow={new Date().toISOString()}
+            />
+          )}
           {user.isAdmin && betaState?.passState === "UNLOCKED" && (
             <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-800">
               <p className="mx-auto mb-3 max-w-md text-xs leading-5 text-zinc-500 dark:text-zinc-400">

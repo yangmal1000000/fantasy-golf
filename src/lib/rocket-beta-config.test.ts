@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { formatRocketBetaEntryDeadline } from "./rocket-beta-config";
+import {
+  ROCKET_BETA_ENTRY_OPENS_AT,
+  formatRocketBetaEntryDeadline,
+} from "./rocket-beta-config";
+
+test("Rocket team entry has one server-owned scheduled opening", () => {
+  assert.equal(
+    ROCKET_BETA_ENTRY_OPENS_AT.toISOString(),
+    "2026-07-28T08:00:00.000Z",
+  );
+});
 
 test("public Rocket deadline stays tied to first tee until officially confirmed", () => {
   assert.equal(

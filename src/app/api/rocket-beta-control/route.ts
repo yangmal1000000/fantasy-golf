@@ -273,6 +273,7 @@ async function readControl() {
       name: campaign.name,
       status: campaign.status,
       tournamentId: campaign.tournamentId,
+      entryOpensAt: campaign.entryOpensAt?.toISOString() ?? null,
       entryClosesAt: campaign.entryClosesAt?.toISOString() ?? null,
       entryDeadlineConfirmed: ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED,
       fieldVersion: campaign.fieldVersion,
