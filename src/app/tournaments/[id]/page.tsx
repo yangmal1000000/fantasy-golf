@@ -25,7 +25,37 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const t = await prisma.tournament.findUnique({ where: { id }, select: { name: true } });
   if (!t) return { title: "Tournament — Fantasy Golf" };
-  return { title: `${t.name} — Fantasy Golf`, description: `Tournament details, field, and entry for ${t.name}.` };
+  const description =
+    id === ROCKET_BETA_TOURNAMENT_ID
+      ? "Join the free Rocket Classic test flight: complete Target, unlock a Test Pass and build a five-player team."
+      : `Tournament details, field, and entry for ${t.name}.`;
+  return {
+    title: `${t.name} — Fantasy Golf`,
+    description,
+    ...(id === ROCKET_BETA_TOURNAMENT_ID
+      ? {
+          openGraph: {
+            title: "Rocket Classic Free Test Flight",
+            description,
+            type: "website",
+            images: [
+              {
+                url: "/courses/detroit-gc.jpg",
+                width: 1024,
+                height: 1024,
+                alt: "Artistic aerial impression of Detroit Golf Club",
+              },
+            ],
+          },
+          twitter: {
+            card: "summary_large_image",
+            title: "Rocket Classic Free Test Flight",
+            description,
+            images: ["/courses/detroit-gc.jpg"],
+          },
+        }
+      : {}),
+  };
 }
 
 export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -159,8 +189,14 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       {/* Header banner */}
       <div className={`relative mt-2 overflow-hidden rounded-xl ${theme ? `ring-1 ${theme.borderAccent}` : ""}`}>
         {isRocketBeta ? (
-          <div className="h-52 bg-[radial-gradient(circle_at_82%_18%,rgba(221,199,127,.30),transparent_26%),radial-gradient(circle_at_18%_82%,rgba(76,155,103,.35),transparent_28%),linear-gradient(125deg,#061f16_0%,#0a3d2a_52%,#142d22_100%)] sm:h-60">
-            <div className="absolute right-5 top-5 rounded-full border border-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-white/45">
+          <div className="h-52 sm:h-60">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/courses/detroit-gc.jpg"
+              alt="Artistic aerial impression of Detroit Golf Club"
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute right-5 top-5 rounded-full border border-white/20 bg-[#071f16]/45 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-white/80 backdrop-blur-sm">
               Detroit · 2026
             </div>
           </div>
