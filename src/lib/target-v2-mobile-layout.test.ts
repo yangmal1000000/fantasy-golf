@@ -53,10 +53,29 @@ test("real decisions do not repeat the practice placement bubble", () => {
 
 test("completion leads with the Test Pass handoff and collapses read-only detail", () => {
   const handoffIndex = targetSource.indexOf("Test-flight handoff");
+  const rankingIndex = targetSource.lastIndexOf("How ranking works");
   const reviewIndex = targetSource.indexOf("Review my three decisions");
   assert.ok(handoffIndex >= 0);
+  assert.ok(rankingIndex > handoffIndex);
+  assert.ok(reviewIndex > rankingIndex);
   assert.ok(reviewIndex > handoffIndex);
   assert.match(targetSource, /Build my Rocket team →/);
+});
+
+test("returning entrants can reread scoring and the intro is unambiguous", () => {
+  const completeStage = targetSource.slice(
+    targetSource.indexOf("function CompleteStage"),
+    targetSource.indexOf("function MetricGrid"),
+  );
+
+  assert.match(
+    targetSource,
+    /each using the supplied golfer[\s\S]*one expected finish centre/,
+  );
+  assert.match(completeStage, /How ranking works/);
+  assert.match(completeStage, /TARGET_V2_SCORING_EXPLANATION/);
+  assert.match(completeStage, /frozen geometric median/);
+  assert.match(completeStage, /not a simple arithmetic average/);
 });
 
 test("the promoted Target submits v2 points and confirms the locked entry", () => {
@@ -90,6 +109,11 @@ test("the map shows direction without pretending to calculate a curved flight", 
   assert.match(courseMapSource, /EXPECTED FINISH CENTRE/);
   assert.match(courseMapSource, /data-target-overlay="expected-finish-pattern"/);
   assert.match(courseMapSource, /place \$\{markerTermWithArticle\}/);
+  assert.equal(
+    [...courseMapSource.matchAll(/aria-live="polite"[\s\S]*?aria-atomic="true"/g)]
+      .length,
+    2,
+  );
 });
 
 test("entrant and judge screens share the same clarity presentation layer", () => {

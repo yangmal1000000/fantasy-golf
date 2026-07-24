@@ -381,6 +381,7 @@ export default function CourseMap({
             <span
               className="flex h-11 w-11 items-center justify-center rounded-xl bg-black/20 px-1 text-center text-[9px] font-black leading-3 text-[#f4df9d]"
               aria-live="polite"
+              aria-atomic="true"
             >
               {finishYards} yd
             </span>
@@ -433,6 +434,7 @@ export default function CourseMap({
               <p
                 className="text-sm font-black text-[#0a3d2a] dark:text-green-300"
                 aria-live="polite"
+                aria-atomic="true"
               >
                 <span className={immersiveMobileControls ? "sm:hidden" : "hidden"}>
                   Approx. {finishYards} yd

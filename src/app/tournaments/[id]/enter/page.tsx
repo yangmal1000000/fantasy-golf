@@ -57,10 +57,10 @@ export default async function EnterTeamPage({
     return (
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#0a3d2a]">
+          <h1 className="text-2xl font-bold text-[#0a3d2a] dark:text-green-300">
             {tournament.name}
           </h1>
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
             {tournament.course} ·{" "}
             {formatDateRange(tournament.startDate, tournament.endDate)} · Par{" "}
             {tournament.par}
@@ -142,8 +142,10 @@ export default async function EnterTeamPage({
     <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Tournament header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#0a3d2a]">{tournament.name}</h1>
-        <p className="text-sm text-zinc-600">
+        <h1 className="text-2xl font-bold text-[#0a3d2a] dark:text-green-300">
+          {tournament.name}
+        </h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
           {tournament.course} ·{" "}
           {formatDateRange(tournament.startDate, tournament.endDate)} · Par{" "}
           {tournament.par}
