@@ -89,6 +89,7 @@ test("the map shows direction without pretending to calculate a curved flight", 
   assert.match(courseMapSource, /INTENDED LINE/);
   assert.match(courseMapSource, /EXPECTED FINISH CENTRE/);
   assert.match(courseMapSource, /data-target-overlay="expected-finish-pattern"/);
+  assert.match(courseMapSource, /place \$\{markerTermWithArticle\}/);
 });
 
 test("entrant and judge screens share the same clarity presentation layer", () => {

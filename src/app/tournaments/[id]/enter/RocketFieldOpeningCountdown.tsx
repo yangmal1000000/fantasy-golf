@@ -95,7 +95,7 @@ export default function RocketFieldOpeningCountdown({
             ? "Official initial field update pending"
             : "Official final field update pending"
           : isProvisionalDrafting
-            ? "Provisional drafting expected in"
+            ? "Provisional draft expected in"
             : "Final confirmation expected in"}
       </p>
       {hasReachedExpectedTime ? (
