@@ -66,7 +66,7 @@ const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(!t){
 function Navbar() {
   return (
     <header className="site-shell-header sticky top-0 z-50 bg-[#0a3d2a] text-white shadow-lg safe-area-top">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-2 sm:px-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-2 sm:px-4 2xl:max-w-7xl">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-base tracking-tight shrink-0">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#c8a951] text-[#0a3d2a]">
