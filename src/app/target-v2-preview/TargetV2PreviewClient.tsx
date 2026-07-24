@@ -253,8 +253,8 @@ export default function TargetV2Client() {
               Read the situation. Choose the finish centre.
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-5 text-white/75 sm:mt-3 sm:text-base sm:leading-6">
-              Three course-management decisions using a supplied golfer profile
-              and one expected finish centre.
+              Three course-management decisions, each using the supplied golfer
+              profile and one expected finish centre.
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] font-bold sm:mt-5 sm:gap-2 sm:text-xs">
               <TargetPill>Free test flight</TargetPill>
@@ -930,6 +930,23 @@ function CompleteStage({
               : "Build my Rocket team →"}
           </Link>
         </div>
+
+        <details className="rounded-2xl border border-[#c8a951]/40 bg-[#fffaf0] dark:border-[#c8a951]/30 dark:bg-[#c8a951]/10">
+          <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-4 py-3 font-black text-zinc-900 dark:text-white sm:px-5">
+            <span>How ranking works</span>
+            <span className="text-xs font-bold text-[#9b7b25] dark:text-[#d7bc6a]">
+              Read the method
+            </span>
+          </summary>
+          <div className="space-y-2 border-t border-[#c8a951]/30 px-4 py-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300 sm:px-5 sm:py-4">
+            <p>{TARGET_V2_SCORING_EXPLANATION}</p>
+            <p>
+              The reference is the frozen geometric median of the three judge
+              markers—not a simple arithmetic average. Exact ties use Decision
+              3, then 2, then 1.
+            </p>
+          </div>
+        </details>
 
         <details className="rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/40">
           <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-4 py-3 font-black text-zinc-900 dark:text-white sm:px-5">

@@ -58,3 +58,15 @@ test("both milestones poll automatically but the clock is never an opening gate"
     /playoff, withdrawal or publishing delay/,
   );
 });
+
+test("the Rocket entry heading stays readable in dark mode", () => {
+  assert.equal(
+    [...enterPageSource.matchAll(/<h1[\s\S]*?dark:text-green-300[\s\S]*?<\/h1>/g)]
+      .length,
+    2,
+  );
+  assert.equal(
+    [...enterPageSource.matchAll(/text-zinc-600 dark:text-zinc-400/g)].length,
+    2,
+  );
+});
