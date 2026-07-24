@@ -108,6 +108,8 @@ test("the production field endpoint is signed and supports safe stage/freeze mod
   assert.match(workflowSource, /- apply/);
   assert.match(workflowSource, /--max-time 110/);
   assert.match(workflowSource, /alreadyApplied/);
+  assert.match(workflowSource, /teamsAutoConfirmed/);
+  assert.match(workflowSource, /teamsAutoConfirmedWithChanges/);
   assert.match(workflowSource, /secrets\.ROCKET_CRON_SECRET/);
   assert.match(workflowSource, /api\/sync\/rocket-field/);
   assert.match(middlewareSource, /pathname === "\/api\/sync\/rocket-field"/);

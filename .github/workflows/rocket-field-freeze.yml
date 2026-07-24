@@ -74,5 +74,7 @@ jobs:
             frozen,
             provisionalDraftingOpened,
             draftsReconciled,
-            draftChanges
+            draftChanges,
+            teamsAutoConfirmed,
+            teamsAutoConfirmedWithChanges
           }' "$output"
