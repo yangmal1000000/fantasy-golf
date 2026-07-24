@@ -44,6 +44,16 @@ test("weekend drafting is explicit and final confirmation reuses then clears the
   assert.match(teamRoute, /draftTeam: Prisma\.DbNull/);
 });
 
+test("Rocket entry explains its field-relative tier structure", () => {
+  assert.match(entryForm, /Rocket field tiers/);
+  assert.match(
+    entryForm,
+    /Top 10 · next 10 · next 10 · next 20 · remaining field/,
+  );
+  assert.match(entryForm, /rocketTierCopy\(tier\)/);
+  assert.match(entryForm, /current world ranking is still/);
+});
+
 test("Rocket withdrawals notify before the lock and use deterministic reserves at lock", () => {
   assert.match(autoSub, /waitForUserAmendment/);
   assert.match(autoSub, /notifyPendingRocketSub/);

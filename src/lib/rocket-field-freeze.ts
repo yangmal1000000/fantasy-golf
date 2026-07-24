@@ -8,6 +8,12 @@ import {
   type RocketReserveCandidate,
 } from "@/lib/rocket-draft";
 import { ensureRocketBetaSchema } from "@/lib/rocket-beta-schema";
+import {
+  assignRocketFieldTiers,
+  ROCKET_FIELD_TIER_ORDER,
+  ROCKET_FIELD_TIER_TARGET_COUNTS,
+  ROCKET_MIN_RANKED_PLAYERS,
+} from "@/lib/rocket-tiers";
 import { sendPushToUser } from "@/lib/push";
 
 export type FieldEvidence = {
@@ -36,13 +42,7 @@ type Ranking = { rank: number; name: string; country: string | null };
 
 export const ROCKET_OFFICIAL_FIELD_ID = "R2026524";
 export const ROCKET_COMMITMENT_DEADLINE = "2026-07-24T21:00:00.000Z";
-export const ROCKET_REQUIRED_TIERS = [
-  "T1_10",
-  "T11_20",
-  "T21_30",
-  "T31_50",
-  "T51_PLUS",
-];
+export const ROCKET_REQUIRED_TIERS = [...ROCKET_FIELD_TIER_ORDER];
 
 export class RocketFieldError extends Error {
   constructor(
@@ -128,22 +128,26 @@ export async function stageRocketBetaField(
   const playerByName = new Map(
     currentPlayers.map((player) => [normaliseName(player.name), player]),
   );
-  const staged = manifest.players.map((name) => {
-    const ranking = rankingByName.get(normaliseName(name)) ?? null;
-    const existing = playerByName.get(normaliseName(name)) ?? null;
-    return {
-      name,
-      existing,
-      rank: ranking?.rank ?? null,
-      country: ranking?.country ?? existing?.country ?? null,
-      tier: tierForRank(ranking?.rank ?? null),
-    };
-  });
+  const staged = assignRocketFieldTiers(
+    manifest.players.map((name) => {
+      const ranking = rankingByName.get(normaliseName(name)) ?? null;
+      const existing = playerByName.get(normaliseName(name)) ?? null;
+      return {
+        name,
+        existing,
+        rank: ranking?.rank ?? null,
+        country: ranking?.country ?? existing?.country ?? null,
+      };
+    }),
+  );
   const tierCounts = staged.reduce<Record<string, number>>((counts, player) => {
     counts[player.tier] = (counts[player.tier] ?? 0) + 1;
     return counts;
   }, {});
-  if (freeze) validateFrozenTiers(tierCounts);
+  const rankingCoverage = staged.filter((player) => player.rank !== null).length;
+  if (apply || freeze) {
+    validateRocketFieldTiers(tierCounts, rankingCoverage, staged.length);
+  }
 
   const sources = evidenceSources(manifest);
   const snapshotHash = sha256({
@@ -153,7 +157,13 @@ export async function stageRocketBetaField(
     officialFieldId: manifest.officialFieldId ?? null,
     sources,
     qualifiers: manifest.qualifiers ?? [],
-    players: staged.map(({ name, rank, tier }) => ({ name, rank, tier })),
+    tierPolicy: "field-relative-10-10-10-20-rest",
+    players: staged.map(({ name, rank, tier, fieldPosition }) => ({
+      name,
+      rank,
+      fieldPosition,
+      tier,
+    })),
   });
   const preFreezeSnapshot = freeze
     ? {
@@ -183,7 +193,9 @@ export async function stageRocketBetaField(
     playerCount: staged.length,
     qualifierCount: manifest.qualifiers?.length ?? 0,
     evidenceSourceCount: sources.length,
-    rankingCoverage: staged.filter((player) => player.rank !== null).length,
+    rankingCoverage,
+    minimumRankingCoverage: ROCKET_MIN_RANKED_PLAYERS,
+    tierPolicy: "field-relative-10-10-10-20-rest",
     existingPlayerMatches: staged.filter((player) => player.existing).length,
     playersToCreate: staged.filter((player) => !player.existing).length,
     existingTournamentPlayers: existingField.length,
@@ -555,11 +567,36 @@ async function reconcileDraftsForFinalField(
   return { draftsReconciled, draftChanges, notifications };
 }
 
-function validateFrozenTiers(tierCounts: Record<string, number>) {
+function validateRocketFieldTiers(
+  tierCounts: Record<string, number>,
+  rankingCoverage: number,
+  playerCount: number,
+) {
+  if (rankingCoverage < ROCKET_MIN_RANKED_PLAYERS) {
+    throw new RocketFieldError(
+      `Rocket field needs at least ${ROCKET_MIN_RANKED_PLAYERS} ranked golfers to build balanced tiers; matched ${rankingCoverage}`,
+      502,
+    );
+  }
   const missing = ROCKET_REQUIRED_TIERS.filter((tier) => !tierCounts[tier]);
   if (missing.length > 0) {
     throw new RocketFieldError(
       `Final field has empty tiers: ${missing.join(", ")}`,
+    );
+  }
+  for (const [tier, expected] of Object.entries(
+    ROCKET_FIELD_TIER_TARGET_COUNTS,
+  )) {
+    if (tierCounts[tier] !== expected) {
+      throw new RocketFieldError(
+        `Rocket ${tier} must contain exactly ${expected} golfers; found ${tierCounts[tier] ?? 0}`,
+      );
+    }
+  }
+  const expectedTierFive = playerCount - ROCKET_MIN_RANKED_PLAYERS;
+  if (tierCounts.T51_PLUS !== expectedTierFive) {
+    throw new RocketFieldError(
+      `Rocket T51_PLUS must contain the remaining ${expectedTierFive} golfers; found ${tierCounts.T51_PLUS ?? 0}`,
     );
   }
 }
@@ -626,14 +663,6 @@ function normaliseName(name: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
-}
-
-function tierForRank(rank: number | null) {
-  if (rank === null || rank > 50) return "T51_PLUS";
-  if (rank <= 10) return "T1_10";
-  if (rank <= 20) return "T11_20";
-  if (rank <= 30) return "T21_30";
-  return "T31_50";
 }
 
 function sha256(value: unknown) {

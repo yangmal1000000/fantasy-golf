@@ -264,7 +264,14 @@ export default async function TeamDetailPage({
                       <Flag countryCode={playerCountry} size="sm" />
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5">
-                      <TierBadge tier={p.tier} size="sm" showLabel />
+                      <TierBadge
+                        tier={p.tier}
+                        size="sm"
+                        showLabel
+                        fieldRelative={
+                          tournamentId === ROCKET_BETA_TOURNAMENT_ID
+                        }
+                      />
                       <Sparkline scores={p.roundScores} par={tournament.par} />
                     </div>
                   </div>
