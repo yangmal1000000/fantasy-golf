@@ -199,16 +199,16 @@ function CoordinatorRehearsalStage() {
   return (
     <div className="space-y-7">
       <StateCard
-        title="Development evidence only"
-        detail="You are operating all three test seats. The system will lock marks, calculate targets, rank the sealed entries and confirm a rehearsal winner, but this cannot be presented as independent PGA judging."
+        title="AI development evidence only"
+        detail="You are entering GomBot AI’s conservative, balanced and aggressive simulated perspectives. The system will lock marks, calculate targets, rank the sealed entries and confirm a rehearsal winner, but this cannot be presented as three independent people or PGA judging."
       />
       {error ? <StateCard title="Unable to update rehearsal" detail={error} tone="danger" /> : null}
 
       <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Development panel</p>
-            <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Choose the seat to operate</h2>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">GomBot AI rehearsal</p>
+            <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Choose the strategy perspective</h2>
           </div>
           <StatusBadge status={control.round.status} />
         </div>
@@ -222,7 +222,7 @@ function CoordinatorRehearsalStage() {
                 onClick={() => selectSeat(assignment.seat)}
                 className={`rounded-2xl border p-4 text-left transition ${active ? "border-[#0a3d2a] bg-[#e8f2eb] dark:border-green-500 dark:bg-green-950/30" : "border-zinc-200 dark:border-zinc-700"}`}
               >
-                <p className="font-black text-zinc-900 dark:text-white">Test seat {assignment.seat}</p>
+                <p className="font-black text-zinc-900 dark:text-white">{assignment.displayName}</p>
                 <p className="mt-2 text-xs text-zinc-500">
                   {assignment.initialLockedAt ? "✓ Initial" : "○ Initial"} · {assignment.finalLockedAt ? "✓ Final" : "○ Final"}
                 </p>

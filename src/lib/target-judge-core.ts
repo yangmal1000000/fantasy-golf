@@ -23,6 +23,30 @@ export const TARGET_JUDGE_PANEL_MODES = [
   "COORDINATOR_REHEARSAL",
 ] as const;
 
+export const TARGET_AI_REHEARSAL_PERSPECTIVES = [
+  {
+    seat: 1,
+    key: "CONSERVATIVE",
+    displayName: "GomBot AI · Conservative",
+    credential:
+      "AI-simulated safety-first strategy perspective · development evidence only",
+  },
+  {
+    seat: 2,
+    key: "BALANCED",
+    displayName: "GomBot AI · Balanced",
+    credential:
+      "AI-simulated expected-value strategy perspective · development evidence only",
+  },
+  {
+    seat: 3,
+    key: "AGGRESSIVE",
+    displayName: "GomBot AI · Aggressive",
+    credential:
+      "AI-simulated opportunity-first strategy perspective · development evidence only",
+  },
+] as const;
+
 export type TargetJudgeStatus = (typeof TARGET_JUDGE_STATUSES)[number];
 export type TargetJudgePanelMode = (typeof TARGET_JUDGE_PANEL_MODES)[number];
 export type TargetJudgePhase = "initial" | "final";
