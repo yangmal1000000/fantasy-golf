@@ -136,6 +136,7 @@ export default async function EnterTeamPreviewPage({
         entryFee={tournament.entryFee}
         betaMode
         dryRunMode
+        fieldRelativeTiers={betaState.provisionalFieldReady}
         playersByTier={playersByTier}
         savedTeams={[]}
       />

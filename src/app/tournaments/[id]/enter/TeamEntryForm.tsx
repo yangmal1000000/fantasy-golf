@@ -4,10 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TIER_CONFIG, TIER_ORDER, formatGBP } from "@/lib/ui";
 import { TEAM_ENTRY_TIERS } from "@/lib/team-entry-validation";
-import {
-  ROCKET_FIELD_TOURNAMENT_ID,
-  rocketTierCopy,
-} from "@/lib/rocket-tiers";
+import { rocketTierCopy } from "@/lib/rocket-tiers";
 import SelectionWheel from "@/components/SelectionWheel";
 import Confetti from "@/components/Confetti";
 import PlayerAvatar from "@/components/PlayerAvatar";
@@ -42,6 +39,7 @@ interface TeamEntryFormProps {
   betaMode?: boolean;
   dryRunMode?: boolean;
   provisionalDraftMode?: boolean;
+  fieldRelativeTiers?: boolean;
   initialTeam?: {
     id: string;
     name: string;
@@ -77,6 +75,7 @@ export default function TeamEntryForm({
   betaMode = false,
   dryRunMode = false,
   provisionalDraftMode = false,
+  fieldRelativeTiers = false,
   initialTeam,
   initialDraft,
   playersByTier,
@@ -114,8 +113,6 @@ export default function TeamEntryForm({
   const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const teamNameInputRef = useRef<HTMLInputElement>(null);
-  const fieldRelativeTiers = tournamentId === ROCKET_FIELD_TOURNAMENT_ID;
-
   const selectedCount = Object.keys(selections).length;
   const allTiersFilled = TEAM_ENTRY_TIERS.every((tier) => selections[tier]);
   const selectedPlayers = TEAM_ENTRY_TIERS.map((tier) =>

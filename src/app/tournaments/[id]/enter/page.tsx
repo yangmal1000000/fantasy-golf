@@ -264,6 +264,9 @@ export default async function EnterTeamPage({
             entryFee={tournament.entryFee}
             betaMode={isRocketBeta}
             provisionalDraftMode={provisionalDraftMode}
+            fieldRelativeTiers={Boolean(
+              betaState?.provisionalFieldReady || betaState?.fieldReady,
+            )}
             initialDraft={initialDraft}
             playersByTier={Object.fromEntries(
               Object.entries(playersByTier).map(([tier, players]) => [
