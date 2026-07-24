@@ -48,48 +48,39 @@ test("paused and final campaigns never self-enrol new accounts", () => {
   );
 });
 
-test("a frozen field stays closed until the scheduled opening", () => {
+test("a verified frozen field opens as soon as it is frozen", () => {
   assert.equal(
     isRocketBetaFieldOpen({
-      entryOpensAt: "2026-07-28T08:00:00.000Z",
-      fieldFrozenAt: "2026-07-28T07:55:00.000Z",
+      fieldFrozenAt: "2026-07-27T19:55:00.000Z",
       fieldHash: "verified-field-hash",
-      now: new Date("2026-07-28T07:59:59.999Z"),
-    }),
-    false,
-  );
-});
-
-test("a verified frozen field opens exactly at the scheduled time", () => {
-  const opensAt = new Date("2026-07-28T08:00:00.000Z");
-  assert.equal(
-    isRocketBetaFieldOpen({
-      entryOpensAt: opensAt,
-      fieldFrozenAt: "2026-07-28T07:55:00.000Z",
-      fieldHash: "verified-field-hash",
-      now: opensAt,
     }),
     true,
   );
 });
 
-test("the scheduled time never opens an incomplete field", () => {
-  const now = new Date("2026-07-28T08:00:00.000Z");
+test("a malformed frozen timestamp never opens the field", () => {
   assert.equal(
     isRocketBetaFieldOpen({
-      entryOpensAt: now,
+      fieldFrozenAt: "not-a-date",
+      fieldHash: "verified-field-hash",
+    }),
+    false,
+  );
+});
+
+test("an expected time never opens an incomplete field", () => {
+  const now = new Date("2026-07-27T21:00:00.000Z");
+  assert.equal(
+    isRocketBetaFieldOpen({
       fieldFrozenAt: null,
       fieldHash: "verified-field-hash",
-      now,
     }),
     false,
   );
   assert.equal(
     isRocketBetaFieldOpen({
-      entryOpensAt: now,
       fieldFrozenAt: now,
       fieldHash: null,
-      now,
     }),
     false,
   );

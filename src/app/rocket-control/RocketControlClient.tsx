@@ -154,7 +154,7 @@ export default function RocketControlClient() {
                     ? `Frozen · ${campaign.fieldVersion}`
                     : `Provisional · ${campaign.fieldVersion ?? "not staged"}`}${
                     campaign.entryOpensAt
-                      ? ` · Opens ${new Date(campaign.entryOpensAt).toLocaleString("en-GB", {
+                      ? ` · Expected ${new Date(campaign.entryOpensAt).toLocaleString("en-GB", {
                           timeZone: "Europe/London",
                         })}`
                       : ""

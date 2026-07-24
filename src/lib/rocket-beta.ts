@@ -137,7 +137,6 @@ export async function getRocketBetaStateForUser(
     fieldVersion: campaign.fieldVersion,
     fieldFrozenAt: campaign.fieldFrozenAt?.toISOString() ?? null,
     fieldReady: isRocketBetaFieldOpen({
-      entryOpensAt: campaign.entryOpensAt ?? ROCKET_BETA_ENTRY_OPENS_AT,
       fieldFrozenAt: campaign.fieldFrozenAt,
       fieldHash: campaign.fieldHash,
     }),
@@ -323,7 +322,6 @@ export async function requireRocketBetaEntryPass(
   }
   if (
     !isRocketBetaFieldOpen({
-      entryOpensAt: campaign.entryOpensAt ?? ROCKET_BETA_ENTRY_OPENS_AT,
       fieldFrozenAt: campaign.fieldFrozenAt,
       fieldHash: campaign.fieldHash,
     })

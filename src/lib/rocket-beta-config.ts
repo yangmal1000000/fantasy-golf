@@ -1,6 +1,10 @@
-// Team entry is scheduled to open after the post-qualifier field review.
-// A frozen final field and all five populated tiers are still required.
-export const ROCKET_BETA_ENTRY_OPENS_AT = new Date("2026-07-28T08:00:00.000Z");
+// This is the public expected-availability point, not a security gate.
+// Entry opens earlier if the complete official field is verified and frozen.
+export const ROCKET_BETA_FIELD_EXPECTED_AT = new Date("2026-07-27T21:00:00.000Z");
+
+// Keep the existing database/API field compatible while its meaning changes
+// from a hard opening time to the public expected-availability time.
+export const ROCKET_BETA_ENTRY_OPENS_AT = ROCKET_BETA_FIELD_EXPECTED_AT;
 
 export const ROCKET_BETA_ENTRY_CLOSES_AT = new Date("2026-07-30T10:45:00.000Z");
 

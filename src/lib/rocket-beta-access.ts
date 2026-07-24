@@ -14,10 +14,8 @@ export function isRocketBetaRegistrationOpen(input: {
 }
 
 export function isRocketBetaFieldOpen(input: {
-  entryOpensAt: Date | string | null;
   fieldFrozenAt: Date | string | null;
   fieldHash: string | null;
-  now?: Date;
 }) {
   if (!input.fieldFrozenAt || !input.fieldHash) return false;
 
@@ -26,12 +24,5 @@ export function isRocketBetaFieldOpen(input: {
       ? input.fieldFrozenAt
       : new Date(input.fieldFrozenAt);
   if (Number.isNaN(frozenAt.getTime())) return false;
-  if (!input.entryOpensAt) return true;
-
-  const opensAt =
-    input.entryOpensAt instanceof Date
-      ? input.entryOpensAt
-      : new Date(input.entryOpensAt);
-  if (Number.isNaN(opensAt.getTime())) return false;
-  return (input.now ?? new Date()).getTime() >= opensAt.getTime();
+  return true;
 }

@@ -1,0 +1,69 @@
+name: Rocket Classic field freeze
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Dry-run the deployed manifest or freeze the verified final field"
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - freeze
+
+permissions: {}
+
+concurrency:
+  group: rocket-classic-field-freeze
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verify or freeze Rocket Classic field
+        env:
+          CRON_SECRET: ${{ secrets.ROCKET_CRON_SECRET }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+
+          output="$RUNNER_TEMP/rocket-field.json"
+          status="$(
+            curl \
+              --silent \
+              --show-error \
+              --max-time 55 \
+              --output "$output" \
+              --write-out "%{http_code}" \
+              --request POST \
+              --header "Authorization: Bearer $CRON_SECRET" \
+              --header "Content-Type: application/json" \
+              --data "{\"mode\":\"$MODE\"}" \
+              "https://fantasy-golf-phi.vercel.app/api/sync/rocket-field"
+          )"
+
+          if [[ "$status" != "200" ]]; then
+            echo "Rocket field endpoint returned HTTP $status."
+            jq -c '{ok, error}' "$output" || true
+            exit 1
+          fi
+
+          jq -e '.ok == true' "$output" >/dev/null
+          jq -c '{
+            ok,
+            mode,
+            version,
+            sourceStatus,
+            playerCount,
+            qualifierCount,
+            evidenceSourceCount,
+            rankingCoverage,
+            tierCounts,
+            snapshotHash,
+            preFreezeSnapshotHash,
+            applied,
+            frozen
+          }' "$output"
