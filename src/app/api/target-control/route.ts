@@ -9,6 +9,7 @@ import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import {
   TARGET_JUDGE_ROUND_SLUG,
   TARGET_SCENARIO_VERSION,
+  TARGET_AI_REHEARSAL_PERSPECTIVES,
   isTargetJudgePanelMode,
   isTargetJudgeStatus,
   validateJudgeSubmission,
@@ -183,12 +184,12 @@ async function startCoordinatorRehearsal(actorEmail: string) {
 
     await tx.targetJudgeAssignment.deleteMany({ where: { roundId: round.id } });
     await tx.targetJudgeAssignment.createMany({
-      data: [1, 2, 3].map((seat) => ({
+      data: TARGET_AI_REHEARSAL_PERSPECTIVES.map((perspective) => ({
         roundId: round.id,
-        seat,
-        email: `coordinator-rehearsal-seat-${seat}@fantasy-golf.invalid`,
-        displayName: `Development panel seat ${seat}`,
-        credential: "Coordinator-operated rehearsal seat · not an independent PGA judge",
+        seat: perspective.seat,
+        email: `gombot-ai-${perspective.key.toLowerCase()}@fantasy-golf.invalid`,
+        displayName: perspective.displayName,
+        credential: perspective.credential,
       })),
     });
     await tx.targetJudgingRound.update({
@@ -208,6 +209,10 @@ async function startCoordinatorRehearsal(actorEmail: string) {
           entrySetHash: currentEntrySetHash,
           seats: 3,
           independentPanel: false,
+          source: "gombot_ai",
+          perspectives: TARGET_AI_REHEARSAL_PERSPECTIVES.map(
+            (perspective) => perspective.key,
+          ),
         },
       },
     });

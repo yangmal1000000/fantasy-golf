@@ -149,7 +149,7 @@ export default function TargetControlClient() {
               </div>
               {round.panelMode === "COORDINATOR_REHEARSAL" ? (
                 <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-200">
-                  <strong>Development panel rehearsal.</strong> The coordinator is operating all three test seats. This validates the software and winner calculation, but it is not an independent PGA panel result.
+                  <strong>Three-perspective AI rehearsal.</strong> GomBot AI supplied conservative, balanced and aggressive strategy perspectives for the coordinator to enter. This validates the software and winner calculation, but it is not an independent human or PGA panel result.
                 </div>
               ) : null}
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -264,16 +264,16 @@ export default function TargetControlClient() {
                 </div>
               </section>
               <section className="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20 sm:p-7">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">Two-person development rehearsal</p>
-                <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Operate all three test seats yourself</h2>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">Three-perspective AI development rehearsal</p>
+                <h2 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">Enter GomBot’s conservative, balanced and aggressive views</h2>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-700 dark:text-zinc-300">
-                  After Harry and Russ have both entered and the entry set is sealed, this opens three clearly labelled development seats on the Judge page. It proves the complete target, ranking and winner-confirmation path without claiming an independent PGA panel.
+                  After the complete Target entry set is sealed, this opens three clearly labelled simulated perspectives on the Judge page. It proves the complete target, ranking and winner-confirmation path without claiming three independent people or a PGA panel.
                 </p>
                 <button
                   type="button"
                   disabled={!round.pilotEntriesSealedAt || busy}
                   onClick={() => {
-                    if (window.confirm("Start the coordinator-operated development panel? This permanently freezes the rehearsal as non-independent and opens test seat 1.")) mutate("start_coordinator_rehearsal");
+                    if (window.confirm("Start the three-perspective GomBot AI rehearsal? This permanently labels the result as non-independent and opens the conservative perspective.")) mutate("start_coordinator_rehearsal");
                   }}
                   className="mt-5 rounded-xl bg-blue-700 px-5 py-3 text-sm font-black text-white disabled:opacity-35 dark:bg-blue-600"
                 >
@@ -317,7 +317,7 @@ export default function TargetControlClient() {
                 <ControlCard
                   title={round.panelMode === "COORDINATOR_REHEARSAL" ? "Rehearsal targets are locked" : "Official targets are locked"}
                   detail={round.panelMode === "COORDINATOR_REHEARSAL"
-                    ? "The system combined the three coordinator-operated test seats automatically. This validates the software only and is not an independent-panel result."
+                    ? "The system combined GomBot AI’s three simulated strategy perspectives automatically. This validates the software only and is not an independent-panel result."
                     : "The system combined the three final marks automatically. There is no manual target or winner override."}
                   tone="success"
                 />

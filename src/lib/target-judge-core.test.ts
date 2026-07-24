@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   calculateOfficialTargets,
   isTargetJudgePanelMode,
+  TARGET_AI_REHEARSAL_PERSPECTIVES,
   validateTargetJudgePanel,
   validateJudgeSubmission,
   type TargetJudgeSubmission,
@@ -42,6 +43,22 @@ test("accepts only explicit official and coordinator-rehearsal panel modes", () 
   assert.equal(isTargetJudgePanelMode("OFFICIAL"), true);
   assert.equal(isTargetJudgePanelMode("COORDINATOR_REHEARSAL"), true);
   assert.equal(isTargetJudgePanelMode("COORDINATOR_AS_PGA_JUDGE"), false);
+});
+
+test("the coordinator rehearsal discloses one AI source and three simulated perspectives", () => {
+  assert.deepEqual(
+    TARGET_AI_REHEARSAL_PERSPECTIVES.map(({ seat, key }) => ({ seat, key })),
+    [
+      { seat: 1, key: "CONSERVATIVE" },
+      { seat: 2, key: "BALANCED" },
+      { seat: 3, key: "AGGRESSIVE" },
+    ],
+  );
+  for (const perspective of TARGET_AI_REHEARSAL_PERSPECTIVES) {
+    assert.match(perspective.displayName, /GomBot AI/);
+    assert.match(perspective.credential, /AI-simulated/);
+    assert.match(perspective.credential, /development evidence only/);
+  }
 });
 
 test("rejects short rationales and duplicate scenarios", () => {
