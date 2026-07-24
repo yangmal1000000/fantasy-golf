@@ -191,6 +191,23 @@ select {
   box-shadow: var(--shadow-lg);
 }
 
+/* Immediate tactile feedback for primary touch controls. */
+.press-feedback {
+  touch-action: manipulation;
+  transition:
+    transform 100ms ease,
+    filter 100ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.press-feedback:not(:disabled):active {
+  transform: translateY(1px) scale(0.98);
+  filter: brightness(0.92);
+}
+
 /* Better focus states */
 *:focus-visible {
   outline: 2px solid var(--color-accent);
@@ -225,6 +242,19 @@ select {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes navigation-loading {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(420%);
+  }
+}
+
+.navigation-loading-bar {
+  animation: navigation-loading 1.1s ease-in-out infinite;
 }
 
 /* Position up — green flash when improving */

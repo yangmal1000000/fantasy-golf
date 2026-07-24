@@ -59,6 +59,20 @@ export class RocketBetaError extends Error {
 }
 
 export async function ensureRocketBetaCampaign() {
+  try {
+    const existing = await prisma.rocketBetaCampaign.findUnique({
+      where: { slug: ROCKET_BETA_CAMPAIGN_SLUG },
+    });
+    if (existing) return existing;
+  } catch (error) {
+    if (
+      !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+      error.code !== "P2021"
+    ) {
+      throw error;
+    }
+  }
+
   await ensureRocketBetaSchema();
 
   const [tournament, round] = await Promise.all([

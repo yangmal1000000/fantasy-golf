@@ -51,3 +51,19 @@ test("large tiers have an accessible player search", () => {
   assert.match(teamEntrySource, /player\.name\.toLowerCase\(\)\.includes/);
   assert.match(teamEntrySource, /No golfers match/);
 });
+
+test("team selection gives immediate tactile and visible feedback", () => {
+  assert.match(teamEntrySource, /aria-pressed=\{isSelected\}/);
+  assert.match(teamEntrySource, /press-feedback/);
+  assert.match(teamEntrySource, /selectionFeedback/);
+  assert.match(teamEntrySource, /✓ \$\{player\.name\} selected/);
+  assert.match(teamEntrySource, /aria-live="polite"/);
+  assert.match(teamEntrySource, /Tap a golfer to change your pick/);
+  assert.match(teamEntrySource, /dark:bg-\[#c8a951\]\/15/);
+});
+
+test("a saved provisional draft leads directly to its visible My Teams card", () => {
+  assert.match(teamEntrySource, /router\.push\("\/my-teams"\)/);
+  assert.match(teamEntrySource, /View saved draft/);
+  assert.match(teamEntrySource, /Opening…/);
+});

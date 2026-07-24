@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TIER_CONFIG, TIER_ORDER, formatGBP } from "@/lib/ui";
 import { TEAM_ENTRY_TIERS } from "@/lib/team-entry-validation";
@@ -112,6 +112,12 @@ export default function TeamEntryForm({
   const [dryRunReviewOpen, setDryRunReviewOpen] = useState(false);
   const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [selectionFeedback, setSelectionFeedback] = useState<string | null>(
+    null,
+  );
+  const selectionFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const teamNameInputRef = useRef<HTMLInputElement>(null);
   const selectedCount = Object.keys(selections).length;
   const allTiersFilled = TEAM_ENTRY_TIERS.every((tier) => selections[tier]);
@@ -180,9 +186,28 @@ export default function TeamEntryForm({
   // Clear missing slots warning when user manually selects a replacement
   function handleTierSelect(tier: string, tournamentPlayerId: string) {
     const isRemovingSelection = selections[tier] === tournamentPlayerId;
+    const player = (playersByTier[tier] || []).find(
+      (candidate) => candidate.tournamentPlayerId === tournamentPlayerId,
+    );
     toggleSelect(tier, tournamentPlayerId);
     setMissingSlots((prev) => prev.filter((s) => s.tier !== tier));
     setPlayerSearches((current) => ({ ...current, [tier]: "" }));
+    setSelectionFeedback(
+      player
+        ? isRemovingSelection
+          ? `${player.name} removed`
+          : `✓ ${player.name} selected`
+        : isRemovingSelection
+          ? "Selection removed"
+          : "Golfer selected",
+    );
+    if (selectionFeedbackTimer.current) {
+      clearTimeout(selectionFeedbackTimer.current);
+    }
+    selectionFeedbackTimer.current = setTimeout(
+      () => setSelectionFeedback(null),
+      1800,
+    );
 
     if (isRemovingSelection) return;
 
@@ -201,6 +226,15 @@ export default function TeamEntryForm({
       });
     }
   }
+
+  useEffect(
+    () => () => {
+      if (selectionFeedbackTimer.current) {
+        clearTimeout(selectionFeedbackTimer.current);
+      }
+    },
+    [],
+  );
 
   const [submittedTeamId, setSubmittedTeamId] = useState<string | null>(null);
   const [saveTemplateState, setSaveTemplateState] = useState<
@@ -393,7 +427,7 @@ export default function TeamEntryForm({
           teamName={teamName.trim()}
           players={selectedPlayers}
           onEdit={() => setDraftSaved(false)}
-          onFinish={() => router.push(`/tournaments/${tournamentId}`)}
+          onFinish={() => router.push("/my-teams")}
         />
       )}
 
@@ -603,13 +637,27 @@ export default function TeamEntryForm({
                       />
                     ))}
                   </div>
+                  <p
+                    className={`mt-1 min-h-4 truncate text-[11px] font-semibold ${
+                      selectionFeedback
+                        ? "text-emerald-700 dark:text-emerald-300"
+                        : "text-zinc-400 dark:text-zinc-500"
+                    }`}
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
+                    {selectionFeedback ??
+                      (selectedCount === TEAM_ENTRY_TIERS.length
+                        ? "Tap a golfer to change your pick"
+                        : "Tap a golfer to add them")}
+                  </p>
                 </div>
               </div>
               {/* Submit button — hidden on mobile */}
               <button
                 onClick={handleSubmit}
                 disabled={submitting || showConfetti}
-                className="hidden min-h-11 rounded-full bg-[#c8a951] px-6 py-2 text-sm font-bold text-[#1a1a1a] shadow transition enabled:hover:bg-[#d4b76a] disabled:cursor-not-allowed disabled:opacity-40 sm:block"
+                className="press-feedback hidden min-h-11 rounded-full bg-[#c8a951] px-6 py-2 text-sm font-bold text-[#1a1a1a] shadow enabled:hover:bg-[#d4b76a] disabled:cursor-not-allowed disabled:opacity-40 sm:block"
               >
                 {submitting
                   ? "Submitting..."
@@ -730,7 +778,7 @@ export default function TeamEntryForm({
                   <div className="sm:mb-3 sm:flex sm:items-center sm:gap-2">
                     <button
                       onClick={() => toggleTier(tier)}
-                      className="flex w-full items-center justify-between gap-2 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2.5 sm:hidden"
+                      className="press-feedback flex w-full items-center justify-between gap-2 bg-zinc-50 px-3 py-2.5 dark:bg-zinc-800/50 sm:hidden"
                     >
                       <div className="flex items-center gap-2">
                         <span
@@ -818,12 +866,14 @@ export default function TeamEntryForm({
                         return (
                           <button
                             key={p.tournamentPlayerId}
+                            type="button"
                             onClick={() =>
                               handleTierSelect(tier, p.tournamentPlayerId)
                             }
-                            className={`flex items-center justify-between rounded-xl border-2 p-3 text-left transition ${
+                            aria-pressed={isSelected}
+                            className={`press-feedback flex items-center justify-between rounded-xl border-2 p-3 text-left ${
                               isSelected
-                                ? `${config.cardClass} ring-2 ring-[#0a3d2a]/30`
+                                ? `${config.cardClass} ring-2 ring-[#0a3d2a]/40 shadow-sm dark:border-[#c8a951]/70 dark:bg-[#c8a951]/15`
                                 : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600"
                             }`}
                           >
@@ -849,7 +899,7 @@ export default function TeamEntryForm({
                               </div>
                             </div>
                             {isSelected && (
-                              <span className="shrink-0 text-lg text-[#0a3d2a]">
+                              <span className="shrink-0 text-lg text-[#0a3d2a] dark:text-[#d7bc6a]">
                                 ✓
                               </span>
                             )}
@@ -897,7 +947,7 @@ export default function TeamEntryForm({
               <button
                 onClick={handleSubmit}
                 disabled={submitting || showConfetti}
-                className="shrink-0 rounded-full bg-[#0a3d2a] px-6 py-3 text-sm font-bold text-white shadow transition enabled:hover:bg-[#0a3d2a] disabled:cursor-not-allowed disabled:opacity-40 touch-target"
+                className="press-feedback touch-target shrink-0 rounded-full bg-[#0a3d2a] px-6 py-3 text-sm font-bold text-white shadow enabled:hover:bg-[#0a3d2a] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {submitting
                   ? "..."
@@ -943,7 +993,7 @@ export default function TeamEntryForm({
               <button
                 onClick={handleSubmit}
                 disabled={submitting || showConfetti}
-                className="rounded-full bg-[#0a3d2a] px-8 py-3 text-sm font-bold text-white shadow transition enabled:hover:bg-[#0a3d2a] disabled:cursor-not-allowed disabled:opacity-40"
+                className="press-feedback rounded-full bg-[#0a3d2a] px-8 py-3 text-sm font-bold text-white shadow enabled:hover:bg-[#0a3d2a] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {submitting
                   ? "Submitting..."
@@ -1080,7 +1130,7 @@ function TeamReviewModal({
             type="button"
             onClick={onBack}
             disabled={submitting}
-            className="min-h-11 rounded-xl border border-zinc-300 px-4 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="press-feedback min-h-11 rounded-xl border border-zinc-300 px-4 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
             Back to picks
           </button>
@@ -1088,7 +1138,7 @@ function TeamReviewModal({
             type="button"
             onClick={onConfirm}
             disabled={submitting}
-            className="min-h-11 rounded-xl bg-[#0a3d2a] px-4 text-sm font-bold text-white transition hover:bg-[#12563c] disabled:opacity-50"
+            className="press-feedback min-h-11 rounded-xl bg-[#0a3d2a] px-4 text-sm font-bold text-white hover:bg-[#12563c] disabled:opacity-50"
           >
             {submitting
               ? provisionalDraftMode
@@ -1121,6 +1171,8 @@ function DraftSavedModal({
   onEdit: () => void;
   onFinish: () => void;
 }) {
+  const [leaving, setLeaving] = useState(false);
+
   return (
     <div
       className="fixed inset-0 z-[60] flex items-end bg-black/70 p-0 sm:items-center sm:justify-center sm:p-4"
@@ -1167,16 +1219,29 @@ function DraftSavedModal({
           <button
             type="button"
             onClick={onEdit}
-            className="min-h-11 rounded-xl border border-zinc-300 px-4 text-sm font-bold text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
+            disabled={leaving}
+            className="press-feedback min-h-11 rounded-xl border border-zinc-300 px-4 text-sm font-bold text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200"
           >
             Edit draft
           </button>
           <button
             type="button"
-            onClick={onFinish}
-            className="min-h-11 rounded-xl bg-[#0a3d2a] px-4 text-sm font-bold text-white"
+            onClick={() => {
+              setLeaving(true);
+              onFinish();
+            }}
+            disabled={leaving}
+            className="press-feedback min-h-11 rounded-xl bg-[#0a3d2a] px-3 text-sm font-bold text-white disabled:opacity-70"
           >
-            Done
+            <span className="inline-flex items-center justify-center gap-2">
+              {leaving ? (
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 rounded-full border-2 border-white border-r-transparent motion-safe:animate-spin"
+                />
+              ) : null}
+              {leaving ? "Opening…" : "View saved draft"}
+            </span>
           </button>
         </div>
       </div>

@@ -28,9 +28,31 @@ export default async function EnterTeamPage({
   const [tournament, user] = await Promise.all([
     prisma.tournament.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        course: true,
+        startDate: true,
+        endDate: true,
+        par: true,
+        status: true,
+        entryFee: true,
         players: {
-          include: { player: true },
+          select: {
+            id: true,
+            playerId: true,
+            tier: true,
+            withdrew: true,
+            player: {
+              select: {
+                id: true,
+                name: true,
+                country: true,
+                photoUrl: true,
+                dataGolfRank: true,
+              },
+            },
+          },
           orderBy: { player: { dataGolfRank: "asc" } },
         },
       },
@@ -80,26 +102,26 @@ export default async function EnterTeamPage({
     );
   }
 
-  const betaState = isRocketBeta ? await getRocketBetaStateForUser(user) : null;
+  const [betaState, savedTeams] = await Promise.all([
+    isRocketBeta ? getRocketBetaStateForUser(user) : Promise.resolve(null),
+    prisma.savedTeam.findMany({
+      where: { userId: user.id },
+      include: {
+        players: {
+          include: {
+            player: {
+              select: { id: true, name: true, country: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
   if (betaState && !betaState.approved) notFound();
   if (betaState?.passState === "REDEEMED" && betaState.teamId) {
     redirect(`/tournaments/${tournament.id}/teams/${betaState.teamId}`);
   }
-
-  // Fetch user's saved team templates
-  const savedTeams = await prisma.savedTeam.findMany({
-    where: { userId: user.id },
-    include: {
-      players: {
-        include: {
-          player: {
-            select: { id: true, name: true, country: true },
-          },
-        },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
 
   // Serialize saved teams for the client component
   const savedTeamsPreview = savedTeams.map((st) => ({

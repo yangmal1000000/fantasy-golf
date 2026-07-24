@@ -10,9 +10,11 @@ import SignInPrompt from "@/components/SignInPrompt";
 import {
   ROCKET_BETA_CAMPAIGN_SLUG,
   ROCKET_BETA_TOURNAMENT_ID,
-  ensureRocketBetaCampaign,
 } from "@/lib/rocket-beta";
 import { isRocketBetaFieldOpen } from "@/lib/rocket-beta-access";
+import { parseRocketDraft } from "@/lib/rocket-draft";
+import { rocketTierCopy } from "@/lib/rocket-tiers";
+import PendingLinkLabel from "@/components/PendingLinkLabel";
 import { SavedTeamsSection, SaveAsTemplateButton } from "./SavedTeamsClient";
 
 export const revalidate = 60;
@@ -36,8 +38,6 @@ export default async function MyTeamsPage() {
       </Suspense>
     );
   }
-
-  await ensureRocketBetaCampaign();
 
   // Fetch saved teams and entered teams in parallel
   const [savedTeams, teams, rocketPass] = await Promise.all([
@@ -110,7 +110,14 @@ export default async function MyTeamsPage() {
     rocketPass?.campaign.provisionalFieldReadyAt &&
     rocketPass.campaign.fieldHash,
   );
-  const hasRocketDraft = Boolean(rocketPass?.draftTeam);
+  const rocketDraft = parseRocketDraft(rocketPass?.draftTeam);
+  const hasRocketDraft = Boolean(rocketDraft);
+  const rocketDraftPicks = rocketDraft
+    ? [...rocketDraft.picks].sort(
+        (left, right) =>
+          TIER_ORDER.indexOf(left.tier) - TIER_ORDER.indexOf(right.tier),
+      )
+    : [];
 
   // Serialize saved teams for client component
   const savedTeamsData = savedTeams.map((st) => ({
@@ -138,7 +145,7 @@ export default async function MyTeamsPage() {
           My Teams
         </h1>
         <p className="mt-0.5 text-xs text-zinc-500">
-          Saved templates &amp; tournament entries
+          Saved drafts, templates &amp; tournament entries
         </p>
 
         {/* Saved Teams Section */}
@@ -169,19 +176,106 @@ export default async function MyTeamsPage() {
                     : "The official initial field is available. Save five weekend picks now without redeeming your Test Pass; final confirmation follows the Monday field update."
                   : "The official initial field has not been published yet. Your Test Pass remains unlocked."}
             </p>
+
+            {rocketDraft ? (
+              <section
+                className="mt-4 overflow-hidden rounded-2xl border border-[#c8a951]/35 bg-white/80 shadow-sm dark:border-[#c8a951]/25 dark:bg-black/20"
+                aria-label="Saved provisional Rocket draft"
+              >
+                <div className="flex items-start justify-between gap-3 border-b border-[#c8a951]/20 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-black uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
+                      Provisional team
+                    </p>
+                    <h3 className="mt-0.5 truncate text-base font-black text-zinc-900 dark:text-white">
+                      {rocketDraft.teamName}
+                    </h3>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-black text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    <span aria-hidden="true">✓</span> 5 picks saved
+                  </span>
+                </div>
+
+                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  {rocketDraftPicks.map((pick) => (
+                    <div
+                      key={pick.tier}
+                      className="flex min-h-12 items-center gap-3 px-4 py-2.5"
+                    >
+                      <TierBadge
+                        tier={pick.tier}
+                        size="md"
+                        fieldRelative
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-zinc-900 dark:text-white">
+                          {pick.playerName}
+                        </p>
+                        <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+                          {rocketTierCopy(pick.tier)?.label ??
+                            pick.tier.replaceAll("_", " ")}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-xs font-semibold tabular text-zinc-500 dark:text-zinc-400">
+                        {pick.rank ? `World #${pick.rank}` : "Unranked"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-3 border-t border-[#c8a951]/20 bg-[#fffaf0]/80 px-3 py-3 text-center dark:bg-[#c8a951]/5">
+                  <div>
+                    <span className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-black text-white">
+                      ✓
+                    </span>
+                    <p className="mt-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                      Draft saved
+                    </p>
+                  </div>
+                  <div>
+                    <span className="mx-auto flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#c8a951] bg-white text-[10px] font-black text-[#8a6d1d] dark:bg-zinc-900 dark:text-[#d7bc6a]">
+                      2
+                    </span>
+                    <p className="mt-1 text-[10px] font-bold text-zinc-600 dark:text-zinc-300">
+                      Final field
+                    </p>
+                  </div>
+                  <div>
+                    <span className="mx-auto flex h-6 w-6 items-center justify-center rounded-full border-2 border-zinc-300 bg-white text-[10px] font-black text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900">
+                      3
+                    </span>
+                    <p className="mt-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
+                      Confirm team
+                    </p>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
             <Link
               href="/tournaments/rocket-classic/enter"
-              className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white transition hover:bg-[#12563c]"
+              className="press-feedback mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white shadow-sm hover:bg-[#12563c] sm:w-auto"
             >
-              {rocketFieldReady
-                ? hasRocketDraft
-                  ? "Review and confirm team →"
-                  : "Build Rocket team →"
-                : rocketProvisionalFieldReady
-                  ? hasRocketDraft
-                    ? "Edit provisional draft →"
-                    : "Start provisional draft →"
-                  : "View entry status →"}
+              <PendingLinkLabel
+                idle={
+                  rocketFieldReady
+                    ? hasRocketDraft
+                      ? "Review and confirm team →"
+                      : "Build Rocket team →"
+                    : rocketProvisionalFieldReady
+                      ? hasRocketDraft
+                        ? "Edit provisional draft →"
+                        : "Start provisional draft →"
+                      : "View entry status →"
+                }
+                pending={
+                  rocketFieldReady
+                    ? "Opening team review…"
+                    : rocketProvisionalFieldReady
+                      ? "Opening your draft…"
+                      : "Checking entry status…"
+                }
+              />
             </Link>
           </div>
         ) : null}

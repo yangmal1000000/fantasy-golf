@@ -9,10 +9,23 @@ const myTeamsSource = readFileSync(
 
 test("an unlocked Rocket pass distinguishes a provisional draft from an official team", () => {
   assert.match(myTeamsSource, /rocketPass\?\.status === "UNLOCKED"/);
+  assert.match(myTeamsSource, /parseRocketDraft\(rocketPass\?\.draftTeam\)/);
   assert.match(myTeamsSource, /Your provisional Rocket draft is saved/);
   assert.match(myTeamsSource, /without using the Test Pass/);
   assert.match(myTeamsSource, /official initial field has not been published/);
   assert.match(myTeamsSource, /href="\/tournaments\/rocket-classic\/enter"/);
+});
+
+test("My Teams renders the saved provisional team and all five picks", () => {
+  assert.match(myTeamsSource, /Saved provisional Rocket draft/);
+  assert.match(myTeamsSource, /\{rocketDraft\.teamName\}/);
+  assert.match(myTeamsSource, /rocketDraftPicks\.map/);
+  assert.match(myTeamsSource, /\{pick\.playerName\}/);
+  assert.match(myTeamsSource, /fieldRelative/);
+  assert.match(myTeamsSource, /5 picks saved/);
+  assert.match(myTeamsSource, /Draft saved/);
+  assert.match(myTeamsSource, /Final field/);
+  assert.match(myTeamsSource, /Confirm team/);
 });
 
 test("My Teams changes its Rocket action when the reviewed field opens", () => {
@@ -21,4 +34,6 @@ test("My Teams changes its Rocket action when the reviewed field opens", () => {
   assert.match(myTeamsSource, /Build Rocket team →/);
   assert.match(myTeamsSource, /Start provisional draft →/);
   assert.match(myTeamsSource, /View entry status →/);
+  assert.match(myTeamsSource, /PendingLinkLabel/);
+  assert.match(myTeamsSource, /Opening your draft…/);
 });
