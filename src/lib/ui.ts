@@ -122,6 +122,7 @@ export const COURSE_IMAGES: Record<string, string> = {
   "memorial-tournament": "/courses/muirfield-village.jpg",
   "tour-championship": "/courses/east-lake.jpg",
   "bmw-pga": "/courses/wentworth.jpg",
+  "rocket-classic": "/courses/detroit-gc.jpg",
 };
 
 /** Keyword → image mapping for course-name-based matching */
@@ -148,7 +149,7 @@ const COURSE_KEYWORD_IMAGES: { keywords: string[]; image: string }[] = [
   { keywords: ["harbour town", "rbc heritage"], image: "/courses/royal-birkdale.jpg" },
   { keywords: ["southwind", "jude"], image: "/courses/tpc-sawgrass.jpg" },
   { keywords: ["wentworth", "bmw pga", "dp world"], image: "/courses/wentworth.jpg" },
-  { keywords: ["detroit", "rocket mortgage", "rocket classic"], image: "/courses/bay-hill.jpg" },
+  { keywords: ["detroit", "rocket mortgage", "rocket classic"], image: "/courses/detroit-gc.jpg" },
   { keywords: ["pebble beach", "at&t", "pro-am"], image: "/courses/oakmont.jpg" },
   { keywords: ["kapalua", "sentry", "plantation"], image: "/courses/royal-birkdale.jpg" },
   { keywords: ["torrey pines", "farmers"], image: "/courses/oakmont.jpg" },
@@ -384,5 +385,4 @@ export const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string
   lpga_major: { label: "LPGA Major", badgeClass: "bg-pink-100 text-pink-800 border-pink-300", icon: "star" },
   regular: { label: "Regular", badgeClass: "bg-zinc-100 text-zinc-600 border-zinc-300", icon: "flag" },
 };
-
 

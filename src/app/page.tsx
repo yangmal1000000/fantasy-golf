@@ -103,27 +103,40 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="rounded-3xl border border-white/12 bg-white/8 p-5 backdrop-blur sm:p-6">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#e4cc85]">
-              Event brief
-            </p>
-            <h2 className="mt-3 text-2xl font-black">{tournament.name}</h2>
-            <p className="mt-2 inline-flex items-center gap-2 text-sm text-white/65">
-              <MapPinIcon className="h-4 w-4 text-[#d7bc6a]" />
-              Detroit Golf Club · Detroit, Michigan
-            </p>
-            <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-white/10 pt-5">
-              <EventFact label="Dates" value="30 Jul–2 Aug" />
-              <EventFact label="Course" value="7,328 yds" />
-              <EventFact label="Par" value="70" />
-              <EventFact
-                label="Team lock"
-                value={formatRocketBetaEntryDeadline({
-                  closesAt: ROCKET_BETA_ENTRY_CLOSES_AT,
-                  confirmed: ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED,
-                })}
+          <div className="overflow-hidden rounded-3xl border border-white/12 bg-white/8 backdrop-blur">
+            <div className="relative h-40 sm:h-44">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/courses/detroit-gc.jpg"
+                alt="Artistic aerial impression of Detroit Golf Club"
+                className="h-full w-full object-cover"
               />
-            </dl>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#071f16] via-[#071f16]/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#e4cc85]">
+                  Rocket Classic · Detroit
+                </p>
+                <h2 className="mt-1 text-2xl font-black">{tournament.name}</h2>
+              </div>
+            </div>
+            <div className="p-5 sm:p-6">
+              <p className="inline-flex items-center gap-2 text-sm text-white/65">
+                <MapPinIcon className="h-4 w-4 text-[#d7bc6a]" />
+                Detroit Golf Club · Detroit, Michigan
+              </p>
+              <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-white/10 pt-5">
+                <EventFact label="Dates" value="30 Jul–2 Aug" />
+                <EventFact label="Course" value="7,328 yds" />
+                <EventFact label="Par" value="70" />
+                <EventFact
+                  label="Team lock"
+                  value={formatRocketBetaEntryDeadline({
+                    closesAt: ROCKET_BETA_ENTRY_CLOSES_AT,
+                    confirmed: ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED,
+                  })}
+                />
+              </dl>
+            </div>
           </div>
         </div>
       </section>
@@ -188,7 +201,7 @@ export default async function Home() {
               icon={<TargetIcon className="h-6 w-6" />}
               number="01"
               title="Place three targets"
-              text="Read each supplied golf situation and place the intended landing centre. Completion—not score—unlocks beta access."
+              text="Read each supplied golf situation and place the intended finishing position. Completion—not score—unlocks beta access."
             />
             <JourneyCard
               icon={<TicketIcon className="h-6 w-6" />}

@@ -8,7 +8,6 @@ export const metadata: Metadata = {
 };
 import { formatDateRange, STATUS_CONFIG, courseImage, CATEGORY_CONFIG } from "@/lib/ui";
 import { toParDisplay } from "@/lib/score-colors";
-import CountdownTimer from "@/components/CountdownTimer";
 import { Suspense } from "react";
 import { TournamentListSkeleton } from "@/components/Skeletons";
 import TournamentSearch from "./TournamentSearch";
@@ -240,6 +239,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
                 <div className="space-y-2">
                   {group.items.map((t) => {
                     const status = STATUS_CONFIG[t.status] ?? STATUS_CONFIG.upcoming;
+                    const isRocketBeta = t.id === "rocket-classic";
                     const canEnter = t.status === "entries_open" || t.status === "upcoming";
                     const isLive = t.status === "in_progress";
                     const cat = CATEGORY_CONFIG[t.category];
@@ -268,7 +268,9 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className="truncate text-sm font-bold text-zinc-900 dark:text-white group-hover:text-[#0a3d2a] dark:group-hover:text-green-400">{t.name}</h3>
-                            <span className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${status.badgeClass}`}>{status.label}</span>
+                            <span className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${isRocketBeta ? "border border-[#c8a951]/40 bg-[#c8a951]/15 text-[#8a6919] dark:text-[#f0d986]" : status.badgeClass}`}>
+                              {isRocketBeta ? "Open test flight" : status.label}
+                            </span>
                           </div>
                           <div className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
                             <MapPinIcon className="h-3 w-3 shrink-0 text-zinc-400" />
@@ -283,10 +285,16 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
                               <span className="text-zinc-400">teams</span>
                             </span>
                             <span className="text-zinc-300 dark:text-zinc-700">|</span>
-                            <span className="inline-flex items-center gap-1">
-                              <PoundIcon className="h-3 w-3 text-[#c8a951]" />
-                              <span className="font-bold tabular text-[#c8a951]">£{(t.entryFee / 100).toFixed(0)}</span>
-                            </span>
+                            {isRocketBeta ? (
+                              <span className="font-bold text-[#9b7b25] dark:text-[#e4cc85]">
+                                Free test flight
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1">
+                                <PoundIcon className="h-3 w-3 text-[#c8a951]" />
+                                <span className="font-bold tabular text-[#c8a951]">£{(t.entryFee / 100).toFixed(0)}</span>
+                              </span>
+                            )}
                             {potValue > 0 && (
                               <>
                                 <span className="text-zinc-300 dark:text-zinc-700">|</span>
