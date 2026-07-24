@@ -14,7 +14,8 @@ export async function middleware(request: NextRequest) {
     pathname === "/api/sync/results" ||
     pathname === "/api/sync/rankings" ||
     pathname === "/api/sync/schedule" ||
-    pathname === "/api/sync/live";
+    pathname === "/api/sync/live" ||
+    pathname === "/api/sync/rocket-field";
   const cronSecret = process.env.CRON_SECRET;
   const cronAuthorized = Boolean(
     cronSafeApi &&
