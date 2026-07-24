@@ -8,6 +8,8 @@
  *   lg  — 32×36px shield + full label (headers, hero sections)
  */
 
+import { rocketTierCopy } from "@/lib/rocket-tiers";
+
 const TIER_META: Record<
   string,
   {
@@ -59,15 +61,20 @@ interface TierBadgeProps {
   tier: string;
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
+  fieldRelative?: boolean;
 }
 
 export default function TierBadge({
   tier,
   size = "sm",
   showLabel = false,
+  fieldRelative = false,
 }: TierBadgeProps) {
   const meta = TIER_META[tier];
   if (!meta) return null;
+  const label = fieldRelative
+    ? (rocketTierCopy(tier)?.label ?? meta.label)
+    : meta.label;
 
   const dims = {
     sm: { w: 18, h: 21, font: 8, iconScale: 0.4 },
@@ -119,7 +126,7 @@ export default function TierBadge({
       </svg>
       {showLabel && (
         <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-          {meta.label}
+          {label}
         </span>
       )}
     </span>

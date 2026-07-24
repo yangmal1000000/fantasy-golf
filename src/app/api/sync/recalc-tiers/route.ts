@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { tierForRank } from "@/lib/data-sync";
 import { adminApiGuard } from "@/lib/admin-auth";
+import { ROCKET_FIELD_TOURNAMENT_ID } from "@/lib/rocket-tiers";
 
 export const maxDuration = 300;
 
 /**
  * POST /api/sync/recalc-tiers
- * Recalculates tier assignments for ALL TournamentPlayer records
- * based on their player's current dataGolfRank. No ESPN fetch.
+ * Recalculates global rank-band tiers for ordinary TournamentPlayer records.
+ * Rocket is excluded because its tiers are field-relative and source-frozen.
  * Pass ?offset=N to skip ahead (for chunked invocation).
  */
 export async function POST(request: Request) {
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
   const BATCH = 500;
 
   const tournamentPlayers = await prisma.tournamentPlayer.findMany({
+    where: { tournamentId: { not: ROCKET_FIELD_TOURNAMENT_ID } },
     include: { player: { select: { dataGolfRank: true } } },
     skip: offset,
     take: BATCH,
@@ -37,7 +39,9 @@ export async function POST(request: Request) {
     }
   }
 
-  const total = await prisma.tournamentPlayer.count();
+  const total = await prisma.tournamentPlayer.count({
+    where: { tournamentId: { not: ROCKET_FIELD_TOURNAMENT_ID } },
+  });
   const processed = offset + tournamentPlayers.length;
 
   return NextResponse.json({

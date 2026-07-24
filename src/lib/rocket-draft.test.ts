@@ -90,6 +90,36 @@ test("final reconciliation preserves valid picks and replaces only an invalid ti
   assert.equal(result.draft.status, "FINAL_RECONCILED");
 });
 
+test("field-relative re-tiering replaces a moved boundary pick within its original slot", () => {
+  const input = draft();
+  const roster = [
+    input.picks[0],
+    { ...input.picks[1], tier: "T1_10" },
+    candidate("rank-16", "T11_20", 16),
+    ...input.picks.slice(2),
+  ];
+  const result = reconcileRocketDraft(input, roster, {
+    fieldVersion: "final",
+    fieldHash: "final-hash",
+    reconciledAt: "2026-07-27T20:10:00.000Z",
+  });
+
+  assert.deepEqual(result.changes, [
+    {
+      tier: "T11_20",
+      oldPlayerId: "original-1",
+      oldPlayerName: "original-1",
+      oldRank: 15,
+      newPlayerId: "rank-16",
+      newPlayerName: "rank-16",
+      newRank: 16,
+      reason: "TIER_CHANGED",
+    },
+  ]);
+  assert.equal(result.draft.picks[1].tier, "T11_20");
+  assert.equal(result.draft.picks[1].playerId, "rank-16");
+});
+
 test("draft parser rejects missing tiers and duplicate players", () => {
   const valid = draft();
   assert.ok(parseRocketDraft(valid));

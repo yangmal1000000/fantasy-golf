@@ -23,6 +23,10 @@ import {
 } from "@/lib/ui";
 import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
 import { calculateLeaderboard, type TeamScoreResult } from "@/lib/scoring";
+import {
+  ROCKET_FIELD_TIER_ORDER,
+  rocketTierCopy,
+} from "@/lib/rocket-tiers";
 import MajorScoreboard from "@/components/MajorScoreboard";
 import {
   MapPinIcon,
@@ -219,14 +223,22 @@ export default async function TournamentDetailPage({
   const potValue = tournament.entryFee * tournament._count.teams;
 
   // Group players by tier
-  const tierOrder = ["T1_10", "T11_20", "T21_30", "T31_50", "T51_PLUS"];
-  const tierLabels: Record<string, string> = {
+  const tierOrder = [...ROCKET_FIELD_TIER_ORDER];
+  const defaultTierLabels: Record<string, string> = {
     T1_10: "Tier 1 (Ranks 1–10)",
     T11_20: "Tier 2 (Ranks 11–20)",
     T21_30: "Tier 3 (Ranks 21–30)",
     T31_50: "Tier 4 (Ranks 31–50)",
     T51_PLUS: "Tier 5 (Ranks 51+)",
   };
+  const tierLabels = Object.fromEntries(
+    tierOrder.map((tier) => [
+      tier,
+      isRocketBeta
+        ? (rocketTierCopy(tier)?.label ?? defaultTierLabels[tier])
+        : defaultTierLabels[tier],
+    ]),
+  );
   const playersByTier: Record<string, typeof tournament.players> = {};
   for (const tp of tournament.players) {
     const tier = tp.tier ?? "T51_PLUS";

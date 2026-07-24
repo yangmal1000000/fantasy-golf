@@ -7,6 +7,7 @@
  */
 
 import { prisma } from "./prisma";
+import { ROCKET_FIELD_TOURNAMENT_ID } from "./rocket-tiers";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -362,9 +363,8 @@ export async function getESPNSchedule(
 // ── Tier Recalculation ─────────────────────────────────────────────────────
 
 /**
- * Recalculate tier assignments for all TournamentPlayer records based on
- * each player's current dataGolfRank. Returns a summary of how many tiers
- * were changed.
+ * Recalculate global rank-band tiers for ordinary TournamentPlayer records.
+ * Rocket is excluded because its tiers are assigned within its official field.
  */
 export async function recalculateTiers(): Promise<{
   tiersChanged: number;
@@ -372,6 +372,7 @@ export async function recalculateTiers(): Promise<{
 }> {
   // Load all tournament players with their player rank
   const tournamentPlayers = await prisma.tournamentPlayer.findMany({
+    where: { tournamentId: { not: ROCKET_FIELD_TOURNAMENT_ID } },
     include: {
       player: {
         select: { dataGolfRank: true },

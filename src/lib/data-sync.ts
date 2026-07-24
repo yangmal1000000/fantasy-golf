@@ -12,6 +12,7 @@
  */
 
 import { prisma } from "./prisma";
+import { ROCKET_FIELD_TOURNAMENT_ID } from "./rocket-tiers";
 import { processAutoSubs } from "./auto-sub";
 import { recalculateTeamScores } from "./team-scores";
 import { applyCutLogic } from "./scoring";
@@ -540,10 +541,11 @@ function parseESPNRankings(html: string): Array<{ rank: number; name: string; co
 }
 
 /**
- * Recalculate tier assignments for all TournamentPlayer records.
+ * Recalculate global rank-band tiers, excluding field-relative Rocket tiers.
  */
 export async function recalculateAllTiers(): Promise<{ tiersChanged: number; totalChecked: number }> {
   const tournamentPlayers = await prisma.tournamentPlayer.findMany({
+    where: { tournamentId: { not: ROCKET_FIELD_TOURNAMENT_ID } },
     include: { player: { select: { dataGolfRank: true } } },
   });
 
@@ -670,12 +672,15 @@ async function processESPNCompetitors(
       : reachedRoundThree
         ? true
         : existingTP?.madeCut ?? null;
+    const rocketFieldManaged = tournamentId === ROCKET_FIELD_TOURNAMENT_ID;
     const tierVal =
-      fieldIsFrozen && existingTP ? existingTP.tier : tierForRank(rank);
+      (fieldIsFrozen || rocketFieldManaged) && existingTP
+        ? existingTP.tier
+        : tierForRank(rank);
 
     // Check if tournament link exists
     if (!existingTP) {
-      if (fieldIsFrozen) continue;
+      if (fieldIsFrozen || rocketFieldManaged) continue;
       newTPs.push({ tournamentId, playerId, tier: tierVal, madeCut, withdrew });
       tpMap.set(playerId, { tier: tierVal, madeCut, withdrew });
       playersLinked++;

@@ -4,6 +4,10 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TIER_CONFIG, TIER_ORDER, formatGBP } from "@/lib/ui";
 import { TEAM_ENTRY_TIERS } from "@/lib/team-entry-validation";
+import {
+  ROCKET_FIELD_TOURNAMENT_ID,
+  rocketTierCopy,
+} from "@/lib/rocket-tiers";
 import SelectionWheel from "@/components/SelectionWheel";
 import Confetti from "@/components/Confetti";
 import PlayerAvatar from "@/components/PlayerAvatar";
@@ -110,6 +114,7 @@ export default function TeamEntryForm({
   const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const teamNameInputRef = useRef<HTMLInputElement>(null);
+  const fieldRelativeTiers = tournamentId === ROCKET_FIELD_TOURNAMENT_ID;
 
   const selectedCount = Object.keys(selections).length;
   const allTiersFilled = TEAM_ENTRY_TIERS.every((tier) => selections[tier]);
@@ -118,6 +123,12 @@ export default function TeamEntryForm({
       (player) => player.tournamentPlayerId === selections[tier],
     ),
   ).filter((player): player is TierPlayer => Boolean(player));
+
+  function displayTierConfig(tier: string) {
+    const config = TIER_CONFIG[tier] ?? TIER_CONFIG.T51_PLUS;
+    const rocketCopy = fieldRelativeTiers ? rocketTierCopy(tier) : null;
+    return rocketCopy ? { ...config, ...rocketCopy } : config;
+  }
 
   function toggleSelect(tier: string, tournamentPlayerId: string) {
     setSelections((prev) => {
@@ -451,6 +462,22 @@ export default function TeamEntryForm({
         </div>
       )}
 
+      {fieldRelativeTiers && (
+        <section className="mb-5 rounded-2xl border border-[#c8a951]/40 bg-[#fffaf0] p-4 dark:border-[#c8a951]/30 dark:bg-[#c8a951]/10">
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-[#9b7b25] dark:text-[#d7bc6a]">
+            Rocket field tiers
+          </p>
+          <p className="mt-1 text-sm font-bold text-zinc-900 dark:text-white">
+            Top 10 · next 10 · next 10 · next 20 · remaining field
+          </p>
+          <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+            Tiers are ranked within this event so every upper tier offers a
+            real choice. Each golfer&rsquo;s current world ranking is still
+            shown beside their name.
+          </p>
+        </section>
+      )}
+
       {/* Mode toggle: Pick Fresh vs Use Saved Team */}
       {hasSavedTeams && !isEditing && (
         <div className="mb-5">
@@ -674,7 +701,7 @@ export default function TeamEntryForm({
           {/* Tier sections — accordion on mobile */}
           <div className="space-y-3 sm:space-y-8">
             {TEAM_ENTRY_TIERS.map((tier) => {
-              const config = TIER_CONFIG[tier];
+              const config = displayTierConfig(tier);
               const players = playersByTier[tier] || [];
               const selectedId = selections[tier];
               const isOpen = openTiers.has(tier);
