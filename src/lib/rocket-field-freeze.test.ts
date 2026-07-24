@@ -31,7 +31,10 @@ test("Rocket final-field freeze is tied to the correct official PGA TOUR field",
 
 test("Rocket final-field freeze requires all qualifiers and all five tiers", () => {
   assert.match(freezeSource, /manifest\.qualifiers\.length !== 4/);
-  assert.match(freezeSource, /Every Monday qualifier must appear in the final field/);
+  assert.match(
+    freezeSource,
+    /Every Monday qualifier must appear in the final field/,
+  );
   assert.match(
     freezeSource,
     /ROCKET_REQUIRED_TIERS = \[[\s\S]*"T1_10"[\s\S]*"T51_PLUS"[\s\S]*\]/,
@@ -41,14 +44,21 @@ test("Rocket final-field freeze requires all qualifiers and all five tiers", () 
   assert.match(freezeSource, /preFreezeSnapshotHash/);
 });
 
-test("the production freeze endpoint is signed and the workflow defaults to dry-run", () => {
-  assert.match(endpointSource, /adminApiGuard\(request, \{ allowCron: true \}\)/);
+test("the production field endpoint is signed and supports safe stage/freeze modes", () => {
+  assert.match(
+    endpointSource,
+    /adminApiGuard\(request, \{ allowCron: true \}\)/,
+  );
   assert.match(endpointSource, /body\.mode !== "dry-run"/);
+  assert.match(endpointSource, /body\.mode !== "apply"/);
+  assert.match(freezeSource, /validateOfficialInitialManifest\(manifest\)/);
+  assert.match(freezeSource, /ROCKET_COMMITMENT_DEADLINE/);
+  assert.match(freezeSource, /Manifest contains a placeholder player/);
+  assert.match(freezeSource, /provisionalFieldReadyAt/);
+  assert.match(freezeSource, /reconcileDraftsForFinalField/);
   assert.match(workflowSource, /default: dry-run/);
+  assert.match(workflowSource, /- apply/);
   assert.match(workflowSource, /secrets\.ROCKET_CRON_SECRET/);
   assert.match(workflowSource, /api\/sync\/rocket-field/);
-  assert.match(
-    middlewareSource,
-    /pathname === "\/api\/sync\/rocket-field"/,
-  );
+  assert.match(middlewareSource, /pathname === "\/api\/sync\/rocket-field"/);
 });

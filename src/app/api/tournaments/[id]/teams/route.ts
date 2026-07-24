@@ -17,17 +17,14 @@ import {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     assertSameOrigin(req);
     assertJsonRequest(req);
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json(
-        { error: "Sign in required" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Sign in required" }, { status: 401 });
     }
     const userId = user.id;
 
@@ -40,11 +37,20 @@ export async function POST(
     });
 
     if (!tournament) {
-      return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Tournament not found" },
+        { status: 404 },
+      );
     }
 
-    if (tournament.status !== "entries_open" && tournament.status !== "upcoming") {
-      return NextResponse.json({ error: "Entries are closed" }, { status: 400 });
+    if (
+      tournament.status !== "entries_open" &&
+      tournament.status !== "upcoming"
+    ) {
+      return NextResponse.json(
+        { error: "Entries are closed" },
+        { status: 400 },
+      );
     }
     const isRocketBeta = tournament.id === ROCKET_BETA_TOURNAMENT_ID;
     if (isRocketBeta) {
@@ -64,7 +70,10 @@ export async function POST(
       }
       if (state.passState === "REDEEMED") {
         return NextResponse.json(
-          { error: "Your Rocket Classic Test Pass has already been used", teamId: state.teamId },
+          {
+            error: "Your Rocket Classic Test Pass has already been used",
+            teamId: state.teamId,
+          },
           { status: 409 },
         );
       }
@@ -107,10 +116,20 @@ export async function POST(
         if (beta) {
           const redeemed = await tx.rocketBetaPass.updateMany({
             where: { id: beta.pass.id, status: "UNLOCKED", teamId: null },
-            data: { status: "REDEEMED", redeemedAt: new Date(), teamId: created.id },
+            data: {
+              status: "REDEEMED",
+              redeemedAt: new Date(),
+              teamId: created.id,
+              draftTeam: Prisma.DbNull,
+              draftUpdatedAt: new Date(),
+              draftFieldVersion: beta.campaign.fieldVersion,
+            },
           });
           if (redeemed.count !== 1) {
-            throw new RocketBetaError("Your Rocket Classic Test Pass has already been used", 409);
+            throw new RocketBetaError(
+              "Your Rocket Classic Test Pass has already been used",
+              409,
+            );
           }
           await tx.rocketBetaAudit.create({
             data: {
@@ -122,6 +141,7 @@ export async function POST(
                 passId: beta.pass.id,
                 teamId: created.id,
                 tournamentId,
+                provisionalDraftUsed: Boolean(beta.pass.draftTeam),
               },
             },
           });
@@ -145,7 +165,10 @@ export async function POST(
     if (err instanceof TeamEntryValidationError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
       return NextResponse.json(
         { error: "A team has already been submitted for this Test Pass" },
         { status: 409 },
@@ -153,7 +176,7 @@ export async function POST(
     }
     return NextResponse.json(
       { error: "Failed to create team" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -166,7 +189,12 @@ function assertSameOrigin(request: NextRequest) {
 }
 
 function assertJsonRequest(request: NextRequest) {
-  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+  if (
+    !request.headers
+      .get("content-type")
+      ?.toLowerCase()
+      .startsWith("application/json")
+  ) {
     throw new RocketBetaError("Content-Type must be application/json", 415);
   }
   const contentLength = Number(request.headers.get("content-length") ?? "0");

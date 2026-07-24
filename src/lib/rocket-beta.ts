@@ -15,6 +15,7 @@ import {
   ROCKET_BETA_ENTRY_CLOSES_AT,
   ROCKET_BETA_ENTRY_OPENS_AT,
 } from "@/lib/rocket-beta-config";
+import { parseRocketDraft, type RocketDraft } from "@/lib/rocket-draft";
 import { ensureRocketBetaSchema } from "@/lib/rocket-beta-schema";
 import { TARGET_JUDGE_ROUND_SLUG } from "@/lib/target-judge-core";
 
@@ -37,6 +38,9 @@ export interface RocketBetaState {
   fieldVersion: string | null;
   fieldFrozenAt: string | null;
   fieldReady: boolean;
+  provisionalFieldReady: boolean;
+  draft: RocketDraft | null;
+  draftUpdatedAt: string | null;
   passState: RocketBetaPassState;
   unlockedAt: string | null;
   redeemedAt: string | null;
@@ -46,7 +50,10 @@ export interface RocketBetaState {
 type BetaActor = Pick<User, "id" | "email" | "name">;
 
 export class RocketBetaError extends Error {
-  constructor(message: string, public readonly status = 400) {
+  constructor(
+    message: string,
+    public readonly status = 400,
+  ) {
     super(message);
   }
 }
@@ -133,14 +140,22 @@ export async function getRocketBetaStateForUser(
     entryOpensAt: (
       campaign.entryOpensAt ?? ROCKET_BETA_ENTRY_OPENS_AT
     ).toISOString(),
-    entryClosesAt: (campaign.entryClosesAt ?? ROCKET_BETA_ENTRY_CLOSES_AT).toISOString(),
+    entryClosesAt: (
+      campaign.entryClosesAt ?? ROCKET_BETA_ENTRY_CLOSES_AT
+    ).toISOString(),
     fieldVersion: campaign.fieldVersion,
     fieldFrozenAt: campaign.fieldFrozenAt?.toISOString() ?? null,
     fieldReady: isRocketBetaFieldOpen({
       fieldFrozenAt: campaign.fieldFrozenAt,
       fieldHash: campaign.fieldHash,
     }),
-    passState: pass?.status === "REDEEMED" ? "REDEEMED" : pass ? "UNLOCKED" : "LOCKED",
+    provisionalFieldReady: Boolean(
+      campaign.provisionalFieldReadyAt && campaign.fieldHash,
+    ),
+    draft: parseRocketDraft(pass?.draftTeam),
+    draftUpdatedAt: pass?.draftUpdatedAt?.toISOString() ?? null,
+    passState:
+      pass?.status === "REDEEMED" ? "REDEEMED" : pass ? "UNLOCKED" : "LOCKED",
     unlockedAt: pass?.unlockedAt.toISOString() ?? null,
     redeemedAt: pass?.redeemedAt?.toISOString() ?? null,
     teamId: pass?.teamId ?? null,
@@ -194,7 +209,10 @@ async function enrolRocketBetaParticipant(
               actorUserId: user.id,
               actorEmail: email,
               action: "participant_joined",
-              payload: { memberId: created.id, accessMode: "open_registration" },
+              payload: {
+                memberId: created.id,
+                accessMode: "open_registration",
+              },
             },
           });
           return created;
@@ -335,10 +353,16 @@ export async function requireRocketBetaEntryPass(
     where: { campaignId_userId: { campaignId: campaign.id, userId: user.id } },
   });
   if (!pass) {
-    throw new RocketBetaError("Complete Target to unlock your Rocket Classic Test Pass", 403);
+    throw new RocketBetaError(
+      "Complete Target to unlock your Rocket Classic Test Pass",
+      403,
+    );
   }
   if (pass.status !== "UNLOCKED" || pass.teamId) {
-    throw new RocketBetaError("Your Rocket Classic Test Pass has already been used", 409);
+    throw new RocketBetaError(
+      "Your Rocket Classic Test Pass has already been used",
+      409,
+    );
   }
   return { campaign, pass };
 }
@@ -360,6 +384,9 @@ function emptyState(
     fieldVersion: null,
     fieldFrozenAt: null,
     fieldReady: false,
+    provisionalFieldReady: false,
+    draft: null,
+    draftUpdatedAt: null,
     passState: "LOCKED",
     unlockedAt: null,
     redeemedAt: null,

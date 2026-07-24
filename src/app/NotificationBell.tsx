@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChartBarIcon, GolfFlagIcon, FinishFlagIcon, ClockIcon, ChatIcon, TrophyIcon, InfoIcon, BellIcon, SwapIcon } from "@/components/icons";
+import {
+  ChartBarIcon,
+  GolfFlagIcon,
+  FinishFlagIcon,
+  ClockIcon,
+  ChatIcon,
+  TrophyIcon,
+  InfoIcon,
+  BellIcon,
+  SwapIcon,
+} from "@/components/icons";
 
 interface Notification {
   id: string;
@@ -21,6 +31,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   achievement: <TrophyIcon className="h-4 w-4" />,
   deadline: <ClockIcon className="h-4 w-4" />,
   auto_sub: <SwapIcon className="h-4 w-4" />,
+  team_change_required: <SwapIcon className="h-4 w-4" />,
   info: <InfoIcon className="h-4 w-4" />,
 };
 
@@ -33,7 +44,10 @@ function timeAgo(iso: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 export default function NotificationBell() {
@@ -77,7 +91,9 @@ export default function NotificationBell() {
         window.Notification?.permission === "granted" &&
         document.hidden
       ) {
-        const latest = (data.notifications ?? []).find((n: Notification) => !n.read);
+        const latest = (data.notifications ?? []).find(
+          (n: Notification) => !n.read,
+        );
         if (latest) {
           try {
             new window.Notification(latest.title, { body: latest.body });
@@ -89,13 +105,19 @@ export default function NotificationBell() {
     };
     load();
     const interval = setInterval(load, 60_000); // poll every minute
-    return () => { active = false; clearInterval(interval); };
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, [fetchNotificationsData]);
 
   // Close on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -190,10 +212,16 @@ export default function NotificationBell() {
               onClick={requestPushPermission}
               className="flex w-full items-center gap-2 border-b border-zinc-100 bg-amber-50 px-4 py-2.5 text-left transition hover:bg-amber-100"
             >
-              <span className="text-base"><BellIcon className="h-4 w-4" /></span>
+              <span className="text-base">
+                <BellIcon className="h-4 w-4" />
+              </span>
               <div>
-                <p className="text-xs font-semibold text-amber-800">Enable push notifications</p>
-                <p className="text-xs text-amber-600">Get alerts for deadlines & score changes</p>
+                <p className="text-xs font-semibold text-amber-800">
+                  Enable push notifications
+                </p>
+                <p className="text-xs text-amber-600">
+                  Get alerts for deadlines & score changes
+                </p>
               </div>
             </button>
           )}
@@ -203,7 +231,9 @@ export default function NotificationBell() {
             {notifications.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <BellIcon className="mx-auto h-8 w-8 text-zinc-400" />
-                <p className="mt-2 text-sm text-zinc-500">No notifications yet</p>
+                <p className="mt-2 text-sm text-zinc-500">
+                  No notifications yet
+                </p>
               </div>
             ) : (
               notifications.map((n) => (

@@ -12,7 +12,8 @@ import RocketFieldOpeningCountdown from "./RocketFieldOpeningCountdown";
 
 export const metadata: Metadata = {
   title: "Enter Team — Fantasy Golf",
-  description: "Build your fantasy golf team: pick one player from each of the 5 ranking tiers.",
+  description:
+    "Build your fantasy golf team: pick one player from each of the 5 ranking tiers.",
 };
 import SignInPrompt from "@/components/SignInPrompt";
 
@@ -55,13 +56,19 @@ export default async function EnterTeamPage({
     return (
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#0a3d2a]">{tournament.name}</h1>
+          <h1 className="text-2xl font-bold text-[#0a3d2a]">
+            {tournament.name}
+          </h1>
           <p className="text-sm text-zinc-600">
-            {tournament.course} · {formatDateRange(tournament.startDate, tournament.endDate)} · Par {tournament.par}
+            {tournament.course} ·{" "}
+            {formatDateRange(tournament.startDate, tournament.endDate)} · Par{" "}
+            {tournament.par}
           </p>
         </div>
         <SignInPrompt
-          title={isRocketBeta ? "Join the Rocket test flight" : "Sign in to Enter"}
+          title={
+            isRocketBeta ? "Join the Rocket test flight" : "Sign in to Enter"
+          }
           message={
             isRocketBeta
               ? "Continue with Google. Complete Target once to unlock your Test Pass, then return here to build your five-player team."
@@ -72,9 +79,7 @@ export default async function EnterTeamPage({
     );
   }
 
-  const betaState = isRocketBeta
-    ? await getRocketBetaStateForUser(user)
-    : null;
+  const betaState = isRocketBeta ? await getRocketBetaStateForUser(user) : null;
   if (betaState && !betaState.approved) notFound();
   if (betaState?.passState === "REDEEMED" && betaState.teamId) {
     redirect(`/tournaments/${tournament.id}/teams/${betaState.teamId}`);
@@ -108,6 +113,29 @@ export default async function EnterTeamPage({
       },
     })),
   }));
+  const tournamentPlayerByPlayerId = new Map(
+    tournament.players.map((entry) => [entry.playerId, entry]),
+  );
+  const initialDraft = betaState?.draft
+    ? {
+        name: betaState.draft.teamName,
+        status: betaState.draft.status,
+        selections: Object.fromEntries(
+          betaState.draft.picks.flatMap((pick) => {
+            const entry = tournamentPlayerByPlayerId.get(pick.playerId);
+            return entry && entry.tier === pick.tier && !entry.withdrew
+              ? [[pick.tier, entry.id]]
+              : [];
+          }),
+        ),
+      }
+    : undefined;
+  const provisionalDraftMode = Boolean(
+    betaState &&
+    !betaState.fieldReady &&
+    betaState.provisionalFieldReady &&
+    betaState.passState === "UNLOCKED",
+  );
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -115,7 +143,9 @@ export default async function EnterTeamPage({
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#0a3d2a]">{tournament.name}</h1>
         <p className="text-sm text-zinc-600">
-          {tournament.course} · {formatDateRange(tournament.startDate, tournament.endDate)} · Par {tournament.par}
+          {tournament.course} ·{" "}
+          {formatDateRange(tournament.startDate, tournament.endDate)} · Par{" "}
+          {tournament.par}
         </p>
       </div>
 
@@ -134,10 +164,13 @@ export default async function EnterTeamPage({
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#e4cc85]">
               Step 1 of 2
             </p>
-            <h2 className="mt-2 text-2xl font-black">Unlock your Test Pass first</h2>
+            <h2 className="mt-2 text-2xl font-black">
+              Unlock your Test Pass first
+            </h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">
-              Complete the three Target decisions once. Your score does not affect
-              your fantasy team; completion simply unlocks one account-bound pass.
+              Complete the three Target decisions once. Your score does not
+              affect your fantasy team; completion simply unlocks one
+              account-bound pass.
             </p>
           </div>
           <div className="p-6 sm:p-8">
@@ -149,7 +182,9 @@ export default async function EnterTeamPage({
             </a>
           </div>
         </div>
-      ) : (betaState && !betaState.fieldReady) ||
+      ) : (betaState &&
+          !betaState.fieldReady &&
+          !betaState.provisionalFieldReady) ||
         tournament.players.length < 5 ||
         ["T1_10", "T11_20", "T21_30", "T31_50", "T51_PLUS"].some(
           (tier) => !playersByTier[tier]?.length,
@@ -162,9 +197,9 @@ export default async function EnterTeamPage({
             The Rocket field is being prepared
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-            Your pass is safely linked to this account. Team selection opens after
-            the complete player field and all five tier lists have been reviewed
-            and frozen.
+            Your pass is safely linked to this account. Team selection opens
+            after the complete player field and all five tier lists have been
+            reviewed and frozen.
           </p>
           {betaState?.entryOpensAt && (
             <RocketFieldOpeningCountdown
@@ -189,26 +224,60 @@ export default async function EnterTeamPage({
           )}
         </div>
       ) : (
-        <TeamEntryForm
-          tournamentId={tournament.id}
-          entryFee={tournament.entryFee}
-          betaMode={isRocketBeta}
-          playersByTier={Object.fromEntries(
-            Object.entries(playersByTier).map(([tier, players]) => [
-              tier,
-              players.map((tp) => ({
-                tournamentPlayerId: tp.id,
-                playerId: tp.playerId,
-                name: tp.player.name,
-                country: tp.player.country,
-                photoUrl: tp.player.photoUrl,
-                dataGolfRank: tp.player.dataGolfRank,
-                tier: tp.tier,
-              })),
-            ]),
+        <>
+          {provisionalDraftMode && (
+            <section className="mb-6 overflow-hidden rounded-2xl border border-amber-300 bg-amber-50 shadow-sm dark:border-amber-800 dark:bg-amber-950/30">
+              <div className="p-5 sm:p-6">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700 dark:text-amber-400">
+                  Official initial field · draft mode
+                </p>
+                <h2 className="mt-1 text-xl font-black text-zinc-900 dark:text-white">
+                  Start your team now
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                  Four Monday qualifiers plus possible withdrawals and
+                  alternates are still pending. Saving below keeps your Test
+                  Pass unlocked and does not create an official team.
+                </p>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                  If one of your picks changes, we will notify you and suggest
+                  the nearest-ranked available golfer in the same tier. You can
+                  amend it before first tee; final confirmation opens after the
+                  verified field is frozen.
+                </p>
+                {betaState?.entryOpensAt && (
+                  <RocketFieldOpeningCountdown
+                    expectedAt={betaState.entryOpensAt}
+                    serverNow={new Date().toISOString()}
+                    finalConfirmation
+                  />
+                )}
+              </div>
+            </section>
           )}
-          savedTeams={savedTeamsPreview}
-        />
+          <TeamEntryForm
+            tournamentId={tournament.id}
+            entryFee={tournament.entryFee}
+            betaMode={isRocketBeta}
+            provisionalDraftMode={provisionalDraftMode}
+            initialDraft={initialDraft}
+            playersByTier={Object.fromEntries(
+              Object.entries(playersByTier).map(([tier, players]) => [
+                tier,
+                players.map((tp) => ({
+                  tournamentPlayerId: tp.id,
+                  playerId: tp.playerId,
+                  name: tp.player.name,
+                  country: tp.player.country,
+                  photoUrl: tp.player.photoUrl,
+                  dataGolfRank: tp.player.dataGolfRank,
+                  tier: tp.tier,
+                })),
+              ]),
+            )}
+            savedTeams={savedTeamsPreview}
+          />
+        </>
       )}
     </div>
   );
