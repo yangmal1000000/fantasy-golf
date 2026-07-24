@@ -14,6 +14,10 @@ const workflowSource = readFileSync(
   new URL("../../.github/workflows/rocket-field-freeze.yml", import.meta.url),
   "utf8",
 );
+const middlewareSource = readFileSync(
+  new URL("../middleware.ts", import.meta.url),
+  "utf8",
+);
 
 test("Rocket final-field freeze is tied to the correct official PGA TOUR field", () => {
   assert.match(freezeSource, /ROCKET_OFFICIAL_FIELD_ID = "R2026524"/);
@@ -43,4 +47,8 @@ test("the production freeze endpoint is signed and the workflow defaults to dry-
   assert.match(workflowSource, /default: dry-run/);
   assert.match(workflowSource, /secrets\.ROCKET_CRON_SECRET/);
   assert.match(workflowSource, /api\/sync\/rocket-field/);
+  assert.match(
+    middlewareSource,
+    /pathname === "\/api\/sync\/rocket-field"/,
+  );
 });
