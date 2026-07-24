@@ -168,7 +168,7 @@ export default async function EnterTeamPage({
           </p>
           {betaState?.entryOpensAt && (
             <RocketFieldOpeningCountdown
-              opensAt={betaState.entryOpensAt}
+              expectedAt={betaState.entryOpensAt}
               serverNow={new Date().toISOString()}
             />
           )}

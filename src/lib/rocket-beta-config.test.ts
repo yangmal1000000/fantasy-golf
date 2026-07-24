@@ -2,14 +2,16 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   ROCKET_BETA_ENTRY_OPENS_AT,
+  ROCKET_BETA_FIELD_EXPECTED_AT,
   formatRocketBetaEntryDeadline,
 } from "./rocket-beta-config";
 
-test("Rocket team entry has one server-owned scheduled opening", () => {
+test("Rocket field has one server-owned expected availability time", () => {
   assert.equal(
-    ROCKET_BETA_ENTRY_OPENS_AT.toISOString(),
-    "2026-07-28T08:00:00.000Z",
+    ROCKET_BETA_FIELD_EXPECTED_AT.toISOString(),
+    "2026-07-27T21:00:00.000Z",
   );
+  assert.equal(ROCKET_BETA_ENTRY_OPENS_AT, ROCKET_BETA_FIELD_EXPECTED_AT);
 });
 
 test("public Rocket deadline stays tied to first tee until officially confirmed", () => {

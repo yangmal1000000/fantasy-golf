@@ -12,7 +12,6 @@ import {
   ROCKET_BETA_TOURNAMENT_ID,
 } from "@/lib/rocket-beta";
 import { isRocketBetaFieldOpen } from "@/lib/rocket-beta-access";
-import { ROCKET_BETA_ENTRY_OPENS_AT } from "@/lib/rocket-beta-config";
 import {
   SavedTeamsSection,
   SaveAsTemplateButton,
@@ -86,7 +85,6 @@ export default async function MyTeamsPage() {
         teamId: true,
         campaign: {
           select: {
-            entryOpensAt: true,
             fieldFrozenAt: true,
             fieldHash: true,
           },
@@ -101,8 +99,6 @@ export default async function MyTeamsPage() {
     rocketPass?.status === "UNLOCKED" && !hasRocketTeam;
   const rocketFieldReady = rocketPass
     ? isRocketBetaFieldOpen({
-        entryOpensAt:
-          rocketPass.campaign.entryOpensAt ?? ROCKET_BETA_ENTRY_OPENS_AT,
         fieldFrozenAt: rocketPass.campaign.fieldFrozenAt,
         fieldHash: rocketPass.campaign.fieldHash,
       })

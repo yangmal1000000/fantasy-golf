@@ -20,12 +20,13 @@ const betaSource = readFileSync(
 
 test("the waiting card renders the server-owned field-opening countdown", () => {
   assert.match(enterPageSource, /RocketFieldOpeningCountdown/);
-  assert.match(enterPageSource, /opensAt=\{betaState\.entryOpensAt\}/);
+  assert.match(enterPageSource, /expectedAt=\{betaState\.entryOpensAt\}/);
   assert.match(betaSource, /entryOpensAt: ROCKET_BETA_ENTRY_OPENS_AT/);
 });
 
 test("the countdown checks for released field data without a manual reload", () => {
   assert.match(countdownSource, /router\.refresh\(\)/);
-  assert.match(countdownSource, /hasReachedOpening \? 15_000 : 60_000/);
-  assert.match(countdownSource, /reveal the five-tier team/);
+  assert.match(countdownSource, /hasReachedExpectedTime \? 15_000 : 60_000/);
+  assert.match(countdownSource, /Waiting for the official PGA TOUR field/);
+  assert.match(countdownSource, /qualifier playoff, withdrawal or delayed official update/);
 });

@@ -36,18 +36,18 @@ function TimeUnit({ value, label }: { value: number; label: string }) {
 }
 
 export default function RocketFieldOpeningCountdown({
-  opensAt,
+  expectedAt,
   serverNow,
 }: {
-  opensAt: string;
+  expectedAt: string;
   serverNow: string;
 }) {
   const router = useRouter();
-  const target = new Date(opensAt).getTime();
+  const target = new Date(expectedAt).getTime();
   const initialNow = new Date(serverNow).getTime();
   const [now, setNow] = useState(initialNow);
   const time = getTimeParts(target, now);
-  const hasReachedOpening = time.total === 0;
+  const hasReachedExpectedTime = time.total === 0;
 
   useEffect(() => {
     const tick = window.setInterval(() => setNow(Date.now()), 1_000);
@@ -60,10 +60,10 @@ export default function RocketFieldOpeningCountdown({
     };
     const interval = window.setInterval(
       refresh,
-      hasReachedOpening ? 15_000 : 60_000,
+      hasReachedExpectedTime ? 15_000 : 60_000,
     );
     return () => window.clearInterval(interval);
-  }, [hasReachedOpening, router]);
+  }, [hasReachedExpectedTime, router]);
 
   if (Number.isNaN(target) || Number.isNaN(initialNow)) return null;
 
@@ -83,14 +83,16 @@ export default function RocketFieldOpeningCountdown({
       aria-label="Rocket team entry opening"
     >
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#9b7b25] dark:text-[#d7bc6a]">
-        {hasReachedOpening ? "Final field checks underway" : "Team entry opens in"}
+        {hasReachedExpectedTime
+          ? "Official field update pending"
+          : "Final field expected in"}
       </p>
-      {hasReachedOpening ? (
+      {hasReachedExpectedTime ? (
         <p
           className="mt-3 text-lg font-black text-zinc-900 dark:text-white"
           role="status"
         >
-          Opening as soon as the final field is confirmed
+          Waiting for the official PGA TOUR field
         </p>
       ) : (
         <div className="mt-3 grid grid-cols-4 gap-2" aria-hidden="true">
@@ -101,11 +103,16 @@ export default function RocketFieldOpeningCountdown({
         </div>
       )}
       <p className="mt-3 text-xs font-bold text-zinc-700 dark:text-zinc-200">
-        Scheduled for {openingLabel}
+        Expected from {openingLabel}
       </p>
       <p className="mt-1 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-        This page checks automatically and will reveal the five-tier team
-        builder as soon as the verified final field is frozen.
+        Entry opens automatically as soon as the PGA TOUR publishes the
+        complete field following Monday qualifying and our verification checks
+        pass.
+      </p>
+      <p className="mt-1 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
+        A qualifier playoff, withdrawal or delayed official update may move the
+        opening later. This page checks automatically — no action is needed.
       </p>
     </section>
   );
