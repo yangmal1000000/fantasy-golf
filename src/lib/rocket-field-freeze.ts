@@ -77,7 +77,13 @@ export async function stageRocketBetaField(
       where: { slug: manifest.campaign },
     }),
     prisma.player.findMany({
-      select: { id: true, name: true, country: true, dataGolfRank: true },
+      select: {
+        id: true,
+        name: true,
+        country: true,
+        dataGolfRank: true,
+        tour: true,
+      },
     }),
     prisma.tournamentPlayer.findMany({
       where: { tournamentId: manifest.tournamentId },
@@ -185,6 +191,19 @@ export async function stageRocketBetaField(
   const preFreezeSnapshotHash = preFreezeSnapshot
     ? sha256(preFreezeSnapshot)
     : null;
+  const existingFieldByName = new Map(
+    existingField.map((entry) => [normaliseName(entry.player.name), entry]),
+  );
+  const fieldMatchesStaged =
+    existingField.length === staged.length &&
+    staged.every((candidate) => {
+      const current = existingFieldByName.get(normaliseName(candidate.name));
+      return current?.tier === candidate.tier && current.withdrew === false;
+    });
+  const campaignMatchesStaged =
+    campaign.fieldVersion === manifest.version &&
+    campaign.fieldHash === snapshotHash &&
+    campaign.provisionalFieldReadyAt !== null;
   const report = {
     ok: true,
     mode,
@@ -199,9 +218,11 @@ export async function stageRocketBetaField(
     existingPlayerMatches: staged.filter((player) => player.existing).length,
     playersToCreate: staged.filter((player) => !player.existing).length,
     existingTournamentPlayers: existingField.length,
+    fieldMatchesStaged,
     tierCounts,
     snapshotHash,
     preFreezeSnapshotHash,
+    alreadyApplied: false,
     applied: false,
     frozen: false,
     provisionalDraftingOpened: false,
@@ -210,6 +231,21 @@ export async function stageRocketBetaField(
   };
 
   if (!apply && !freeze) return report;
+  if (apply && campaignMatchesStaged) {
+    if (!fieldMatchesStaged) {
+      throw new RocketFieldError(
+        "Campaign records the staged field but the live roster does not match",
+      );
+    }
+    return {
+      ...report,
+      alreadyApplied: true,
+      applied: true,
+      provisionalDraftingOpened: true,
+      message:
+        "Official initial field was already staged; provisional drafting is open.",
+    };
+  }
 
   const draftNotifications: {
     userId: string;
@@ -222,8 +258,10 @@ export async function stageRocketBetaField(
 
   await prisma.$transaction(
     async (tx) => {
-      const retainedTournamentPlayerIds: string[] = [];
       const finalRoster: RocketReserveCandidate[] = [];
+      const playerByNormalisedName = new Map(
+        currentPlayers.map((player) => [normaliseName(player.name), player]),
+      );
 
       if (freeze && preFreezeSnapshot && preFreezeSnapshotHash) {
         await tx.rocketBetaAudit.create({
@@ -239,38 +277,34 @@ export async function stageRocketBetaField(
       }
 
       for (const candidate of staged) {
-        const player = candidate.existing
-          ? await tx.player.update({
-              where: { id: candidate.existing.id },
-              data: {
-                dataGolfRank: candidate.rank,
-                country: candidate.country,
-                tour: "pga",
-              },
-            })
-          : await tx.player.create({
-              data: {
-                name: candidate.name,
-                country: candidate.country,
-                dataGolfRank: candidate.rank,
-                tour: "pga",
-              },
-            });
-        const tournamentPlayer = await tx.tournamentPlayer.upsert({
-          where: {
-            tournamentId_playerId: {
-              tournamentId: manifest.tournamentId,
-              playerId: player.id,
+        let player = playerByNormalisedName.get(
+          normaliseName(candidate.name),
+        );
+        if (!player) {
+          player = await tx.player.create({
+            data: {
+              name: candidate.name,
+              country: candidate.country,
+              dataGolfRank: candidate.rank,
+              tour: "pga",
             },
-          },
-          update: { tier: candidate.tier, withdrew: false },
-          create: {
-            tournamentId: manifest.tournamentId,
-            playerId: player.id,
-            tier: candidate.tier,
-          },
-        });
-        retainedTournamentPlayerIds.push(tournamentPlayer.id);
+          });
+          playerByNormalisedName.set(normaliseName(candidate.name), player);
+        } else if (
+          player.dataGolfRank !== candidate.rank ||
+          player.country !== candidate.country ||
+          player.tour !== "pga"
+        ) {
+          player = await tx.player.update({
+            where: { id: player.id },
+            data: {
+              dataGolfRank: candidate.rank,
+              country: candidate.country,
+              tour: "pga",
+            },
+          });
+          playerByNormalisedName.set(normaliseName(candidate.name), player);
+        }
         finalRoster.push({
           tier: candidate.tier,
           playerId: player.id,
@@ -279,10 +313,39 @@ export async function stageRocketBetaField(
         });
       }
 
+      const retainedPlayerIds = finalRoster.map((player) => player.playerId);
+      const existingTournamentPlayerIds = new Set(
+        existingField.map((player) => player.playerId),
+      );
+      const newTournamentPlayers = finalRoster.filter(
+        (player) => !existingTournamentPlayerIds.has(player.playerId),
+      );
+      if (newTournamentPlayers.length > 0) {
+        await tx.tournamentPlayer.createMany({
+          data: newTournamentPlayers.map((player) => ({
+            tournamentId: manifest.tournamentId,
+            playerId: player.playerId,
+            tier: player.tier,
+          })),
+          skipDuplicates: true,
+        });
+      }
+      for (const tier of ROCKET_REQUIRED_TIERS) {
+        const playerIds = finalRoster
+          .filter((player) => player.tier === tier)
+          .map((player) => player.playerId);
+        await tx.tournamentPlayer.updateMany({
+          where: {
+            tournamentId: manifest.tournamentId,
+            playerId: { in: playerIds },
+          },
+          data: { tier, withdrew: false },
+        });
+      }
       await tx.tournamentPlayer.deleteMany({
         where: {
           tournamentId: manifest.tournamentId,
-          id: { notIn: retainedTournamentPlayerIds },
+          playerId: { notIn: retainedPlayerIds },
         },
       });
 
@@ -331,7 +394,7 @@ export async function stageRocketBetaField(
     },
     {
       isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      timeout: 60_000,
+      timeout: 90_000,
     },
   );
 

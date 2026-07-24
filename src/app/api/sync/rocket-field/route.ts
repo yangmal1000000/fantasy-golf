@@ -8,7 +8,7 @@ import {
 } from "@/lib/rocket-field-freeze";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(request: Request) {
   const denied = await adminApiGuard(request, { allowCron: true });

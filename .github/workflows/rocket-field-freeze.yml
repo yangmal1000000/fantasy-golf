@@ -22,7 +22,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: Verify, stage or freeze Rocket Classic field
         env:
@@ -36,7 +36,7 @@ jobs:
             curl \
               --silent \
               --show-error \
-              --max-time 55 \
+              --max-time 110 \
               --output "$output" \
               --write-out "%{http_code}" \
               --request POST \
@@ -62,9 +62,14 @@ jobs:
             qualifierCount,
             evidenceSourceCount,
             rankingCoverage,
+            existingPlayerMatches,
+            playersToCreate,
+            existingTournamentPlayers,
+            fieldMatchesStaged,
             tierCounts,
             snapshotHash,
             preFreezeSnapshotHash,
+            alreadyApplied,
             applied,
             frozen,
             provisionalDraftingOpened,

@@ -97,9 +97,17 @@ test("the production field endpoint is signed and supports safe stage/freeze mod
   assert.match(freezeSource, /ROCKET_COMMITMENT_DEADLINE/);
   assert.match(freezeSource, /Manifest contains a placeholder player/);
   assert.match(freezeSource, /provisionalFieldReadyAt/);
+  assert.match(freezeSource, /campaignMatchesStaged/);
+  assert.match(freezeSource, /alreadyApplied: true/);
+  assert.match(freezeSource, /fieldMatchesStaged/);
+  assert.match(freezeSource, /tournamentPlayer\.createMany/);
+  assert.match(freezeSource, /tournamentPlayer\.updateMany/);
   assert.match(freezeSource, /reconcileDraftsForFinalField/);
+  assert.match(endpointSource, /maxDuration = 120/);
   assert.match(workflowSource, /default: dry-run/);
   assert.match(workflowSource, /- apply/);
+  assert.match(workflowSource, /--max-time 110/);
+  assert.match(workflowSource, /alreadyApplied/);
   assert.match(workflowSource, /secrets\.ROCKET_CRON_SECRET/);
   assert.match(workflowSource, /api\/sync\/rocket-field/);
   assert.match(middlewareSource, /pathname === "\/api\/sync\/rocket-field"/);
