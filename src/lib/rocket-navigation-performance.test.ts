@@ -14,6 +14,13 @@ const appLoadingSource = readFileSync(
   new URL("../app/loading.tsx", import.meta.url),
   "utf8",
 );
+const vercelConfig = JSON.parse(
+  readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"),
+) as { regions?: string[] };
+
+test("server functions run beside the Frankfurt Supabase project", () => {
+  assert.deepEqual(vercelConfig.regions, ["fra1"]);
+});
 
 test("existing Rocket campaigns avoid request-time schema setup and upserts", () => {
   const existingLookup = rocketBetaSource.indexOf(
