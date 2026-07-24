@@ -7,6 +7,7 @@ import {
   ROCKET_BETA_TOURNAMENT_ID,
   getRocketBetaStateForUser,
 } from "@/lib/rocket-beta";
+import { ROCKET_BETA_PROVISIONAL_DRAFT_EXPECTED_AT } from "@/lib/rocket-beta-config";
 import TeamEntryForm from "./TeamEntryForm";
 import RocketFieldOpeningCountdown from "./RocketFieldOpeningCountdown";
 
@@ -197,14 +198,15 @@ export default async function EnterTeamPage({
             The Rocket field is being prepared
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-            Your pass is safely linked to this account. Team selection opens
-            after the complete player field and all five tier lists have been
-            reviewed and frozen.
+            Your pass is safely linked to this account. Provisional drafting
+            opens after tonight’s official post-commitment field is published,
+            verified and placed into all five tiers.
           </p>
-          {betaState?.entryOpensAt && (
+          {betaState && (
             <RocketFieldOpeningCountdown
-              expectedAt={betaState.entryOpensAt}
+              expectedAt={ROCKET_BETA_PROVISIONAL_DRAFT_EXPECTED_AT.toISOString()}
               serverNow={new Date().toISOString()}
+              milestone="provisional-drafting"
             />
           )}
           {user.isAdmin && betaState?.passState === "UNLOCKED" && (
@@ -249,7 +251,7 @@ export default async function EnterTeamPage({
                   <RocketFieldOpeningCountdown
                     expectedAt={betaState.entryOpensAt}
                     serverNow={new Date().toISOString()}
-                    finalConfirmation
+                    milestone="final-confirmation"
                   />
                 )}
               </div>

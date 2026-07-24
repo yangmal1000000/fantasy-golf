@@ -1,11 +1,20 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
+import { TARGET_MAP_HEIGHT, TARGET_MAP_WIDTH } from "./target-challenge";
 import {
+  TARGET_V2_DETAIL_HEADING,
+  TARGET_V2_EXPECTED_FINISH_INSTRUCTION,
+  TARGET_V2_FIXED_SHOT_EXPLANATION,
   TARGET_V2_PRACTICE,
+  TARGET_V2_SCORING_EXPLANATION,
   TARGET_V2_SCENARIOS,
+  TARGET_V2_TASK_EXPLANATION,
   TARGET_V2_VERSION,
   buildTargetYardageGuidePoints,
   estimateTargetFinishYards,
+  targetV2DisplayMetrics,
+  targetV2DispersionEllipse,
   targetFinishDistanceYards,
   targetPointAtViewBox,
 } from "./target-v2";
@@ -24,17 +33,36 @@ function visibleScenarioText(index: number): string {
   ].join(" ");
 }
 
-test("v2 uses one clear finishing-position instruction throughout", () => {
-  for (const scenario of TARGET_V2_SCENARIOS) {
-    assert.equal(scenario.question, "Place the marker where you want the ball to finish.");
-  }
-  assert.match(TARGET_V2_PRACTICE.question, /finish/i);
+test("v2 presentation clearly asks for an expected finish centre", () => {
+  assert.match(TARGET_V2_EXPECTED_FINISH_INSTRUCTION, /supplied golfer and situation/i);
+  assert.match(TARGET_V2_EXPECTED_FINISH_INSTRUCTION, /centre of the expected finishing pattern/i);
+  assert.match(TARGET_V2_TASK_EXPLANATION, /not the exact result of one shot/i);
+  assert.match(TARGET_V2_FIXED_SHOT_EXPLANATION, /intended line and expected finish centre/i);
+  assert.match(TARGET_V2_SCORING_EXPLANATION, /same frozen information/i);
+  assert.match(TARGET_V2_SCORING_EXPLANATION, /lowest combined distance/i);
+  assert.equal(TARGET_V2_DETAIL_HEADING, "Golfer & course detail");
+  assert.match(TARGET_V2_PRACTICE.question, /expected finishing pattern/i);
 
-  const allCopy = [
-    ...TARGET_V2_SCENARIOS.map((_, index) => visibleScenarioText(index)),
-    TARGET_V2_PRACTICE.question,
+  const allPresentationCopy = [
+    TARGET_V2_EXPECTED_FINISH_INSTRUCTION,
+    TARGET_V2_TASK_EXPLANATION,
+    TARGET_V2_FIXED_SHOT_EXPLANATION,
+    TARGET_V2_SCORING_EXPLANATION,
   ].join(" ");
-  assert.doesNotMatch(allCopy, /landing|6[\s-]?iron|lay[\s-]?up|above the tee/i);
+  assert.doesNotMatch(allPresentationCopy, /landing position|exact flight path/i);
+});
+
+test("presentation labels distinguish golfer data from course information", () => {
+  const teeMetrics = targetV2DisplayMetrics(TARGET_V2_SCENARIOS[0].metrics);
+  assert.ok(teeMetrics.some((metric) => metric.label === "Golfer’s expected total"));
+  assert.ok(teeMetrics.some((metric) => metric.label === "Golfer’s shot pattern"));
+
+  const secondShotMetrics = targetV2DisplayMetrics(TARGET_V2_SCENARIOS[2].metrics);
+  assert.ok(
+    secondShotMetrics.some(
+      (metric) => metric.label === "Golfer’s controlled finish",
+    ),
+  );
 });
 
 test("approach copy uses the ball and a conventional pin sheet", () => {
@@ -101,6 +129,41 @@ test("every generated yardage guide follows the same proportional distance model
       }
     }
   }
+});
+
+test("each live decision draws a calibrated expected-finish dispersion area", () => {
+  for (const scenario of TARGET_V2_SCENARIOS) {
+    const guide = scenario.yardage!.guides[Math.floor(scenario.yardage!.guides.length / 2)];
+    const point = buildTargetYardageGuidePoints(scenario.yardage!, guide, 3)[1];
+    const ellipse = targetV2DispersionEllipse(
+      scenario,
+      targetPointAtViewBox(point.x, point.y),
+    );
+    assert.ok(ellipse);
+    assert.ok(ellipse.radiusX > 0);
+    assert.ok(ellipse.radiusY > 0);
+    assert.ok(ellipse.widthYards > 0);
+    assert.ok(ellipse.depthYards > 0);
+  }
+});
+
+test("presentation-only clarity changes preserve the frozen live scenario hash", () => {
+  const hash = createHash("sha256")
+    .update(
+      JSON.stringify({
+        scenarioVersion: TARGET_V2_VERSION,
+        coordinateSpace: {
+          width: TARGET_MAP_WIDTH,
+          height: TARGET_MAP_HEIGHT,
+        },
+        scenarios: TARGET_V2_SCENARIOS,
+      }),
+    )
+    .digest("hex");
+  assert.equal(
+    hash,
+    "f16df993e576bed2c59dab0f0d0232679d8944b02fb2a7fc7994007149af5567",
+  );
 });
 
 test("v2 live Target has a distinct stable version identifier", () => {

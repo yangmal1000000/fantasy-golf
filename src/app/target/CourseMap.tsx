@@ -15,6 +15,7 @@ import {
 import {
   buildTargetYardageGuidePoints,
   estimateTargetFinishYards,
+  targetV2DispersionEllipse,
 } from "@/lib/target-v2";
 
 interface CourseMapProps {
@@ -99,8 +100,9 @@ export default function CourseMap({
   const ballPoint = scenario.ballPoint ?? BALL_POSITIONS[scenario.mapKind];
   const ballMarker = ballPoint ? pointToViewBox(ballPoint) : null;
   const finishYards = estimateTargetFinishYards(scenario, point);
+  const dispersion = targetV2DispersionEllipse(scenario, point);
   const prefix = `course-${scenario.mapKind}`;
-  const markerTerm = scenario.yardage ? "finishing marker" : "target";
+  const markerTerm = scenario.yardage ? "expected finish centre" : "target";
 
   return (
     <div>
@@ -225,6 +227,20 @@ export default function CourseMap({
 
           {marker && ballMarker && finishYards !== null ? (
             <g pointerEvents="none">
+              {dispersion ? (
+                <ellipse
+                  cx={marker.x}
+                  cy={marker.y}
+                  rx={dispersion.radiusX}
+                  ry={dispersion.radiusY}
+                  fill="rgba(216,184,92,.18)"
+                  stroke="#fff7dd"
+                  strokeWidth="3"
+                  strokeDasharray="8 7"
+                  opacity=".9"
+                  data-target-overlay="expected-finish-pattern"
+                />
+              ) : null}
               <path
                 d={`M${ballMarker.x} ${ballMarker.y} L${marker.x} ${marker.y}`}
                 fill="none"
@@ -232,22 +248,33 @@ export default function CourseMap({
                 strokeWidth="4"
                 strokeDasharray="10 9"
                 opacity=".9"
+                data-target-overlay="intended-line"
               />
               <g
                 transform={`translate(${Math.max(72, Math.min(928, (ballMarker.x + marker.x) / 2))} ${Math.max(38, Math.min(612, (ballMarker.y + marker.y) / 2))})`}
               >
                 <rect
-                  x="-66"
-                  y="-21"
-                  width="132"
-                  height="42"
-                  rx="21"
+                  x="-72"
+                  y="-29"
+                  width="144"
+                  height="58"
+                  rx="18"
                   fill="rgba(7,29,20,.9)"
                   stroke="#f4df9d"
                   strokeWidth="2"
                 />
                 <text
-                  y="7"
+                  y="-7"
+                  textAnchor="middle"
+                  fill="#f4df9d"
+                  fontSize="11"
+                  fontWeight="900"
+                  letterSpacing="1.5"
+                >
+                  INTENDED LINE
+                </text>
+                <text
+                  y="16"
                   textAnchor="middle"
                   fill="#fff6d9"
                   fontSize="20"
@@ -305,6 +332,31 @@ export default function CourseMap({
                 strokeLinecap="round"
                 opacity=".85"
               />
+              {!compact ? (
+                <g
+                  transform={`translate(${marker.x > 760 ? -166 : 40} ${marker.y < 95 ? 40 : -72})`}
+                >
+                  <rect
+                    width="158"
+                    height="30"
+                    rx="15"
+                    fill="rgba(7,29,20,.92)"
+                    stroke="#f4df9d"
+                    strokeWidth="2"
+                  />
+                  <text
+                    x="79"
+                    y="19"
+                    textAnchor="middle"
+                    fill="#fff6d9"
+                    fontSize="11"
+                    fontWeight="900"
+                    letterSpacing=".7"
+                  >
+                    EXPECTED FINISH CENTRE
+                  </text>
+                </g>
+              ) : null}
             </g>
           ) : null}
         </svg>
@@ -383,7 +435,8 @@ export default function CourseMap({
                   Approx. {finishYards} yd
                 </span>
                 <span className={immersiveMobileControls ? "hidden sm:inline" : ""}>
-                  Approx. finishing distance: {finishYards} yards
+                  Expected finish centre: approx. {finishYards} yards from the
+                  ball
                 </span>
               </p>
             ) : null}

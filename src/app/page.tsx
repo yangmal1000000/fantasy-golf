@@ -201,7 +201,7 @@ export default async function Home() {
               icon={<TargetIcon className="h-6 w-6" />}
               number="01"
               title="Place three targets"
-              text="Read each supplied golf situation and place the intended finishing position. Completion—not score—unlocks beta access."
+              text="Use each supplied golfer profile and course situation to place the best expected finish centre. Completion—not score—unlocks beta access."
             />
             <JourneyCard
               icon={<TicketIcon className="h-6 w-6" />}
