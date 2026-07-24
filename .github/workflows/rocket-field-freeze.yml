@@ -1,15 +1,16 @@
-name: Rocket Classic field freeze
+name: Rocket Classic field stage or freeze
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "Dry-run the deployed manifest or freeze the verified final field"
+        description: "Dry-run, stage the official initial field, or freeze the verified final field"
         required: true
         default: dry-run
         type: choice
         options:
           - dry-run
+          - apply
           - freeze
 
 permissions: {}
@@ -23,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Verify or freeze Rocket Classic field
+      - name: Verify, stage or freeze Rocket Classic field
         env:
           CRON_SECRET: ${{ secrets.ROCKET_CRON_SECRET }}
           MODE: ${{ inputs.mode }}
@@ -65,5 +66,8 @@ jobs:
             snapshotHash,
             preFreezeSnapshotHash,
             applied,
-            frozen
+            frozen,
+            provisionalDraftingOpened,
+            draftsReconciled,
+            draftChanges
           }' "$output"

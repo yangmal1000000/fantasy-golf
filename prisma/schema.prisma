@@ -357,6 +357,7 @@ model RocketBetaCampaign {
   fieldVersion    String?
   fieldHash       String?
   fieldFrozenAt   DateTime?
+  provisionalFieldReadyAt DateTime?
   results         Json?
   resultsHash     String?
   finalizedAt     DateTime?
@@ -394,6 +395,9 @@ model RocketBetaPass {
   unlockedAt          DateTime           @default(now())
   redeemedAt          DateTime?
   teamId              String?            @unique
+  draftTeam           Json?
+  draftUpdatedAt      DateTime?
+  draftFieldVersion   String?
   campaign            RocketBetaCampaign @relation(references: [id], fields: [campaignId], onDelete: Cascade)
   member              RocketBetaMember   @relation(references: [id], fields: [memberId], onDelete: Cascade)
 

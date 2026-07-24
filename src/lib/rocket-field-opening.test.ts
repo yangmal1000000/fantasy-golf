@@ -28,5 +28,10 @@ test("the countdown checks for released field data without a manual reload", () 
   assert.match(countdownSource, /router\.refresh\(\)/);
   assert.match(countdownSource, /hasReachedExpectedTime \? 15_000 : 60_000/);
   assert.match(countdownSource, /Waiting for the official PGA TOUR field/);
-  assert.match(countdownSource, /qualifier playoff, withdrawal or delayed official update/);
+  assert.match(
+    countdownSource,
+    /qualifier playoff, withdrawal or delayed official update/,
+  );
+  assert.match(countdownSource, /Final confirmation/);
+  assert.match(enterPageSource, /finalConfirmation/);
 });

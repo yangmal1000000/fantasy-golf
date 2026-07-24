@@ -10,12 +10,10 @@ import SignInPrompt from "@/components/SignInPrompt";
 import {
   ROCKET_BETA_CAMPAIGN_SLUG,
   ROCKET_BETA_TOURNAMENT_ID,
+  ensureRocketBetaCampaign,
 } from "@/lib/rocket-beta";
 import { isRocketBetaFieldOpen } from "@/lib/rocket-beta-access";
-import {
-  SavedTeamsSection,
-  SaveAsTemplateButton,
-} from "./SavedTeamsClient";
+import { SavedTeamsSection, SaveAsTemplateButton } from "./SavedTeamsClient";
 
 export const revalidate = 60;
 
@@ -38,6 +36,8 @@ export default async function MyTeamsPage() {
       </Suspense>
     );
   }
+
+  await ensureRocketBetaCampaign();
 
   // Fetch saved teams and entered teams in parallel
   const [savedTeams, teams, rocketPass] = await Promise.all([
@@ -83,10 +83,13 @@ export default async function MyTeamsPage() {
       select: {
         status: true,
         teamId: true,
+        draftTeam: true,
+        draftUpdatedAt: true,
         campaign: {
           select: {
             fieldFrozenAt: true,
             fieldHash: true,
+            provisionalFieldReadyAt: true,
           },
         },
       },
@@ -103,6 +106,11 @@ export default async function MyTeamsPage() {
         fieldHash: rocketPass.campaign.fieldHash,
       })
     : false;
+  const rocketProvisionalFieldReady = Boolean(
+    rocketPass?.campaign.provisionalFieldReadyAt &&
+    rocketPass.campaign.fieldHash,
+  );
+  const hasRocketDraft = Boolean(rocketPass?.draftTeam);
 
   // Serialize saved teams for client component
   const savedTeamsData = savedTeams.map((st) => ({
@@ -143,21 +151,37 @@ export default async function MyTeamsPage() {
             </p>
             <h2 className="mt-2 text-lg font-black text-[#0a3d2a] dark:text-green-400">
               {rocketFieldReady
-                ? "Build your real Rocket team"
-                : "Your real team will appear here after confirmation"}
+                ? hasRocketDraft
+                  ? "Review and confirm your Rocket team"
+                  : "Build your real Rocket team"
+                : rocketProvisionalFieldReady
+                  ? hasRocketDraft
+                    ? "Your provisional Rocket draft is saved"
+                    : "Start your provisional Rocket draft"
+                  : "Your real team will appear here after confirmation"}
             </h2>
             <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
               {rocketFieldReady
-                ? "The reviewed field is open. Confirm one golfer from every tier to add the team to My Teams and the Rocket standings."
-                : "The final field is still being reviewed. Dry-run teams are deliberately not saved, and your Test Pass remains unlocked."}
+                ? "The reviewed final field is open. Confirm one golfer from every tier to add the team to My Teams and the Rocket standings."
+                : rocketProvisionalFieldReady
+                  ? hasRocketDraft
+                    ? "Your five picks are saved without using the Test Pass. We will preserve unaffected picks and notify you if the final field requires a same-tier replacement."
+                    : "The official initial field is available. Save five weekend picks now without redeeming your Test Pass; final confirmation follows the Monday field update."
+                  : "The official initial field has not been published yet. Your Test Pass remains unlocked."}
             </p>
             <Link
               href="/tournaments/rocket-classic/enter"
               className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0a3d2a] px-5 py-3 text-sm font-black text-white transition hover:bg-[#12563c]"
             >
               {rocketFieldReady
-                ? "Build Rocket team →"
-                : "View entry status →"}
+                ? hasRocketDraft
+                  ? "Review and confirm team →"
+                  : "Build Rocket team →"
+                : rocketProvisionalFieldReady
+                  ? hasRocketDraft
+                    ? "Edit provisional draft →"
+                    : "Start provisional draft →"
+                  : "View entry status →"}
             </Link>
           </div>
         ) : null}

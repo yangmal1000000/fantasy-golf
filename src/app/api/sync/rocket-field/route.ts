@@ -16,8 +16,12 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as { mode?: unknown };
-    if (body.mode !== "dry-run" && body.mode !== "freeze") {
-      throw new RocketFieldError("Mode must be dry-run or freeze", 400);
+    if (
+      body.mode !== "dry-run" &&
+      body.mode !== "apply" &&
+      body.mode !== "freeze"
+    ) {
+      throw new RocketFieldError("Mode must be dry-run, apply or freeze", 400);
     }
     const result = await stageRocketBetaField(
       fieldManifestJson as FieldManifest,

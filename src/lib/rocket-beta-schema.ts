@@ -36,6 +36,7 @@ async function createRocketBetaSchema() {
       "fieldVersion" TEXT,
       "fieldHash" TEXT,
       "fieldFrozenAt" TIMESTAMPTZ,
+      "provisionalFieldReadyAt" TIMESTAMPTZ,
       "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
@@ -67,6 +68,9 @@ async function createRocketBetaSchema() {
       "unlockedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "redeemedAt" TIMESTAMPTZ,
       "teamId" TEXT UNIQUE REFERENCES "Team"("id") ON DELETE SET NULL ON UPDATE CASCADE,
+      "draftTeam" JSONB,
+      "draftUpdatedAt" TIMESTAMPTZ,
+      "draftFieldVersion" TEXT,
       CONSTRAINT "RocketBetaPass_campaignId_userId_key" UNIQUE ("campaignId", "userId")
     )
   `);
@@ -96,6 +100,13 @@ async function createRocketBetaSchema() {
     ALTER TABLE "RocketBetaCampaign"
       ADD COLUMN IF NOT EXISTS "results" JSONB,
       ADD COLUMN IF NOT EXISTS "resultsHash" TEXT,
-      ADD COLUMN IF NOT EXISTS "finalizedAt" TIMESTAMPTZ
+      ADD COLUMN IF NOT EXISTS "finalizedAt" TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS "provisionalFieldReadyAt" TIMESTAMPTZ
+  `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "RocketBetaPass"
+      ADD COLUMN IF NOT EXISTS "draftTeam" JSONB,
+      ADD COLUMN IF NOT EXISTS "draftUpdatedAt" TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS "draftFieldVersion" TEXT
   `);
 }

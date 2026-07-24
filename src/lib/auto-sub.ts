@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { sendPushToUser } from "./push";
 import { genId } from "./db-ensure";
+import { chooseNearestRankReserve } from "./rocket-draft";
 
 /**
  * Auto-Sub Processor
@@ -13,8 +14,10 @@ import { genId } from "./db-ensure";
  *  1. A player is eligible for auto-sub if:
  *     - TournamentPlayer.withdrew = true
  *     - The player has NO scores recorded for this tournament
- *  2. Replacement priority: lowest dataGolfRank (best ranked) in the same tier
- *     who is NOT already on the user's team for this tournament.
+ *  2. Rocket replacement priority: nearest dataGolfRank in the same tier,
+ *     preferring the next lower-ranked golfer on an equal distance, who is not
+ *     already on the user's team. Other tournaments retain their existing
+ *     best-ranked same-tier fallback.
  *  3. If no replacement is available, the slot is left empty (team plays with 4).
  *  4. Each sub is logged in TeamSubLog for audit/transparency.
  *  5. After all subs, team scores are NOT recalculated here (the caller handles that).
@@ -31,6 +34,12 @@ export interface AutoSubResult {
     newPlayerName: string;
     tier: string;
   }[];
+  pending: {
+    teamId: string;
+    teamName: string;
+    tier: string;
+    wdPlayerName: string;
+  }[];
   unresolved: {
     teamId: string;
     teamName: string;
@@ -39,7 +48,9 @@ export interface AutoSubResult {
   }[];
 }
 
-export async function processAutoSubs(tournamentId: string): Promise<AutoSubResult> {
+export async function processAutoSubs(
+  tournamentId: string,
+): Promise<AutoSubResult> {
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
     select: { id: true, name: true, currentRound: true },
@@ -50,6 +61,7 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
       tournamentId,
       subsProcessed: 0,
       subs: [],
+      pending: [],
       unresolved: [],
     };
   }
@@ -81,6 +93,7 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
       tournamentId,
       subsProcessed: 0,
       subs: [],
+      pending: [],
       unresolved: [],
     };
   }
@@ -99,7 +112,9 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
     include: {
       team: { select: { id: true, name: true, userId: true } },
       tournamentPlayer: {
-        include: { player: { select: { id: true, name: true, dataGolfRank: true } } },
+        include: {
+          player: { select: { id: true, name: true, dataGolfRank: true } },
+        },
       },
     },
   });
@@ -109,6 +124,7 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
       tournamentId,
       subsProcessed: 0,
       subs: [],
+      pending: [],
       unresolved: [],
     };
   }
@@ -131,23 +147,51 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
     list.push(tp);
     candidatesByTier.set(tp.tier, list);
   }
-
-  // Sort each tier by dataGolfRank ascending (best ranked first)
-  for (const [, list] of candidatesByTier) {
-    list.sort((a, b) => {
-      const rankA = a.player.dataGolfRank ?? 9999;
-      const rankB = b.player.dataGolfRank ?? 9999;
-      return rankA - rankB;
-    });
+  for (const list of candidatesByTier.values()) {
+    list.sort(
+      (left, right) =>
+        (left.player.dataGolfRank ?? 9999) -
+        (right.player.dataGolfRank ?? 9999),
+    );
   }
 
   const subs: AutoSubResult["subs"] = [];
+  const pending: AutoSubResult["pending"] = [];
   const unresolved: AutoSubResult["unresolved"] = [];
+  const rocketCampaign =
+    tournamentId === "rocket-classic"
+      ? await prisma.rocketBetaCampaign.findUnique({
+          where: { tournamentId },
+          select: { entryClosesAt: true },
+        })
+      : null;
+  const waitForUserAmendment = Boolean(
+    rocketCampaign?.entryClosesAt && new Date() < rocketCampaign.entryClosesAt,
+  );
 
   // Process each affected selection
   for (const selection of affectedSelections) {
     const tier = selection.tournamentPlayer.tier;
     const wdPlayer = selection.tournamentPlayer.player;
+
+    if (waitForUserAmendment) {
+      pending.push({
+        teamId: selection.team.id,
+        teamName: selection.team.name,
+        tier,
+        wdPlayerName: wdPlayer.name,
+      });
+      await notifyPendingRocketSub({
+        tournamentName: tournament.name,
+        tournamentId,
+        teamId: selection.team.id,
+        userId: selection.team.userId,
+        tier,
+        playerName: wdPlayer.name,
+        entryClosesAt: rocketCampaign!.entryClosesAt!,
+      });
+      continue;
+    }
 
     // Get all player IDs already on this team (to avoid duplicate picks)
     const teamSelections = await prisma.teamSelection.findMany({
@@ -158,11 +202,31 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
       teamSelections.map((ts) => ts.tournamentPlayer.playerId),
     );
 
-    // Find the best available replacement in the same tier
+    // Rocket uses the nearest-ranked reserve. Other tournaments keep their
+    // established best-ranked same-tier fallback.
     const candidates = candidatesByTier.get(tier) ?? [];
-    const replacement = candidates.find(
-      (c) => !alreadyPicked.has(c.playerId),
-    );
+    const replacement =
+      tournamentId === "rocket-classic"
+        ? (() => {
+            const reserve = chooseNearestRankReserve(
+              { playerId: wdPlayer.id, rank: wdPlayer.dataGolfRank },
+              candidates.map((candidate) => ({
+                tier,
+                playerId: candidate.playerId,
+                playerName: candidate.player.name,
+                rank: candidate.player.dataGolfRank,
+              })),
+              alreadyPicked,
+            );
+            return reserve
+              ? candidates.find(
+                  (candidate) => candidate.playerId === reserve.playerId,
+                )
+              : null;
+          })()
+        : candidates.find(
+            (candidate) => !alreadyPicked.has(candidate.playerId),
+          );
 
     if (!replacement) {
       // No replacement available — record as unresolved
@@ -201,7 +265,10 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
           oldPlayerId: wdPlayer.id,
           newPlayerId: replacement.playerId,
           tier,
-          reason: "pre_round_wd",
+          reason:
+            tournamentId === "rocket-classic"
+              ? "pre_round_wd_nearest_rank_at_lock"
+              : "pre_round_wd",
         },
       }),
     ]);
@@ -217,7 +284,10 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
     // Send notification to the affected user
     const userId = selection.team.userId;
     const notifTitle = `🔄 Auto-sub: ${wdPlayer.name} → ${replacement.player.name}`;
-    const notifBody = `${tournament.name}: ${wdPlayer.name} withdrew (Tier ${tier}). Replaced with ${replacement.player.name} (rank ${(replacement.player.dataGolfRank ?? "—").toString()}).`;
+    const notifBody =
+      tournamentId === "rocket-classic"
+        ? `${tournament.name}: ${wdPlayer.name} withdrew (Tier ${tier}). Replaced at the entry lock with the nearest-ranked available same-tier golfer, ${replacement.player.name} (rank ${(replacement.player.dataGolfRank ?? "—").toString()}).`
+        : `${tournament.name}: ${wdPlayer.name} withdrew (Tier ${tier}). Replaced with ${replacement.player.name} (rank ${(replacement.player.dataGolfRank ?? "—").toString()}).`;
 
     try {
       await prisma.notification.create({
@@ -276,6 +346,45 @@ export async function processAutoSubs(tournamentId: string): Promise<AutoSubResu
     tournamentId,
     subsProcessed: subs.length,
     subs,
+    pending,
     unresolved,
   };
+}
+
+async function notifyPendingRocketSub(input: {
+  tournamentName: string;
+  tournamentId: string;
+  teamId: string;
+  userId: string;
+  tier: string;
+  playerName: string;
+  entryClosesAt: Date;
+}) {
+  const title = `Action needed: ${input.playerName} withdrew`;
+  const body = `${input.tournamentName}: amend your ${input.tier} pick before first tee. If you do not, the nearest-ranked available golfer in the same tier will be selected automatically at the entry lock.`;
+  const existing = await prisma.notification.findFirst({
+    where: {
+      userId: input.userId,
+      type: "team_change_required",
+      title,
+    },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  await prisma.notification.create({
+    data: {
+      id: genId(),
+      userId: input.userId,
+      title,
+      body,
+      type: "team_change_required",
+    },
+  });
+  await sendPushToUser(input.userId, {
+    title,
+    body,
+    url: `/tournaments/${input.tournamentId}/teams/${input.teamId}/edit`,
+    tag: `rocket-team-change-${input.teamId}`,
+  });
 }

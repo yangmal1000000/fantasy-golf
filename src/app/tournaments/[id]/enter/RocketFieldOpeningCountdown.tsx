@@ -38,9 +38,11 @@ function TimeUnit({ value, label }: { value: number; label: string }) {
 export default function RocketFieldOpeningCountdown({
   expectedAt,
   serverNow,
+  finalConfirmation = false,
 }: {
   expectedAt: string;
   serverNow: string;
+  finalConfirmation?: boolean;
 }) {
   const router = useRouter();
   const target = new Date(expectedAt).getTime();
@@ -80,7 +82,11 @@ export default function RocketFieldOpeningCountdown({
   return (
     <section
       className="mx-auto mt-6 max-w-md rounded-2xl border border-[#c8a951]/35 bg-[#c8a951]/5 p-4"
-      aria-label="Rocket team entry opening"
+      aria-label={
+        finalConfirmation
+          ? "Rocket final confirmation opening"
+          : "Rocket team entry opening"
+      }
     >
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#9b7b25] dark:text-[#d7bc6a]">
         {hasReachedExpectedTime
@@ -106,9 +112,9 @@ export default function RocketFieldOpeningCountdown({
         Expected from {openingLabel}
       </p>
       <p className="mt-1 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-        Entry opens automatically as soon as the PGA TOUR publishes the
-        complete field following Monday qualifying and our verification checks
-        pass.
+        {finalConfirmation ? "Final confirmation" : "Entry"} opens
+        automatically as soon as the PGA TOUR publishes the complete field
+        following Monday qualifying and our verification checks pass.
       </p>
       <p className="mt-1 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
         A qualifier playoff, withdrawal or delayed official update may move the

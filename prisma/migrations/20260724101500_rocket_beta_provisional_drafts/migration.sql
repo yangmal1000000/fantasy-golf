@@ -1,0 +1,7 @@
+ALTER TABLE "RocketBetaCampaign"
+  ADD COLUMN IF NOT EXISTS "provisionalFieldReadyAt" TIMESTAMPTZ;
+
+ALTER TABLE "RocketBetaPass"
+  ADD COLUMN IF NOT EXISTS "draftTeam" JSONB,
+  ADD COLUMN IF NOT EXISTS "draftUpdatedAt" TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS "draftFieldVersion" TEXT;
