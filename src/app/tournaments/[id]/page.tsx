@@ -24,7 +24,9 @@ import {
 import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
 import { calculateLeaderboard, type TeamScoreResult } from "@/lib/scoring";
 import {
+  assignRocketFieldTiers,
   ROCKET_FIELD_TIER_ORDER,
+  ROCKET_MIN_RANKED_PLAYERS,
   rocketTierCopy,
 } from "@/lib/rocket-tiers";
 import MajorScoreboard from "@/components/MajorScoreboard";
@@ -224,6 +226,36 @@ export default async function TournamentDetailPage({
 
   // Group players by tier
   const tierOrder = [...ROCKET_FIELD_TIER_ORDER];
+  const rocketFieldIsStaged =
+    isRocketBeta &&
+    Boolean(
+      betaCampaign?.provisionalFieldReadyAt || betaCampaign?.fieldFrozenAt,
+    );
+  const rocketRankedPreviewCount = isRocketBeta
+    ? tournament.players.filter(
+        (tp) =>
+          Number.isInteger(tp.player.dataGolfRank) &&
+          Number(tp.player.dataGolfRank) > 0,
+      ).length
+    : 0;
+  const showRocketBalancedPreview =
+    isRocketBeta &&
+    !rocketFieldIsStaged &&
+    tournament.players.length >= 50 &&
+    rocketRankedPreviewCount >= ROCKET_MIN_RANKED_PLAYERS;
+  const useRocketFieldRelativeTiers =
+    isRocketBeta && (rocketFieldIsStaged || showRocketBalancedPreview);
+  const rocketPreviewTierByTournamentPlayerId = showRocketBalancedPreview
+    ? new Map(
+        assignRocketFieldTiers(
+          tournament.players.map((tp) => ({
+            id: tp.id,
+            name: tp.player.name,
+            rank: tp.player.dataGolfRank,
+          })),
+        ).map((player) => [player.id, player.tier]),
+      )
+    : new Map<string, string>();
   const defaultTierLabels: Record<string, string> = {
     T1_10: "Tier 1 (Ranks 1–10)",
     T11_20: "Tier 2 (Ranks 11–20)",
@@ -234,17 +266,18 @@ export default async function TournamentDetailPage({
   const tierLabels = Object.fromEntries(
     tierOrder.map((tier) => [
       tier,
-      isRocketBeta &&
-      Boolean(
-        betaCampaign?.provisionalFieldReadyAt || betaCampaign?.fieldFrozenAt,
-      )
+      useRocketFieldRelativeTiers
         ? (rocketTierCopy(tier)?.label ?? defaultTierLabels[tier])
         : defaultTierLabels[tier],
     ]),
   );
   const playersByTier: Record<string, typeof tournament.players> = {};
   for (const tp of tournament.players) {
-    const tier = tp.tier ?? "T51_PLUS";
+    const tier = showRocketBalancedPreview
+      ? (rocketPreviewTierByTournamentPlayerId.get(tp.id) ??
+        tp.tier ??
+        "T51_PLUS")
+      : (tp.tier ?? "T51_PLUS");
     if (!playersByTier[tier]) playersByTier[tier] = [];
     playersByTier[tier].push(tp);
   }
@@ -648,11 +681,15 @@ export default async function TournamentDetailPage({
           <strong>
             {betaCampaign?.provisionalFieldReadyAt
               ? "Official initial field · drafts open."
-              : "Provisional field review."}
+              : showRocketBalancedPreview
+                ? "Balanced provisional preview."
+                : "Provisional field review."}
           </strong>{" "}
           {betaCampaign?.provisionalFieldReadyAt
             ? "Test Pass holders can save five weekend picks now. Four Monday qualifiers plus possible withdrawals and alternates remain pending; official confirmation follows the final five-tier freeze."
-            : "The staged commitment list is for inspection only. Drafting opens after PGA TOUR/PGATOUR.COM publishes the official post-deadline field."}
+            : showRocketBalancedPreview
+              ? "The current provisional list is arranged as 10 / 10 / 10 / 20 / remaining field so you can preview the real game structure. Player names and tiers may change after tonight’s official PGA TOUR update. Drafting stays locked until the post-deadline field passes verification."
+              : "The staged commitment list is for inspection only. Drafting opens after PGA TOUR/PGATOUR.COM publishes the official post-deadline field."}
         </div>
       )}
 
@@ -1025,9 +1062,16 @@ export default async function TournamentDetailPage({
       ) : (
         <div className="mt-6">
           {/* The Field — players by tier */}
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-zinc-500">
-            The Field
-          </h2>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500">
+              The Field
+            </h2>
+            {showRocketBalancedPreview && (
+              <span className="rounded-full border border-amber-300/70 bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-900 dark:border-amber-800/70 dark:bg-amber-950/30 dark:text-amber-200">
+                Provisional preview · 10 / 10 / 10 / 20 / rest
+              </span>
+            )}
+          </div>
           {tournament.players.length === 0 ? (
             <div className="rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-8 text-center">
               <div className="mb-2 text-3xl">⛳</div>
