@@ -21,9 +21,15 @@ import {
   type TargetPoint,
 } from "@/lib/target-challenge";
 import {
+  TARGET_V2_DETAIL_HEADING,
+  TARGET_V2_EXPECTED_FINISH_INSTRUCTION,
+  TARGET_V2_FIXED_SHOT_EXPLANATION,
   TARGET_V2_PRACTICE,
+  TARGET_V2_SCORING_EXPLANATION,
   TARGET_V2_SCENARIOS,
+  TARGET_V2_TASK_EXPLANATION,
   estimateTargetFinishYards,
+  targetV2DisplayMetrics,
   type TargetV2Metric,
   type TargetV2Scenario,
 } from "@/lib/target-v2";
@@ -244,11 +250,11 @@ export default function TargetV2Client() {
               Finish-position Target
             </p>
             <h1 className="mt-2 max-w-3xl text-2xl font-black tracking-tight sm:mt-3 sm:text-5xl">
-              Read the shot. Choose the finish.
+              Read the situation. Choose the finish centre.
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-5 text-white/75 sm:mt-3 sm:text-base sm:leading-6">
-              Three golf decisions, clearer yardages and one precise finishing
-              marker.
+              Three course-management decisions using a supplied golfer profile
+              and one expected finish centre.
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] font-bold sm:mt-5 sm:gap-2 sm:text-xs">
               <TargetPill>Free test flight</TargetPill>
@@ -410,7 +416,7 @@ function IntroStage({
               Practice
             </p>
             <h2 className="mt-0.5 text-xl font-black text-zinc-900 dark:text-white sm:mt-1 sm:text-2xl">
-              Place a finish marker
+              Place an expected finish centre
             </h2>
           </div>
           <span className="rounded-full bg-[#e8f2eb] px-2.5 py-1 text-[10px] font-bold text-[#0a3d2a] dark:bg-green-950/40 dark:text-green-300 sm:px-3 sm:text-xs">
@@ -436,9 +442,9 @@ function IntroStage({
         <ul className="mt-3 grid grid-cols-3 gap-2 text-xs sm:mt-5 sm:block sm:space-y-4 sm:text-sm">
           <IntroBullet
             icon={<MapPinIcon className="h-4 w-4" />}
-            mobileText="Choose the finish"
+            mobileText="Choose the centre"
           >
-            Place one marker where you want the ball to finish.
+            Choose the strategic centre of the expected finishing pattern.
           </IntroBullet>
           <IntroBullet
             icon={<TargetIcon className="h-4 w-4" />}
@@ -453,6 +459,28 @@ function IntroStage({
             You have 20 minutes. Speed does not affect the result.
           </IntroBullet>
         </ul>
+
+        <div className="mt-4 space-y-2 sm:mt-6 sm:space-y-3">
+          <div className="rounded-xl border border-white/15 bg-white/5 p-3 sm:rounded-2xl sm:p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#f0d986] sm:text-xs">
+              What you decide
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-white/85 sm:text-sm sm:leading-6">
+              {TARGET_V2_TASK_EXPLANATION}
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-white/65 sm:text-xs">
+              {TARGET_V2_FIXED_SHOT_EXPLANATION}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/15 bg-white/5 p-3 sm:rounded-2xl sm:p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#f0d986] sm:text-xs">
+              How ranking works
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-white/75 sm:text-xs">
+              {TARGET_V2_SCORING_EXPLANATION}
+            </p>
+          </div>
+        </div>
 
         <label className="mt-4 flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-white/15 bg-white/5 p-3 sm:mt-6 sm:rounded-2xl sm:p-4">
           <input
@@ -482,9 +510,9 @@ function IntroStage({
               one free Rocket team. Target never changes the fantasy score.
             </li>
             <li>
-              Three final panel markers are combined automatically into one
-              reference position for each decision. The result identifies
-              whether the panel is independent or a coordinator-run rehearsal.
+              Three final panel markers are combined by the frozen geometric
+              median into one robust consensus reference for each decision. It
+              is not a simple arithmetic average.
             </li>
             <li>
               Entries rank by combined distance from those references; exact
@@ -637,10 +665,13 @@ function PlayingStage({
             </div>
 
             <p className="mt-3 rounded-xl bg-white/7 px-3 py-2.5 text-xs font-black leading-4">
-              {scenario.question}
+              {TARGET_V2_EXPECTED_FINISH_INSTRUCTION}
             </p>
 
-            <MetricGrid metrics={scenario.metrics} compact />
+            <MetricGrid
+              metrics={targetV2DisplayMetrics(scenario.metrics)}
+              compact
+            />
 
             <p className="mt-3 text-xs font-semibold leading-5 text-white/85">
               {scenario.summary}
@@ -667,14 +698,14 @@ function PlayingStage({
             {scenario.hole}
           </p>
           <p className="mt-3 rounded-xl bg-[#f4f0e5] p-3 text-sm font-black leading-5 text-zinc-900 dark:bg-zinc-800 dark:text-white sm:mt-4 sm:rounded-2xl sm:p-4 sm:text-base sm:leading-6">
-            {scenario.question}
+            {TARGET_V2_EXPECTED_FINISH_INSTRUCTION}
           </p>
 
-          <MetricGrid metrics={scenario.metrics} />
+          <MetricGrid metrics={targetV2DisplayMetrics(scenario.metrics)} />
 
           <details className="mt-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700 sm:mt-5 sm:rounded-2xl sm:p-4">
             <summary className="cursor-pointer text-sm font-black text-[#0a3d2a] dark:text-green-300">
-              Course detail
+              {TARGET_V2_DETAIL_HEADING}
             </summary>
             <ul className="mt-3 space-y-2 text-sm leading-5 text-zinc-600 dark:text-zinc-300">
               {scenario.details.map((detail) => (
@@ -779,7 +810,7 @@ function ReviewStage({
           Final review
         </p>
         <h2 className="mt-1 text-xl font-black text-zinc-900 dark:text-white sm:mt-2 sm:text-3xl">
-          Check your finishing positions
+          Check your expected finish centres
         </h2>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 sm:mt-2 sm:text-sm">
           These markers lock when submitted and cannot be replaced.
@@ -865,7 +896,7 @@ function CompleteStage({
           Target complete
         </h2>
         <p className="mt-1 text-sm text-white/70 sm:mt-2">
-          Your three finishing positions are locked.
+          Your three expected finish centres are locked.
         </p>
         {entryReference ? (
           <p className="mt-2 text-xs font-bold text-[#f0d986]">
@@ -886,8 +917,9 @@ function CompleteStage({
             Test Pass unlocked
           </h3>
           <p className="mt-1 max-w-2xl text-sm leading-5 text-zinc-600 dark:text-zinc-300 sm:leading-6">
-            Your account-bound pass is ready. Team selection opens after the
-            official Rocket field and five tiers are verified.
+            Your account-bound pass is ready. Provisional drafting opens after
+            tonight’s official initial field is verified; final confirmation
+            follows the complete Monday field.
           </p>
           <Link
             href="/tournaments/rocket-classic/enter"
@@ -926,15 +958,18 @@ function CompleteStage({
                     {scenario.hole}
                   </p>
                   <p className="mt-2 text-sm font-black leading-5 text-zinc-900 dark:text-white sm:mt-3 sm:leading-6">
-                    {scenario.question}
+                    {TARGET_V2_EXPECTED_FINISH_INSTRUCTION}
                   </p>
-                  <MetricGrid metrics={scenario.metrics} compact />
+                  <MetricGrid
+                    metrics={targetV2DisplayMetrics(scenario.metrics)}
+                    compact
+                  />
                   <p className="mt-3 text-sm leading-5 text-zinc-600 dark:text-zinc-300 sm:mt-4 sm:leading-6">
                     {scenario.summary}
                   </p>
                   <details className="mt-3 text-sm text-zinc-600 dark:text-zinc-300 sm:mt-4">
                     <summary className="cursor-pointer font-black text-[#0a3d2a] dark:text-green-300">
-                      Shot detail
+                      {TARGET_V2_DETAIL_HEADING}
                     </summary>
                     <ul className="mt-2 space-y-2 leading-5">
                       {scenario.details.map((detail) => (

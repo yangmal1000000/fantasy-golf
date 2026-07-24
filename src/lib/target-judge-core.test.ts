@@ -68,6 +68,23 @@ test("geometric median uses rectangular map geometry and is order-independent", 
   assert.ok(result.y >= 25_000 && result.y <= 50_000);
 });
 
+test("the official consensus is a geometric median rather than an arithmetic average", () => {
+  const points = [
+    { x: 10_000, y: 10_000 },
+    { x: 10_000, y: 20_000 },
+    { x: 90_000, y: 90_000 },
+  ];
+  const result = geometricMedianTarget(points);
+  const arithmeticAverage = {
+    x: Math.round(points.reduce((total, point) => total + point.x, 0) / points.length),
+    y: Math.round(points.reduce((total, point) => total + point.y, 0) / points.length),
+  };
+
+  assert.notDeepEqual(result, arithmeticAverage);
+  assert.ok(result.x < arithmeticAverage.x);
+  assert.ok(result.y < arithmeticAverage.y);
+});
+
 test("calculates one official target per scenario from exactly three judges", () => {
   const targets = calculateOfficialTargets([submission(-2_000), submission(0), submission(2_000)]);
   assert.deepEqual(targets, [

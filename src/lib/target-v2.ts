@@ -20,6 +20,37 @@ export interface TargetV2Scenario extends TargetScenario {
   details: string[];
 }
 
+// Presentation-only copy deliberately lives outside TARGET_V2_SCENARIOS.
+// Those frozen scenario objects are included in the live judging hash, while
+// these labels may be clarified without invalidating an entry or judge round.
+export const TARGET_V2_EXPECTED_FINISH_INSTRUCTION =
+  "Using the supplied golfer and situation, place the centre of the expected finishing pattern where it gives the best strategic outcome.";
+
+export const TARGET_V2_TASK_EXPLANATION =
+  "Imagine you are advising the supplied golfer. Use their distance, shot pattern and tendencies together with the hole, wind and hazards. Choose the strategic centre of the expected finish pattern—not the exact result of one shot.";
+
+export const TARGET_V2_FIXED_SHOT_EXPLANATION =
+  "The supplied profile already includes the shot’s normal distance, release and dispersion, plus any stated bias. You choose only the intended line and expected finish centre.";
+
+export const TARGET_V2_SCORING_EXPLANATION =
+  "Three judges make the same three decisions from the same frozen information. Their final markers form one robust consensus reference for each decision; the lowest combined distance from all three references ranks first.";
+
+export const TARGET_V2_DETAIL_HEADING = "Golfer & course detail";
+
+export function targetV2DisplayMetrics(
+  metrics: readonly TargetV2Metric[],
+): TargetV2Metric[] {
+  const labels: Record<string, string> = {
+    "Expected total": "Golfer’s expected total",
+    "Controlled finish": "Golfer’s controlled finish",
+    "Shot pattern": "Golfer’s shot pattern",
+  };
+  return metrics.map((metric) => ({
+    ...metric,
+    label: labels[metric.label] ?? metric.label,
+  }));
+}
+
 const TEE_BALL = { x: 48_000, y: 93_000 };
 const APPROACH_BALL = { x: 49_000, y: 93_000 };
 const SECOND_SHOT_BALL = { x: 47_000, y: 94_000 };
@@ -177,6 +208,60 @@ export const TARGET_V2_SCENARIOS: readonly TargetV2Scenario[] = [
   },
 ] as const;
 
+const TARGET_V2_DISPERSION_YARDS: Readonly<
+  Record<string, { width: number; depth: number }>
+> = {
+  "hawthorn-6-tee-finish-v2": { width: 38, depth: 24 },
+  "hawthorn-11-approach-finish-v2": { width: 24, depth: 18 },
+  "hawthorn-15-second-shot-finish-v2": { width: 26, depth: 20 },
+  "hawthorn-practice-finish-v2": { width: 28, depth: 18 },
+};
+
+export interface TargetV2DispersionEllipse {
+  radiusX: number;
+  radiusY: number;
+  widthYards: number;
+  depthYards: number;
+}
+
+export function targetV2DispersionEllipse(
+  scenario: Pick<TargetScenario, "id" | "yardage">,
+  point: TargetPoint | null,
+): TargetV2DispersionEllipse | null {
+  const dispersion = TARGET_V2_DISPERSION_YARDS[scenario.id];
+  if (!dispersion || !scenario.yardage || !point) return null;
+
+  const centre = targetPointToMapSpace(point);
+  const anchor = interpolateYardageAnchor(
+    scenario.yardage.anchors,
+    centre.y,
+  );
+  const centreDistance = targetFinishDistanceAtMapPoint(
+    scenario.yardage,
+    centre,
+  );
+  const nearY = solveViewBoxYForDistance(
+    scenario.yardage,
+    Math.max(0, centreDistance - dispersion.depth / 2),
+    centre.x,
+  );
+  const farY = solveViewBoxYForDistance(
+    scenario.yardage,
+    centreDistance + dispersion.depth / 2,
+    centre.x,
+  );
+
+  return {
+    radiusX: Math.max(
+      12,
+      dispersion.width / 2 / Math.max(0.01, anchor.lateralYardsPerUnit),
+    ),
+    radiusY: Math.max(8, Math.abs(nearY - farY) / 2),
+    widthYards: dispersion.width,
+    depthYards: dispersion.depth,
+  };
+}
+
 export const TARGET_V2_PRACTICE: TargetV2Scenario = {
   id: "hawthorn-practice-finish-v2",
   number: 0,
@@ -185,7 +270,7 @@ export const TARGET_V2_PRACTICE: TargetV2Scenario = {
   hole: "Hawthorn Vale practice hole",
   mapKind: "practice",
   summary: "Move the marker and watch the approximate distance update.",
-  question: "Tap where you want the ball to finish.",
+  question: "Tap to place the centre of an expected finishing pattern.",
   skill: "This practice map has no correct answer and is never submitted.",
   playerFacts: [],
   conditions: [],

@@ -3,10 +3,15 @@ import test from "node:test";
 import {
   ROCKET_BETA_ENTRY_OPENS_AT,
   ROCKET_BETA_FIELD_EXPECTED_AT,
+  ROCKET_BETA_PROVISIONAL_DRAFT_EXPECTED_AT,
   formatRocketBetaEntryDeadline,
 } from "./rocket-beta-config";
 
-test("Rocket field has one server-owned expected availability time", () => {
+test("Rocket exposes separate server-owned expectations for drafting and confirmation", () => {
+  assert.equal(
+    ROCKET_BETA_PROVISIONAL_DRAFT_EXPECTED_AT.toISOString(),
+    "2026-07-24T21:00:00.000Z",
+  );
   assert.equal(
     ROCKET_BETA_FIELD_EXPECTED_AT.toISOString(),
     "2026-07-27T21:00:00.000Z",

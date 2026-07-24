@@ -10,6 +10,10 @@ const courseMapSource = readFileSync(
   new URL("../app/target/CourseMap.tsx", import.meta.url),
   "utf8",
 );
+const judgeSource = readFileSync(
+  new URL("../app/target-judge/TargetJudgeClient.tsx", import.meta.url),
+  "utf8",
+);
 
 test("immersive mobile map and detail column explicitly fill the Safari viewport", () => {
   assert.match(
@@ -27,8 +31,8 @@ test("full shot information uses the remaining mobile height and scrolls interna
     targetSource,
     /min-h-0 flex-1 overflow-y-auto overscroll-contain/,
   );
-  assert.match(targetSource, /\{scenario\.question\}/);
-  assert.match(targetSource, /MetricGrid metrics=\{scenario\.metrics\} compact/);
+  assert.match(targetSource, /TARGET_V2_EXPECTED_FINISH_INSTRUCTION/);
+  assert.match(targetSource, /targetV2DisplayMetrics\(scenario\.metrics\)/);
   assert.match(targetSource, /\{scenario\.summary\}/);
   assert.match(targetSource, /scenario\.details\.map/);
 });
@@ -74,4 +78,27 @@ test("immersive fine adjustment is overlaid in the map's lower-left corner", () 
   assert.match(courseMapSource, /Move \$\{markerTerm\} left[\s\S]*overlay/);
   assert.match(courseMapSource, /Move \$\{markerTerm\} down[\s\S]*overlay/);
   assert.match(courseMapSource, /Move \$\{markerTerm\} right[\s\S]*overlay/);
+});
+
+test("the map shows direction without pretending to calculate a curved flight", () => {
+  assert.match(
+    courseMapSource,
+    /d=\{`M\$\{ballMarker\.x\} \$\{ballMarker\.y\} L\$\{marker\.x\} \$\{marker\.y\}`\}/,
+  );
+  assert.match(courseMapSource, /data-target-overlay="intended-line"/);
+  assert.match(courseMapSource, /INTENDED LINE/);
+  assert.match(courseMapSource, /EXPECTED FINISH CENTRE/);
+  assert.match(courseMapSource, /data-target-overlay="expected-finish-pattern"/);
+});
+
+test("entrant and judge screens share the same clarity presentation layer", () => {
+  for (const source of [targetSource, judgeSource]) {
+    assert.match(source, /TARGET_V2_EXPECTED_FINISH_INSTRUCTION/);
+    assert.match(source, /TARGET_V2_DETAIL_HEADING/);
+    assert.match(source, /targetV2DisplayMetrics/);
+  }
+  assert.match(targetSource, /TARGET_V2_TASK_EXPLANATION/);
+  assert.match(targetSource, /TARGET_V2_SCORING_EXPLANATION/);
+  assert.match(judgeSource, /TARGET_V2_TASK_EXPLANATION/);
+  assert.match(judgeSource, /TARGET_V2_FIXED_SHOT_EXPLANATION/);
 });

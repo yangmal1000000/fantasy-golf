@@ -5,7 +5,14 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import CourseMap from "@/app/target/CourseMap";
 import TargetPanelReview from "@/components/TargetPanelReview";
 import { type TargetPoint } from "@/lib/target-challenge";
-import { TARGET_V2_SCENARIOS as TARGET_SCENARIOS } from "@/lib/target-v2";
+import {
+  TARGET_V2_DETAIL_HEADING,
+  TARGET_V2_EXPECTED_FINISH_INSTRUCTION,
+  TARGET_V2_FIXED_SHOT_EXPLANATION,
+  TARGET_V2_SCENARIOS as TARGET_SCENARIOS,
+  TARGET_V2_TASK_EXPLANATION,
+  targetV2DisplayMetrics,
+} from "@/lib/target-v2";
 import type {
   TargetJudgeControlDto,
   TargetJudgeContextDto,
@@ -551,8 +558,19 @@ function MarkingForm({
           {phase === "initial" ? "Place your initial targets" : "Lock your final targets"}
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          Place one target and give a short strategic rationale for every scenario. The final phase starts from your initial answers, but you may revise them after the panel discussion.
+          For each frozen scenario, place the expected finish centre that gives
+          the supplied golfer the best strategic outcome, then give a short
+          rationale. The final phase starts from your initial answers, but you
+          may revise them after the panel discussion.
         </p>
+        <div className="mt-4 grid gap-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300 md:grid-cols-2">
+          <p className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+            {TARGET_V2_TASK_EXPLANATION}
+          </p>
+          <p className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+            {TARGET_V2_FIXED_SHOT_EXPLANATION}
+          </p>
+        </div>
       </div>
 
       {phase === "initial" && developmentMode ? (
@@ -589,9 +607,9 @@ function MarkingForm({
               <p className="text-xs font-black uppercase tracking-[0.18em] text-[#9b7b25] dark:text-[#d7bc6a]">Decision {scenario.number}</p>
               <h3 className="mt-1 text-2xl font-black text-zinc-900 dark:text-white">{scenario.title}</h3>
               <p className="mt-1 text-sm font-semibold text-[#0a3d2a] dark:text-green-400">{scenario.hole}</p>
-              <p className="mt-4 rounded-2xl bg-[#f4f0e5] p-4 text-sm font-bold leading-6 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">{scenario.question}</p>
+              <p className="mt-4 rounded-2xl bg-[#f4f0e5] p-4 text-sm font-bold leading-6 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">{TARGET_V2_EXPECTED_FINISH_INSTRUCTION}</p>
               <div className="mt-4 grid grid-cols-2 gap-2">
-                {scenario.metrics.map((metric) => (
+                {targetV2DisplayMetrics(scenario.metrics).map((metric) => (
                   <div
                     key={`${metric.label}-${metric.value}`}
                     className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/70"
@@ -606,7 +624,7 @@ function MarkingForm({
                 ))}
               </div>
               <div className="mt-4 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
-                <ScenarioFacts title="Course detail" items={scenario.details} />
+                <ScenarioFacts title={TARGET_V2_DETAIL_HEADING} items={scenario.details} />
               </div>
               <label className="mt-5 block text-sm font-black text-zinc-900 dark:text-white" htmlFor={`rationale-${phase}-${scenario.id}`}>
                 Strategic rationale
@@ -617,7 +635,7 @@ function MarkingForm({
                 onChange={(event) => updateRationale(index, event.target.value)}
                 maxLength={1_000}
                 rows={5}
-                placeholder="Explain the wind, dispersion, penalty and course-management factors behind your target…"
+                placeholder="Explain the wind, dispersion, penalty and course-management factors behind your expected finish centre…"
                 className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-900 outline-none transition focus:border-[#c8a951] focus:ring-2 focus:ring-[#c8a951]/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
               />
               <p className={`mt-1 text-right text-xs ${rationales[index].trim().length >= 40 ? "text-green-600" : "text-zinc-400"}`}>

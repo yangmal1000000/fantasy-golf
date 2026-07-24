@@ -1,5 +1,13 @@
+// Public expectation for the first official post-commitment field. This is
+// when provisional drafting may become available after verification; it is
+// never a security or opening gate by itself.
+export const ROCKET_BETA_PROVISIONAL_DRAFT_EXPECTED_AT = new Date(
+  "2026-07-24T21:00:00.000Z",
+);
+
 // This is the public expected-availability point, not a security gate.
-// Entry opens earlier if the complete official field is verified and frozen.
+// Final confirmation opens earlier if the complete official field is verified
+// and frozen.
 export const ROCKET_BETA_FIELD_EXPECTED_AT = new Date("2026-07-27T21:00:00.000Z");
 
 // Keep the existing database/API field compatible while its meaning changes
