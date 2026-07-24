@@ -66,6 +66,31 @@ test("Rocket entry explains its field-relative tier structure", () => {
   );
 });
 
+test("the public Rocket field uses a balanced read-only preview before official staging", () => {
+  assert.match(
+    tournamentPage,
+    /rocketRankedPreviewCount >= ROCKET_MIN_RANKED_PLAYERS/,
+  );
+  assert.match(
+    tournamentPage,
+    /assignRocketFieldTiers\([\s\S]*tournament\.players\.map/,
+  );
+  assert.match(
+    tournamentPage,
+    /rocketPreviewTierByTournamentPlayerId\.get\(tp\.id\)/,
+  );
+  assert.match(tournamentPage, /Balanced provisional preview\./);
+  assert.match(tournamentPage, /Player names and tiers may change/);
+  assert.match(
+    tournamentPage,
+    /Drafting stays locked until the post-deadline field passes verification/,
+  );
+  assert.match(
+    tournamentPage,
+    /Provisional preview · 10 \/ 10 \/ 10 \/ 20 \/ rest/,
+  );
+});
+
 test("Rocket withdrawals notify before the lock and use deterministic reserves at lock", () => {
   assert.match(autoSub, /waitForUserAmendment/);
   assert.match(autoSub, /notifyPendingRocketSub/);
