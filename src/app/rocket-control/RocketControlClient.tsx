@@ -7,6 +7,7 @@ type ControlData = {
   campaign: {
     name: string;
     status: string;
+    entryOpensAt: string | null;
     entryClosesAt: string | null;
     entryDeadlineConfirmed: boolean;
     fieldVersion: string | null;
@@ -149,9 +150,15 @@ export default function RocketControlClient() {
                 label="Field snapshot"
                 value={`${campaign.fieldCount} players`}
                 detail={
-                  campaign.fieldFrozenAt
+                  `${campaign.fieldFrozenAt
                     ? `Frozen · ${campaign.fieldVersion}`
-                    : `Provisional · ${campaign.fieldVersion ?? "not staged"}`
+                    : `Provisional · ${campaign.fieldVersion ?? "not staged"}`}${
+                    campaign.entryOpensAt
+                      ? ` · Opens ${new Date(campaign.entryOpensAt).toLocaleString("en-GB", {
+                          timeZone: "Europe/London",
+                        })}`
+                      : ""
+                  }`
                 }
               />
               <Metric

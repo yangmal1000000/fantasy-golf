@@ -1,3 +1,7 @@
+// Team entry is scheduled to open after the post-qualifier field review.
+// A frozen final field and all five populated tiers are still required.
+export const ROCKET_BETA_ENTRY_OPENS_AT = new Date("2026-07-28T08:00:00.000Z");
+
 export const ROCKET_BETA_ENTRY_CLOSES_AT = new Date("2026-07-30T10:45:00.000Z");
 
 // Keep public copy tied to the event rather than presenting the safety cutoff
