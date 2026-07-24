@@ -5,18 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { TargetIcon } from "@/components/icons";
-
-const MENU_LINKS = [
-  { href: "/tournaments/rocket-classic", label: "Rocket Beta" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/tournaments", label: "Tournaments" },
-  { href: "/my-teams", label: "My Teams" },
-  { href: "/players", label: "Players" },
-  { href: "/stats", label: "Stats" },
-  { href: "/leagues", label: "Leagues" },
-  { href: "/power-rankings", label: "Power Rankings" },
-  { href: "/how-to-play", label: "How to Play" },
-];
+import {
+  isSiteNavItemActive,
+  SITE_NAV_LINKS,
+} from "@/lib/site-navigation";
 
 export default function MobileMenu() {
   const { user } = useAuth();
@@ -87,7 +79,7 @@ export default function MobileMenu() {
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="rounded-md p-1.5 text-white/80 transition hover:bg-white/10 hover:text-white sm:hidden"
+        className="rounded-md p-1.5 text-white/80 transition hover:bg-white/10 hover:text-white xl:hidden"
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
         aria-controls="mobile-site-menu"
@@ -107,19 +99,20 @@ export default function MobileMenu() {
         <>
           <button
             type="button"
-            className="fixed inset-0 z-40 bg-black/30 sm:hidden"
+            className="fixed inset-0 z-40 bg-black/30 xl:hidden"
             onClick={close}
             aria-label="Close menu"
           />
           <div
             id="mobile-site-menu"
-            className="absolute left-0 right-0 top-full z-50 border-t border-white/10 bg-[#0a3d2a] shadow-xl sm:hidden"
+            className="absolute left-0 right-0 top-full z-50 border-t border-white/10 bg-[#0a3d2a] shadow-xl xl:hidden"
           >
-            <nav className="mx-auto max-w-6xl px-3 py-2" aria-label="Mobile navigation">
+            <nav className="mx-auto max-w-6xl px-3 py-2" aria-label="Menu navigation">
               {targetPreviewAllowed && (
                 <Link
                   href="/target"
                   onClick={close}
+                  aria-current={pathname.startsWith("/target") ? "page" : undefined}
                   className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-semibold transition ${
                     pathname.startsWith("/target")
                       ? "bg-white/10 text-white"
@@ -135,13 +128,14 @@ export default function MobileMenu() {
                 </Link>
               )}
 
-              {MENU_LINKS.map((link) => {
-                const active = pathname.startsWith(link.href);
+              {SITE_NAV_LINKS.map((link) => {
+                const active = isSiteNavItemActive(pathname, link.href);
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={close}
+                    aria-current={active ? "page" : undefined}
                     className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                       active
                         ? "bg-white/10 text-white"
