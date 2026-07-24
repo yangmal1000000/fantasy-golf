@@ -159,7 +159,7 @@ export default async function MyTeamsPage() {
             <h2 className="mt-2 text-lg font-black text-[#0a3d2a] dark:text-green-400">
               {rocketFieldReady
                 ? hasRocketDraft
-                  ? "Review and confirm your Rocket team"
+                  ? "Your Rocket team is being finalised"
                   : "Build your real Rocket team"
                 : rocketProvisionalFieldReady
                   ? hasRocketDraft
@@ -169,11 +169,11 @@ export default async function MyTeamsPage() {
             </h2>
             <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
               {rocketFieldReady
-                ? "The reviewed final field is open. Confirm one golfer from every tier to add the team to My Teams and the Rocket standings."
+                ? "The reviewed final field is open. Saved drafts are fixed automatically; new entrants can still confirm one golfer from every tier before first tee."
                 : rocketProvisionalFieldReady
                   ? hasRocketDraft
-                    ? "Your five picks are saved without using the Test Pass. We will preserve unaffected picks and notify you if the final field requires a same-tier replacement."
-                    : "The official initial field is available. Save five weekend picks now without redeeming your Test Pass; final confirmation follows the Monday field update."
+                    ? "Your five picks are saved without using the Test Pass. The verified final field will fix them automatically; if a pick becomes invalid, we will notify you and use the nearest-ranked available golfer in the same tier."
+                    : "The official initial field is available. Save five weekend picks now; the verified final field will fix the draft automatically."
                   : "The official initial field has not been published yet. Your Test Pass remains unlocked."}
             </p>
 
@@ -245,7 +245,7 @@ export default async function MyTeamsPage() {
                       3
                     </span>
                     <p className="mt-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
-                      Confirm team
+                      Team fixed
                     </p>
                   </div>
                 </div>
@@ -260,7 +260,7 @@ export default async function MyTeamsPage() {
                 idle={
                   rocketFieldReady
                     ? hasRocketDraft
-                      ? "Review and confirm team →"
+                      ? "Check team status →"
                       : "Build Rocket team →"
                     : rocketProvisionalFieldReady
                       ? hasRocketDraft

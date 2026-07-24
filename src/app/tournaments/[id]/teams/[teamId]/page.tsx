@@ -201,7 +201,8 @@ export default async function TeamDetailPage({
               </h2>
             </div>
             <p className="mt-1 text-xs text-blue-600 dark:text-blue-500">
-              These players were automatically swapped after a withdrawal.
+              These players were automatically swapped during final-field or
+              withdrawal reconciliation.
             </p>
             <div className="mt-3 space-y-2">
               {subLogs.map((log) => {

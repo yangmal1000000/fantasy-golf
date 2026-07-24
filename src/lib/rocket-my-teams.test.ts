@@ -25,7 +25,8 @@ test("My Teams renders the saved provisional team and all five picks", () => {
   assert.match(myTeamsSource, /5 picks saved/);
   assert.match(myTeamsSource, /Draft saved/);
   assert.match(myTeamsSource, /Final field/);
-  assert.match(myTeamsSource, /Confirm team/);
+  assert.match(myTeamsSource, /Team fixed/);
+  assert.match(myTeamsSource, /final field will fix them automatically/);
 });
 
 test("My Teams changes its Rocket action when the reviewed field opens", () => {

@@ -1072,7 +1072,7 @@ function TeamReviewModal({
         </h2>
         <p className="mt-1 text-sm leading-5 text-zinc-500 dark:text-zinc-400">
           {provisionalDraftMode
-            ? "This saves your five picks without creating an official team or redeeming your Test Pass. Any final-field change is reconciled within the same tier."
+            ? "This saves your five picks without creating an official team yet. The verified final field will confirm the team automatically; only an invalid pick may be replaced by the nearest-ranked available golfer in the same tier."
             : dryRunMode
               ? "This checks the same five-tier rules as a real entry. Nothing will be saved and your Test Pass stays unlocked."
               : editMode
@@ -1195,7 +1195,10 @@ function DraftSavedModal({
         </h2>
         <p className="mx-auto mt-2 max-w-sm text-sm leading-5 text-zinc-500 dark:text-zinc-400">
           No official team was created and your Test Pass remains unlocked. We
-          will notify you if the final field changes one of these picks.
+          will confirm these picks automatically after the verified final
+          field. If a pick becomes invalid, we will notify you, select the
+          nearest-ranked available golfer in the same tier and let you amend it
+          before first tee.
         </p>
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left dark:border-amber-900 dark:bg-amber-950/30">
           <p className="font-black text-zinc-900 dark:text-white">{teamName}</p>

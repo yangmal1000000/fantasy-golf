@@ -462,15 +462,15 @@ export default async function TournamentDetailPage({
                 </span>
                 <div>
                   <p className="font-black text-zinc-900 dark:text-white">
-                    Confirm five-player team
+                    Choose five-player team
                   </p>
                   <p className="text-xs leading-5 text-zinc-500">
                     {betaState?.passState === "REDEEMED"
                       ? "Confirmed · follow your live standing here"
                       : betaState?.provisionalFieldReady
                         ? betaState.draft
-                          ? "Provisional draft saved · final confirmation pending"
-                          : "Weekend drafting open · final confirmation Monday"
+                          ? "Draft saved · automatic final-field check pending"
+                          : "Weekend drafting open · final field Monday"
                         : "One golfer from each final tier"}
                   </p>
                 </div>
@@ -686,7 +686,7 @@ export default async function TournamentDetailPage({
                 : "Provisional field review."}
           </strong>{" "}
           {betaCampaign?.provisionalFieldReadyAt
-            ? "Test Pass holders can save five weekend picks now. Four Monday qualifiers plus possible withdrawals and alternates remain pending; official confirmation follows the final five-tier freeze."
+            ? "Test Pass holders can save five weekend picks now. Four Monday qualifiers plus possible withdrawals and alternates remain pending; the verified final field fixes unchanged drafts automatically and applies only necessary same-tier reserves."
             : showRocketBalancedPreview
               ? "The current provisional list is arranged as 10 / 10 / 10 / 20 / remaining field so you can preview the real game structure. Player names and tiers may change after tonight’s official PGA TOUR update. Drafting stays locked until the post-deadline field passes verification."
               : "The staged commitment list is for inspection only. Drafting opens after PGA TOUR/PGATOUR.COM publishes the official post-deadline field."}

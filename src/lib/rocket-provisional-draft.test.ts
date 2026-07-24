@@ -26,6 +26,10 @@ const teamRoute = readFileSync(
   new URL("../app/api/tournaments/[id]/teams/route.ts", import.meta.url),
   "utf8",
 );
+const fieldFreeze = readFileSync(
+  new URL("./rocket-field-freeze.ts", import.meta.url),
+  "utf8",
+);
 const autoSub = readFileSync(new URL("./auto-sub.ts", import.meta.url), "utf8");
 
 test("a Rocket provisional draft is stored on the unlocked pass without creating a team", () => {
@@ -39,13 +43,37 @@ test("a Rocket provisional draft is stored on the unlocked pass without creating
   assert.doesNotMatch(draftRoute, /tx\.team\.create/);
 });
 
-test("weekend drafting is explicit and final confirmation reuses then clears the draft", () => {
+test("weekend drafting explicitly authorises automatic final-field confirmation", () => {
   assert.match(entryPage, /Official initial field · draft mode/);
   assert.match(entryPage, /Four Monday qualifiers/);
+  assert.match(entryPage, /fixes your team automatically/);
   assert.match(entryForm, /Save provisional draft/);
   assert.match(entryForm, /No official team was created/);
+  assert.match(entryForm, /confirm the team automatically/);
+  assert.match(entryForm, /nearest-ranked available golfer in the same tier/);
   assert.match(teamRoute, /provisionalDraftUsed/);
   assert.match(teamRoute, /draftTeam: Prisma\.DbNull/);
+});
+
+test("final-field freeze creates official teams, redeems passes and keeps changed picks editable", () => {
+  assert.match(fieldFreeze, /const team = await tx\.team\.create/);
+  assert.match(fieldFreeze, /selectionCount: \{ increment: 1 \}/);
+  assert.match(fieldFreeze, /teamSubLog\.createMany/);
+  assert.match(fieldFreeze, /final_field_\$\{change\.reason\.toLowerCase\(\)\}_nearest_rank/);
+  assert.match(fieldFreeze, /status: "REDEEMED"/);
+  assert.match(fieldFreeze, /draftTeam: Prisma\.DbNull/);
+  assert.match(
+    fieldFreeze,
+    /action: "rocket_provisional_draft_auto_confirmed"/,
+  );
+  assert.match(
+    fieldFreeze,
+    /policy: "auto_confirm_final_field_nearest_rank_same_tier"/,
+  );
+  assert.match(fieldFreeze, /Your five picks were unchanged/);
+  assert.match(fieldFreeze, /nearest-ranked available golfer in the same tier/);
+  assert.match(fieldFreeze, /you can amend it before first tee/);
+  assert.match(fieldFreeze, /teamsAutoConfirmedWithChanges/);
 });
 
 test("Rocket entry explains its field-relative tier structure", () => {

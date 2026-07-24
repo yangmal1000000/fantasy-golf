@@ -228,6 +228,8 @@ export async function stageRocketBetaField(
     provisionalDraftingOpened: false,
     draftsReconciled: 0,
     draftChanges: 0,
+    teamsAutoConfirmed: 0,
+    teamsAutoConfirmedWithChanges: 0,
   };
 
   if (!apply && !freeze) return report;
@@ -254,6 +256,8 @@ export async function stageRocketBetaField(
   }[] = [];
   let draftsReconciled = 0;
   let draftChanges = 0;
+  let teamsAutoConfirmed = 0;
+  let teamsAutoConfirmedWithChanges = 0;
   const changedAt = new Date();
 
   await prisma.$transaction(
@@ -352,6 +356,7 @@ export async function stageRocketBetaField(
       if (freeze) {
         const reconciliation = await reconcileDraftsForFinalField(tx, {
           campaignId: campaign.id,
+          tournamentId: manifest.tournamentId,
           fieldVersion: manifest.version,
           fieldHash: snapshotHash,
           reconciledAt: changedAt,
@@ -359,6 +364,9 @@ export async function stageRocketBetaField(
         });
         draftsReconciled = reconciliation.draftsReconciled;
         draftChanges = reconciliation.draftChanges;
+        teamsAutoConfirmed = reconciliation.teamsAutoConfirmed;
+        teamsAutoConfirmedWithChanges =
+          reconciliation.teamsAutoConfirmedWithChanges;
         draftNotifications.push(...reconciliation.notifications);
       }
 
@@ -403,7 +411,7 @@ export async function stageRocketBetaField(
       sendPushToUser(notification.userId, {
         title: notification.title,
         body: notification.body,
-        url: "/tournaments/rocket-classic/enter",
+        url: "/my-teams",
         tag: "rocket-draft-field-change",
       }),
     ),
@@ -416,8 +424,10 @@ export async function stageRocketBetaField(
     provisionalDraftingOpened: apply,
     draftsReconciled,
     draftChanges,
+    teamsAutoConfirmed,
+    teamsAutoConfirmedWithChanges,
     message: freeze
-      ? "Final field and tiers are frozen."
+      ? "Final field and tiers are frozen; saved drafts were confirmed automatically."
       : "Official initial field staged; provisional drafting is open and the Test Pass remains unlocked.",
   };
 }
@@ -541,6 +551,7 @@ async function reconcileDraftsForFinalField(
   tx: Prisma.TransactionClient,
   input: {
     campaignId: string;
+    tournamentId: string;
     fieldVersion: string;
     fieldHash: string;
     reconciledAt: Date;
@@ -561,6 +572,20 @@ async function reconcileDraftsForFinalField(
   }[] = [];
   let draftsReconciled = 0;
   let draftChanges = 0;
+  let teamsAutoConfirmed = 0;
+  let teamsAutoConfirmedWithChanges = 0;
+  const tournamentPlayers = await tx.tournamentPlayer.findMany({
+    where: { tournamentId: input.tournamentId },
+    select: {
+      id: true,
+      playerId: true,
+      tier: true,
+      withdrew: true,
+    },
+  });
+  const tournamentPlayerByPlayerId = new Map(
+    tournamentPlayers.map((player) => [player.playerId, player]),
+  );
 
   for (const pass of passes) {
     if (!pass.draftTeam) continue;
@@ -575,29 +600,99 @@ async function reconcileDraftsForFinalField(
       fieldHash: input.fieldHash,
       reconciledAt: input.reconciledAt.toISOString(),
     });
-    await tx.rocketBetaPass.update({
-      where: { id: pass.id },
+
+    const selectedTournamentPlayers = reconciled.draft.picks.map((pick) => {
+      const tournamentPlayer = tournamentPlayerByPlayerId.get(pick.playerId);
+      if (
+        !tournamentPlayer ||
+        tournamentPlayer.tier !== pick.tier ||
+        tournamentPlayer.withdrew
+      ) {
+        throw new RocketFieldError(
+          `Reconciled Rocket draft ${pass.id} does not match the frozen field`,
+        );
+      }
+      return tournamentPlayer;
+    });
+    if (
+      selectedTournamentPlayers.length !== 5 ||
+      new Set(selectedTournamentPlayers.map((player) => player.id)).size !== 5
+    ) {
+      throw new RocketFieldError(
+        `Reconciled Rocket draft ${pass.id} is not a valid five-player team`,
+      );
+    }
+
+    const team = await tx.team.create({
       data: {
-        draftTeam: reconciled.draft as unknown as Prisma.InputJsonValue,
+        name: reconciled.draft.teamName,
+        userId: pass.userId,
+        tournamentId: input.tournamentId,
+        selections: {
+          create: selectedTournamentPlayers.map((player) => ({
+            tournamentPlayerId: player.id,
+          })),
+        },
+      },
+    });
+    if (reconciled.changes.length > 0) {
+      await tx.teamSubLog.createMany({
+        data: reconciled.changes.map((change) => ({
+          teamId: team.id,
+          oldPlayerId: change.oldPlayerId,
+          newPlayerId: change.newPlayerId,
+          tier: change.tier,
+          reason: `final_field_${change.reason.toLowerCase()}_nearest_rank`,
+        })),
+      });
+    }
+    await tx.tournamentPlayer.updateMany({
+      where: {
+        id: { in: selectedTournamentPlayers.map((player) => player.id) },
+      },
+      data: { selectionCount: { increment: 1 } },
+    });
+    const redeemed = await tx.rocketBetaPass.updateMany({
+      where: {
+        id: pass.id,
+        status: "UNLOCKED",
+        teamId: null,
+      },
+      data: {
+        status: "REDEEMED",
+        redeemedAt: input.reconciledAt,
+        teamId: team.id,
+        draftTeam: Prisma.DbNull,
         draftUpdatedAt: input.reconciledAt,
         draftFieldVersion: input.fieldVersion,
       },
     });
+    if (redeemed.count !== 1) {
+      throw new RocketFieldError(
+        `Rocket Test Pass ${pass.id} changed during final-field confirmation`,
+      );
+    }
     await tx.rocketBetaAudit.create({
       data: {
         campaignId: input.campaignId,
         actorUserId: pass.userId,
-        action: "rocket_provisional_draft_final_reconciled",
+        action: "rocket_provisional_draft_auto_confirmed",
         payload: {
           passId: pass.id,
+          teamId: team.id,
           fieldVersion: input.fieldVersion,
           fieldHash: input.fieldHash,
           changes: reconciled.changes,
+          policy: "auto_confirm_final_field_nearest_rank_same_tier",
         } as unknown as Prisma.InputJsonValue,
       },
     });
     draftsReconciled += 1;
     draftChanges += reconciled.changes.length;
+    teamsAutoConfirmed += 1;
+    if (reconciled.changes.length > 0) {
+      teamsAutoConfirmedWithChanges += 1;
+    }
 
     const summary = reconciled.changes
       .map(
@@ -607,27 +702,36 @@ async function reconcileDraftsForFinalField(
       .join("; ");
     const title =
       reconciled.changes.length === 0
-        ? "Rocket final field ready"
+        ? "Rocket team confirmed automatically"
         : reconciled.changes.length === 1
-          ? "Rocket draft pick updated"
-          : "Rocket draft picks updated";
+          ? "Rocket team changed — review your pick"
+          : "Rocket team changed — review your picks";
     const body =
       reconciled.changes.length === 0
-        ? "Your five provisional picks remain valid. Review and confirm the official team before first tee."
-        : `${summary}. Review or amend your draft before first tee, then confirm the official team.`;
+        ? "Your five picks were unchanged in the verified final field, so your official team is now fixed and your Test Pass has been redeemed."
+        : `${summary}. The nearest-ranked available golfer in the same tier was selected automatically. Your official team is confirmed, but you can amend it before first tee.`;
     await tx.notification.create({
       data: {
         id: genId(),
         userId: pass.userId,
         title,
         body,
-        type: "team_change_required",
+        type:
+          reconciled.changes.length === 0
+            ? "info"
+            : "team_change_required",
       },
     });
     notifications.push({ userId: pass.userId, title, body });
   }
 
-  return { draftsReconciled, draftChanges, notifications };
+  return {
+    draftsReconciled,
+    draftChanges,
+    teamsAutoConfirmed,
+    teamsAutoConfirmedWithChanges,
+    notifications,
+  };
 }
 
 function validateRocketFieldTiers(

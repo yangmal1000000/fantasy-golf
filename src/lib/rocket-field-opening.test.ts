@@ -36,11 +36,12 @@ test("the waiting card counts down to verified provisional drafting first", () =
   assert.match(betaSource, /entryOpensAt: ROCKET_BETA_ENTRY_OPENS_AT/);
 });
 
-test("draft mode switches the same countdown to final confirmation", () => {
+test("draft mode switches the same countdown to the automatic final-field check", () => {
   assert.match(enterPageSource, /expectedAt=\{betaState\.entryOpensAt\}/);
-  assert.match(enterPageSource, /milestone="final-confirmation"/);
+  assert.match(enterPageSource, /milestone="final-field"/);
   assert.match(countdownSource, /Provisional draft expected in/);
-  assert.match(countdownSource, /Final confirmation expected in/);
+  assert.match(countdownSource, /Final field expected in/);
+  assert.match(countdownSource, /Saved drafts become official teams automatically/);
   assert.match(countdownSource, /Official initial field update pending/);
   assert.match(countdownSource, /Official final field update pending/);
 });

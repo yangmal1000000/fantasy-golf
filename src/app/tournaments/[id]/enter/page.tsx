@@ -268,14 +268,14 @@ export default async function EnterTeamPage({
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
                   If one of your picks changes, we will notify you and suggest
                   the nearest-ranked available golfer in the same tier. You can
-                  amend it before first tee; final confirmation opens after the
-                  verified field is frozen.
+                  amend it before first tee. If nothing changes, the verified
+                  final field fixes your team automatically.
                 </p>
                 {betaState?.entryOpensAt && (
                   <RocketFieldOpeningCountdown
                     expectedAt={betaState.entryOpensAt}
                     serverNow={new Date().toISOString()}
-                    milestone="final-confirmation"
+                    milestone="final-field"
                   />
                 )}
               </div>

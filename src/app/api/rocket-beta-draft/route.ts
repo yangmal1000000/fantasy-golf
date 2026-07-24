@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         }
         if (campaign.fieldFrozenAt) {
           throw new RocketBetaError(
-            "The final field is ready. Review and confirm your official team.",
+            "The final field is ready. Check My Teams for your official team.",
             409,
           );
         }

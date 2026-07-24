@@ -42,7 +42,7 @@ export default function RocketFieldOpeningCountdown({
 }: {
   expectedAt: string;
   serverNow: string;
-  milestone: "provisional-drafting" | "final-confirmation";
+  milestone: "provisional-drafting" | "final-field";
 }) {
   const router = useRouter();
   const target = new Date(expectedAt).getTime();
@@ -86,7 +86,7 @@ export default function RocketFieldOpeningCountdown({
       aria-label={
         isProvisionalDrafting
           ? "Rocket provisional drafting availability"
-          : "Rocket final confirmation availability"
+          : "Rocket final-field availability"
       }
     >
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#9b7b25] dark:text-[#d7bc6a]">
@@ -96,7 +96,7 @@ export default function RocketFieldOpeningCountdown({
             : "Official final field update pending"
           : isProvisionalDrafting
             ? "Provisional draft expected in"
-            : "Final confirmation expected in"}
+            : "Final field expected in"}
       </p>
       {hasReachedExpectedTime ? (
         <p
@@ -121,12 +121,12 @@ export default function RocketFieldOpeningCountdown({
       <p className="mt-1 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
         {isProvisionalDrafting
           ? "Provisional drafting opens automatically once PGA TOUR/PGATOUR.COM publishes tonight’s official post-commitment field and our verification checks pass."
-          : "Final confirmation opens automatically once the four Monday qualifiers and any withdrawals or alternates appear in the verified complete field."}
+          : "Saved drafts become official teams automatically once the four Monday qualifiers and any withdrawals or alternates appear in the verified complete field."}
       </p>
       <p className="mt-1 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
         {isProvisionalDrafting
           ? "A PGA TOUR publishing or field-validation delay may move drafting later."
-          : "Michigan PGA/Golf Genius must publish the qualifiers, then PGA TOUR/PGATOUR.COM must publish the authoritative event field. A playoff, withdrawal or publishing delay may move confirmation later."}
+          : "Michigan PGA/Golf Genius must publish the qualifiers, then PGA TOUR/PGATOUR.COM must publish the authoritative event field. A playoff, withdrawal or publishing delay may move the final-field update later."}
       </p>
       <p className="mt-1 text-[11px] font-semibold leading-5 text-zinc-600 dark:text-zinc-300">
         The clock is an estimate only and cannot open this stage by itself. This

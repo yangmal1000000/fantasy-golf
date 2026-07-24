@@ -918,8 +918,8 @@ function CompleteStage({
           </h3>
           <p className="mt-1 max-w-2xl text-sm leading-5 text-zinc-600 dark:text-zinc-300 sm:leading-6">
             Your account-bound pass is ready. Provisional drafting opens after
-            tonight’s official initial field is verified; final confirmation
-            follows the complete Monday field.
+            tonight’s official initial field is verified; saved drafts are
+            fixed automatically after the complete Monday field is verified.
           </p>
           <Link
             href="/tournaments/rocket-classic/enter"
