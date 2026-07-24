@@ -39,7 +39,7 @@ test("the waiting card counts down to verified provisional drafting first", () =
 test("draft mode switches the same countdown to final confirmation", () => {
   assert.match(enterPageSource, /expectedAt=\{betaState\.entryOpensAt\}/);
   assert.match(enterPageSource, /milestone="final-confirmation"/);
-  assert.match(countdownSource, /Provisional drafting expected in/);
+  assert.match(countdownSource, /Provisional draft expected in/);
   assert.match(countdownSource, /Final confirmation expected in/);
   assert.match(countdownSource, /Official initial field update pending/);
   assert.match(countdownSource, /Official final field update pending/);

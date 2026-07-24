@@ -103,6 +103,9 @@ export default function CourseMap({
   const dispersion = targetV2DispersionEllipse(scenario, point);
   const prefix = `course-${scenario.mapKind}`;
   const markerTerm = scenario.yardage ? "expected finish centre" : "target";
+  const markerTermWithArticle = scenario.yardage
+    ? "an expected finish centre"
+    : "a target";
 
   return (
     <div>
@@ -120,7 +123,7 @@ export default function CourseMap({
         tabIndex={interactive ? 0 : undefined}
         aria-label={
           interactive
-            ? `${scenario.title} course map. Tap or click to place a ${markerTerm}. Use arrow keys for fine adjustment.`
+            ? `${scenario.title} course map. Tap or click to place ${markerTermWithArticle}. Use arrow keys for fine adjustment.`
             : `${scenario.title} submitted ${markerTerm} map`
         }
       >
