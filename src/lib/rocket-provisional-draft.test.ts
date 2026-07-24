@@ -18,6 +18,10 @@ const entryForm = readFileSync(
   new URL("../app/tournaments/[id]/enter/TeamEntryForm.tsx", import.meta.url),
   "utf8",
 );
+const tournamentPage = readFileSync(
+  new URL("../app/tournaments/[id]/page.tsx", import.meta.url),
+  "utf8",
+);
 const teamRoute = readFileSync(
   new URL("../app/api/tournaments/[id]/teams/route.ts", import.meta.url),
   "utf8",
@@ -52,6 +56,14 @@ test("Rocket entry explains its field-relative tier structure", () => {
   );
   assert.match(entryForm, /rocketTierCopy\(tier\)/);
   assert.match(entryForm, /current world ranking is still/);
+  assert.match(
+    entryPage,
+    /fieldRelativeTiers=\{Boolean\([\s\S]*provisionalFieldReady[\s\S]*fieldReady/,
+  );
+  assert.match(
+    tournamentPage,
+    /betaCampaign\?\.provisionalFieldReadyAt \|\| betaCampaign\?\.fieldFrozenAt/,
+  );
 });
 
 test("Rocket withdrawals notify before the lock and use deterministic reserves at lock", () => {

@@ -123,6 +123,7 @@ export default async function EditRocketTeamPage({
         tournamentId={tournament.id}
         entryFee={tournament.entryFee}
         betaMode
+        fieldRelativeTiers
         initialTeam={{
           id: team.id,
           name: team.name,

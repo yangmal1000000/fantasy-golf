@@ -234,7 +234,10 @@ export default async function TournamentDetailPage({
   const tierLabels = Object.fromEntries(
     tierOrder.map((tier) => [
       tier,
-      isRocketBeta
+      isRocketBeta &&
+      Boolean(
+        betaCampaign?.provisionalFieldReadyAt || betaCampaign?.fieldFrozenAt,
+      )
         ? (rocketTierCopy(tier)?.label ?? defaultTierLabels[tier])
         : defaultTierLabels[tier],
     ]),
