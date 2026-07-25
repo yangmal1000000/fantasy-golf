@@ -25,7 +25,7 @@ class ControlError extends Error {
 }
 
 export async function GET(request: NextRequest) {
-  const denied = await adminApiGuard(request);
+  const denied = await adminApiGuard(request, { required: "VIEW_OPERATIONS" });
   if (denied) return denied;
   try {
     await ensureRocketBetaCampaign();
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const denied = await adminApiGuard(request);
+  const denied = await adminApiGuard(request, { required: "OPERATE_TOURNAMENT" });
   if (denied) return denied;
   try {
     const actor = await getCurrentUser();

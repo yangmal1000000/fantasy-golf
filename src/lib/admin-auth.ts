@@ -1,7 +1,14 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import {
+  getAdminActor,
+  type AdminActor,
+} from "@/lib/admin-session";
+import {
+  hasAdminCapability,
+  type AdminCapability,
+} from "@/lib/admin-roles";
 import { isAuthorizedCronHeader } from "@/lib/cron-auth";
 
 function sameOrigin(request: Request): boolean {
@@ -16,33 +23,57 @@ function sameOrigin(request: Request): boolean {
  */
 export async function adminApiGuard(
   request?: Request,
-  options: { allowCron?: boolean } = {},
+  options: {
+    allowCron?: boolean;
+    required?: AdminCapability;
+  } = {},
 ): Promise<NextResponse | null> {
+  const result = await adminApiActor(request, options);
+  return result.denied;
+}
+
+export async function adminApiActor(
+  request?: Request,
+  options: {
+    allowCron?: boolean;
+    required?: AdminCapability;
+  } = {},
+): Promise<{ actor: AdminActor | null; denied: NextResponse | null }> {
   if (request && options.allowCron && isAuthorizedCronRequest(request)) {
-    return null;
+    return { actor: null, denied: null };
   }
   if (request && !sameOrigin(request)) {
-    return NextResponse.json(
-      { error: "Request origin rejected" },
-      { status: 403 },
-    );
+    return {
+      actor: null,
+      denied: NextResponse.json(
+        { error: "Request origin rejected" },
+        { status: 403 },
+      ),
+    };
   }
 
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json(
-      { error: "Authentication required" },
-      { status: 401 },
-    );
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      actor: null,
+      denied: NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 },
+      ),
+    };
   }
-  if (!user.isAdmin) {
-    return NextResponse.json(
-      { error: "Admin access required" },
-      { status: 403 },
-    );
+  const required = options.required ?? "OPERATE_TOURNAMENT";
+  if (!hasAdminCapability(actor.role, required)) {
+    return {
+      actor: null,
+      denied: NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 },
+      ),
+    };
   }
 
-  return null;
+  return { actor, denied: null };
 }
 
 function isAuthorizedCronRequest(request: Request) {

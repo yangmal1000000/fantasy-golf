@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { readAdminCustomerDetail } from "@/lib/admin-customers";
+import { hasAdminCapability, maskAdminEmail } from "@/lib/admin-roles";
+import { requireAdminCapability } from "@/lib/admin-session";
 import { CustomerAccessBadge, CustomerStageBadge } from "../CustomerBadges";
+import CustomerPiiReveal from "./CustomerPiiReveal";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,8 +15,12 @@ export default async function CustomerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const customer = await readAdminCustomerDetail(id);
+  const [actor, customer] = await Promise.all([
+    requireAdminCapability("VIEW_CUSTOMERS"),
+    readAdminCustomerDetail(id),
+  ]);
   if (!customer) notFound();
+  const canRevealPii = hasAdminCapability(actor.role, "REVEAL_CUSTOMER_PII");
 
   return (
     <div className="min-h-screen bg-[#f7f7f5] px-4 pb-24 pt-20 text-zinc-900 dark:bg-[#0d0f0e] dark:text-white sm:px-6 lg:px-8 lg:pb-12 lg:pt-8">
@@ -43,10 +50,14 @@ export default async function CustomerDetailPage({
               )}
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-[#8a6b1f] dark:text-[#d7bc6a]">
-                  Owner-only customer record
+                  Admin customer record · read-only
                 </p>
                 <h1 className="mt-1 truncate text-3xl font-black tracking-tight">{customer.name}</h1>
-                <p className="mt-1 break-all text-sm text-zinc-500">{customer.email}</p>
+                <CustomerPiiReveal
+                  customerId={customer.id}
+                  maskedEmail={maskAdminEmail(customer.email)}
+                  canReveal={canRevealPii}
+                />
                 <div className="mt-3 flex flex-wrap gap-2">
                   <CustomerStageBadge stage={customer.stage} />
                   <CustomerAccessBadge access={customer.access} />

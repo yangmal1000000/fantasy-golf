@@ -178,7 +178,7 @@ export async function readAdminCustomerOverview(): Promise<AdminCustomerOverview
     return {
       id: user.id,
       email: user.email,
-      name: user.name?.trim() || user.email,
+      name: customerDisplayName(user.name, user.email, user.id),
       avatar: user.avatar,
       isOwner: owner,
       isDemo: isDemoCustomer(user.email),
@@ -418,7 +418,7 @@ export async function readAdminCustomerDetail(
   return {
     id: user.id,
     email: user.email,
-    name: user.name?.trim() || user.email,
+    name: customerDisplayName(user.name, user.email, user.id),
     avatar: user.avatar,
     isOwner: owner,
     isDemo: isDemoCustomer(user.email),
@@ -514,6 +514,17 @@ function lifecycleInput({
 
 function normaliseEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function customerDisplayName(
+  name: string | null,
+  email: string,
+  id: string,
+): string {
+  const trimmed = name?.trim();
+  return trimmed && normaliseEmail(trimmed) !== normaliseEmail(email)
+    ? trimmed
+    : `Account ${id.slice(-6).toUpperCase()}`;
 }
 
 function formatAuditAction(action: string): string {

@@ -6,6 +6,10 @@ import {
   RocketFieldError,
   stageRocketBetaField,
 } from "@/lib/rocket-field-freeze";
+import {
+  beginOperationalRun,
+  completeOperationalRun,
+} from "@/lib/operational-jobs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -13,6 +17,14 @@ export const maxDuration = 120;
 export async function POST(request: Request) {
   const denied = await adminApiGuard(request, { allowCron: true });
   if (denied) return denied;
+  const run = await beginOperationalRun(
+    {
+      key: "rocket-field-reconciliation",
+      name: "Rocket final-field reconciliation",
+      source: "github-actions",
+    },
+    "signed-field-endpoint",
+  );
 
   try {
     const body = (await request.json()) as { mode?: unknown };
@@ -27,8 +39,20 @@ export async function POST(request: Request) {
       fieldManifestJson as FieldManifest,
       body.mode,
     );
+    await completeOperationalRun(run, {
+      status: "SUCCESS",
+      recordsProcessed: result.playerCount,
+      summary: `${body.mode}: ${result.sourceStatus}; ${result.draftChanges} draft changes`,
+    });
     return noStoreJson(result);
   } catch (error) {
+    await completeOperationalRun(run, {
+      status: "FAILED",
+      errorSummary:
+        error instanceof RocketFieldError
+          ? error.message
+          : "Rocket field verification failed",
+    });
     if (error instanceof RocketFieldError) {
       return noStoreJson(
         { ok: false, error: error.message },

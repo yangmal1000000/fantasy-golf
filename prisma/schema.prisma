@@ -13,11 +13,20 @@ model User {
   name      String?
   avatar    String?
   isAdmin   Boolean  @default(false)
+  adminRole AdminRole?
   createdAt DateTime @default(now())
   teams     Team[]
   leagues   LeagueMember[]
   notifications Notification[]
   savedTeams SavedTeam[]
+  adminAuditEvents AdminAuditEvent[] @relation("AdminAuditActor")
+}
+
+enum AdminRole {
+  OWNER
+  OPERATOR
+  SUPPORT
+  READ_ONLY
 }
 
 model League {
@@ -340,6 +349,57 @@ model TargetJudgeAudit {
   round      TargetJudgingRound @relation(references: [id], fields: [roundId], onDelete: Cascade)
 
   @@index([roundId, createdAt])
+}
+
+// ===== Admin operations and monitoring =====
+
+model AdminAuditEvent {
+  id           String    @id @default(cuid())
+  actorUserId  String?
+  actorEmail   String?
+  actorRole    AdminRole
+  action       String
+  resourceType String
+  resourceId   String?
+  reason       String?
+  metadata     Json?
+  requestId    String?   @unique
+  createdAt    DateTime  @default(now())
+  actor        User?     @relation("AdminAuditActor", references: [id], fields: [actorUserId], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([resourceType, resourceId, createdAt])
+}
+
+model OperationalJob {
+  id                      String              @id @default(cuid())
+  key                     String              @unique
+  name                    String
+  source                  String
+  enabled                 Boolean             @default(true)
+  expectedIntervalMinutes Int?
+  staleAfterMinutes       Int?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  runs                    OperationalJobRun[]
+}
+
+model OperationalJobRun {
+  id               String         @id @default(cuid())
+  jobId            String
+  trigger          String
+  status           String
+  startedAt        DateTime       @default(now())
+  completedAt      DateTime?
+  recordsProcessed Int?
+  summary          String?
+  errorSummary     String?
+  correlationId    String?        @unique
+  job              OperationalJob @relation(references: [id], fields: [jobId], onDelete: Cascade)
+
+  @@index([jobId, startedAt])
+  @@index([status, startedAt])
 }
 
 // ===== Rocket Classic open-registration test flight =====

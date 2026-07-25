@@ -10,6 +10,7 @@ import {
   readAdminCustomerOverview,
   type AdminCustomerSummary,
 } from "@/lib/admin-customers";
+import { maskAdminEmail } from "@/lib/admin-roles";
 import { CustomerAccessBadge, CustomerStageBadge } from "./CustomerBadges";
 
 export const dynamic = "force-dynamic";
@@ -261,7 +262,7 @@ function CustomerRow({ customer }: { customer: AdminCustomerSummary }) {
           <Avatar customer={customer} />
           <div className="min-w-0">
             <p className="truncate font-black text-zinc-900 dark:text-white">{customer.name}</p>
-            <p className="truncate text-xs text-zinc-500">{customer.email}</p>
+            <p className="truncate text-xs text-zinc-500">{maskAdminEmail(customer.email)}</p>
             <CustomerKind customer={customer} />
           </div>
         </div>
@@ -298,7 +299,7 @@ function CustomerCard({ customer }: { customer: AdminCustomerSummary }) {
         <Avatar customer={customer} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-black text-zinc-900 dark:text-white">{customer.name}</p>
-          <p className="truncate text-xs text-zinc-500">{customer.email}</p>
+          <p className="truncate text-xs text-zinc-500">{maskAdminEmail(customer.email)}</p>
           <CustomerKind customer={customer} />
         </div>
         <Link

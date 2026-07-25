@@ -7,6 +7,10 @@ import {
   ROCKET_LIVE_SYNC_STOP,
   isRocketLiveSyncWindow,
 } from "@/lib/rocket-live-window";
+import {
+  beginOperationalRun,
+  completeOperationalRun,
+} from "@/lib/operational-jobs";
 
 export const maxDuration = 60;
 
@@ -19,12 +23,31 @@ export const maxDuration = 60;
 async function syncLive(request: Request) {
   const denied = await adminApiGuard(request, { allowCron: true });
   if (denied) return denied;
+  const run = await beginOperationalRun(
+    {
+      key: "rocket-live-scoring",
+      name: "Rocket live scoring",
+      source: "github-actions",
+      expectedIntervalMinutes: 5,
+      staleAfterMinutes: 15,
+    },
+    isAuthorizedCronHeader(
+      request.headers.get("authorization"),
+      process.env.CRON_SECRET,
+    )
+      ? "scheduled"
+      : "manual",
+  );
   try {
     const isScheduledRun = isAuthorizedCronHeader(
       request.headers.get("authorization"),
       process.env.CRON_SECRET,
     );
     if (isScheduledRun && !isRocketLiveSyncWindow()) {
+      await completeOperationalRun(run, {
+        status: "SKIPPED",
+        summary: "Outside the configured Rocket live-scoring window",
+      });
       return NextResponse.json({
         ok: true,
         skipped: 1,
@@ -40,8 +63,19 @@ async function syncLive(request: Request) {
     const tournamentId = searchParams.get("tournamentId") ?? undefined;
 
     const result = await syncLiveScores(tournamentId);
+    await completeOperationalRun(run, {
+      status: result.ok ? "SUCCESS" : "FAILED",
+      recordsProcessed:
+        typeof result.updated === "number" ? result.updated : undefined,
+      summary: result.ok ? "Live scores synchronized" : undefined,
+      errorSummary: result.ok ? undefined : "Live score provider returned an error",
+    });
     return NextResponse.json(result, { status: result.ok ? 200 : 502 });
   } catch (e) {
+    await completeOperationalRun(run, {
+      status: "FAILED",
+      errorSummary: "Live score synchronization failed",
+    });
     console.error("sync/live error:", e);
     return NextResponse.json(
       { ok: false, error: String(e).slice(0, 500) },

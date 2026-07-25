@@ -1,13 +1,11 @@
-import { notFound } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAdminCapability } from "@/lib/admin-session";
 
 export default async function CustomersLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-  if (!user?.isAdmin) notFound();
+  await requireAdminCapability("VIEW_CUSTOMERS");
 
   return children;
 }

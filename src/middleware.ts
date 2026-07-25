@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/utils/supabase/middleware";
-import { isAdminPortalUser } from "@/lib/admin-access";
+import {
+  canEdgeOperateAdmin,
+  isAdminPortalUser,
+  isEdgeAdminPathAllowed,
+} from "@/lib/admin-access";
 
 export async function middleware(request: NextRequest) {
   const { response, verifiedEmail } = await updateSession(request);
@@ -27,6 +31,14 @@ export async function middleware(request: NextRequest) {
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||
     pathname === "/rocket-control";
+  const auditedPiiReveal =
+    request.method === "POST" &&
+    /^\/api\/admin\/customers\/[^/]+\/pii$/.test(pathname);
+  const quarantinedLegacyMutation =
+    pathname.startsWith("/api/admin/") &&
+    request.method !== "GET" &&
+    request.method !== "HEAD" &&
+    !auditedPiiReveal;
   const disabledRocketSideGame =
     pathname === "/tournaments/rocket-classic/side-games" ||
     pathname.startsWith("/tournaments/rocket-classic/side-games/");
@@ -38,15 +50,31 @@ export async function middleware(request: NextRequest) {
     });
   }
 
+  if (quarantinedLegacyMutation) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   if (
-    (protectedApi || protectedPage) &&
+    protectedPage &&
+    !isEdgeAdminPathAllowed(verifiedEmail, pathname)
+  ) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  if (
+    pathname === "/api/rocket-beta-control" &&
+    request.method !== "GET" &&
+    !canEdgeOperateAdmin(verifiedEmail)
+  ) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (
+    protectedApi &&
     !isAdminPortalUser(verifiedEmail) &&
     !cronAuthorized
   ) {
-    if (protectedApi) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   return response;
