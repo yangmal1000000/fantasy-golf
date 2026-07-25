@@ -14,6 +14,11 @@ import {
   type OperationalJobContract,
 } from "@/lib/operational-jobs";
 
+const ROCKET_ENTRY_FUNNEL_ACTIONS = [
+  "rocket_funnel_five_picks_selected",
+  "rocket_funnel_review_opened",
+] as const;
+
 export type OperationsTone = "healthy" | "warning" | "critical" | "waiting";
 
 export interface OperationsMetric {
@@ -104,6 +109,9 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
           },
         },
         auditEvents: {
+          where: {
+            action: { notIn: [...ROCKET_ENTRY_FUNNEL_ACTIONS] },
+          },
           orderBy: { createdAt: "desc" },
           take: 8,
           select: { id: true, action: true, createdAt: true },
@@ -167,6 +175,7 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
     tournament,
     fieldGroups,
     scoreActivity,
+    entryFunnelEvents,
   ] = await Promise.all([
     prisma.targetPilotEntry.count({ where: { roundId: campaign.targetRoundId } }),
     prisma.team.count({ where: { tournamentId: campaign.tournamentId } }),
@@ -184,6 +193,17 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
       _count: { _all: true },
       _max: { updatedAt: true },
     }),
+    prisma.rocketBetaAudit.findMany({
+      where: {
+        campaignId: campaign.id,
+        action: { in: [...ROCKET_ENTRY_FUNNEL_ACTIONS] },
+        actorUserId: { not: null },
+      },
+      select: {
+        action: true,
+        actorUserId: true,
+      },
+    }),
   ]);
 
   const passes = campaign.members.flatMap((member) => member.passes);
@@ -193,6 +213,18 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
   const confirmedFromPasses = passes.filter(
     (pass) => pass.teamId || pass.redeemedAt,
   ).length;
+  const fivePicksReached = new Set(
+    entryFunnelEvents
+      .filter(
+        (event) => event.action === "rocket_funnel_five_picks_selected",
+      )
+      .map((event) => event.actorUserId),
+  ).size;
+  const reviewOpened = new Set(
+    entryFunnelEvents
+      .filter((event) => event.action === "rocket_funnel_review_opened")
+      .map((event) => event.actorUserId),
+  ).size;
   const fieldCount = fieldGroups.reduce(
     (total, group) => total + group._count._all,
     0,
@@ -252,6 +284,18 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
         "Unlocked or redeemed",
         "RocketBetaPass",
         "/admin/customers?stage=test_pass",
+      ),
+      metric(
+        "5/5 selected",
+        fivePicksReached,
+        "Unique users since clarity tracking began",
+        "RocketBetaAudit",
+      ),
+      metric(
+        "Review opened",
+        reviewOpened,
+        "Unique users since clarity tracking began",
+        "RocketBetaAudit",
       ),
       metric(
         "Drafts saved",

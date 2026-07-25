@@ -163,7 +163,7 @@ export default async function MyTeamsPage() {
                   : "Build your real Rocket team"
                 : rocketProvisionalFieldReady
                   ? hasRocketDraft
-                    ? "Your provisional Rocket draft is saved"
+                    ? "Entry saved — no action needed"
                     : "Start your provisional Rocket draft"
                   : "Your real team will appear here after confirmation"}
             </h2>
@@ -172,7 +172,7 @@ export default async function MyTeamsPage() {
                 ? "The reviewed final field is open. Saved drafts are fixed automatically; new entrants can still confirm one golfer from every tier before first tee."
                 : rocketProvisionalFieldReady
                   ? hasRocketDraft
-                    ? "Your five picks are saved without using the Test Pass. The verified final field will fix them automatically; if a pick becomes invalid, we will notify you and use the nearest-ranked available golfer in the same tier."
+                    ? "Your five picks are saved. You do not need to do anything else. We will make your team official automatically after Monday’s verified final field and notify you if anything changes."
                     : "The official initial field is available. Save five weekend picks now; the verified final field will fix the draft automatically."
                   : "The official initial field has not been published yet. Your Test Pass remains unlocked."}
             </p>
@@ -180,19 +180,19 @@ export default async function MyTeamsPage() {
             {rocketDraft ? (
               <section
                 className="mt-4 overflow-hidden rounded-2xl border border-[#c8a951]/35 bg-white/80 shadow-sm dark:border-[#c8a951]/25 dark:bg-black/20"
-                aria-label="Saved provisional Rocket draft"
+                aria-label="Saved Rocket entry"
               >
                 <div className="flex items-start justify-between gap-3 border-b border-[#c8a951]/20 px-4 py-3">
                   <div className="min-w-0">
                     <p className="text-[11px] font-black uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
-                      Provisional team
+                      Saved entry
                     </p>
                     <h3 className="mt-0.5 truncate text-base font-black text-zinc-900 dark:text-white">
                       {rocketDraft.teamName}
                     </h3>
                   </div>
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-black text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                    <span aria-hidden="true">✓</span> 5 picks saved
+                    <span aria-hidden="true">✓</span> No action needed
                   </span>
                 </div>
 
@@ -229,7 +229,7 @@ export default async function MyTeamsPage() {
                       ✓
                     </span>
                     <p className="mt-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
-                      Draft saved
+                      Saved now
                     </p>
                   </div>
                   <div>
@@ -237,7 +237,7 @@ export default async function MyTeamsPage() {
                       2
                     </span>
                     <p className="mt-1 text-[10px] font-bold text-zinc-600 dark:text-zinc-300">
-                      Final field
+                      Field checked Monday
                     </p>
                   </div>
                   <div>
@@ -245,7 +245,7 @@ export default async function MyTeamsPage() {
                       3
                     </span>
                     <p className="mt-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
-                      Team fixed
+                      Official automatically
                     </p>
                   </div>
                 </div>
@@ -264,7 +264,7 @@ export default async function MyTeamsPage() {
                       : "Build Rocket team →"
                     : rocketProvisionalFieldReady
                       ? hasRocketDraft
-                        ? "Edit provisional draft →"
+                        ? "Change saved picks →"
                         : "Start provisional draft →"
                       : "View entry status →"
                 }

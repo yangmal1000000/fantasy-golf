@@ -10,23 +10,23 @@ const myTeamsSource = readFileSync(
 test("an unlocked Rocket pass distinguishes a provisional draft from an official team", () => {
   assert.match(myTeamsSource, /rocketPass\?\.status === "UNLOCKED"/);
   assert.match(myTeamsSource, /parseRocketDraft\(rocketPass\?\.draftTeam\)/);
-  assert.match(myTeamsSource, /Your provisional Rocket draft is saved/);
-  assert.match(myTeamsSource, /without using the Test Pass/);
+  assert.match(myTeamsSource, /Entry saved — no action needed/);
+  assert.match(myTeamsSource, /do not need to do anything else/);
   assert.match(myTeamsSource, /official initial field has not been published/);
   assert.match(myTeamsSource, /href="\/tournaments\/rocket-classic\/enter"/);
 });
 
 test("My Teams renders the saved provisional team and all five picks", () => {
-  assert.match(myTeamsSource, /Saved provisional Rocket draft/);
+  assert.match(myTeamsSource, /Saved Rocket entry/);
   assert.match(myTeamsSource, /\{rocketDraft\.teamName\}/);
   assert.match(myTeamsSource, /rocketDraftPicks\.map/);
   assert.match(myTeamsSource, /\{pick\.playerName\}/);
   assert.match(myTeamsSource, /fieldRelative/);
-  assert.match(myTeamsSource, /5 picks saved/);
-  assert.match(myTeamsSource, /Draft saved/);
-  assert.match(myTeamsSource, /Final field/);
-  assert.match(myTeamsSource, /Team fixed/);
-  assert.match(myTeamsSource, /final field will fix them automatically/);
+  assert.match(myTeamsSource, /No action needed/);
+  assert.match(myTeamsSource, /Saved now/);
+  assert.match(myTeamsSource, /Field checked Monday/);
+  assert.match(myTeamsSource, /Official automatically/);
+  assert.match(myTeamsSource, /official automatically after Monday/);
 });
 
 test("My Teams changes its Rocket action when the reviewed field opens", () => {

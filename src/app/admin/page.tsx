@@ -76,7 +76,7 @@ export default async function AdminDashboard() {
             title="Tester journey"
             detail="Production records only · click a stage to inspect the matching customers"
           />
-          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-6">
+          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8">
             {cockpit.funnel.map((item, index) => {
               const content = (
                 <>
@@ -85,7 +85,7 @@ export default async function AdminDashboard() {
                       {item.label}
                     </p>
                     <span className="text-[10px] font-black text-[#9b7621]">
-                      {index + 1}/6
+                      {index + 1}/{cockpit.funnel.length}
                     </span>
                   </div>
                   <p className="mt-3 text-3xl font-black text-[#083c2a] dark:text-emerald-300">

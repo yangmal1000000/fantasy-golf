@@ -69,6 +69,31 @@ interface DryRunResult {
   };
 }
 
+type RocketEntryFunnelEvent =
+  | "five_picks_selected"
+  | "review_opened";
+
+function createDraftFingerprint(
+  teamName: string,
+  selections: Record<string, string>,
+) {
+  return JSON.stringify({
+    teamName: teamName.trim(),
+    selections: TEAM_ENTRY_TIERS.map((tier) => selections[tier] ?? null),
+  });
+}
+
+function recordRocketEntryFunnelEvent(event: RocketEntryFunnelEvent) {
+  void fetch("/api/rocket-beta-funnel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event }),
+    keepalive: true,
+  }).catch(() => {
+    // Product analytics must never interrupt team entry.
+  });
+}
+
 export default function TeamEntryForm({
   tournamentId,
   entryFee,
@@ -112,6 +137,13 @@ export default function TeamEntryForm({
   const [dryRunReviewOpen, setDryRunReviewOpen] = useState(false);
   const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [lastSavedDraftFingerprint, setLastSavedDraftFingerprint] = useState<
+    string | null
+  >(() =>
+    initialDraft
+      ? createDraftFingerprint(initialDraft.name, initialDraft.selections)
+      : null,
+  );
   const [selectionFeedback, setSelectionFeedback] = useState<string | null>(
     null,
   );
@@ -120,7 +152,14 @@ export default function TeamEntryForm({
   );
   const teamNameInputRef = useRef<HTMLInputElement>(null);
   const selectedCount = Object.keys(selections).length;
+  const previousSelectedCount = useRef(selectedCount);
   const allTiersFilled = TEAM_ENTRY_TIERS.every((tier) => selections[tier]);
+  const currentDraftFingerprint = createDraftFingerprint(teamName, selections);
+  const hasUnsavedCompleteDraft =
+    provisionalDraftMode &&
+    allTiersFilled &&
+    !draftSaved &&
+    currentDraftFingerprint !== lastSavedDraftFingerprint;
   const selectedPlayers = TEAM_ENTRY_TIERS.map((tier) =>
     (playersByTier[tier] || []).find(
       (player) => player.tournamentPlayerId === selections[tier],
@@ -236,6 +275,60 @@ export default function TeamEntryForm({
     [],
   );
 
+  useEffect(() => {
+    if (
+      provisionalDraftMode &&
+      !initialDraft &&
+      previousSelectedCount.current < TEAM_ENTRY_TIERS.length &&
+      selectedCount === TEAM_ENTRY_TIERS.length
+    ) {
+      recordRocketEntryFunnelEvent("five_picks_selected");
+    }
+    previousSelectedCount.current = selectedCount;
+  }, [initialDraft, provisionalDraftMode, selectedCount]);
+
+  useEffect(() => {
+    if (!hasUnsavedCompleteDraft) return;
+
+    const leaveMessage =
+      "Your five picks have not been saved. Leave without saving?";
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const handleLinkClick = (event: MouseEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const link = target.closest<HTMLAnchorElement>("a[href]");
+      if (!link || link.target === "_blank") return;
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+      const destination = new URL(link.href, window.location.href);
+      if (destination.href === window.location.href) return;
+      if (!window.confirm(leaveMessage)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleLinkClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleLinkClick, true);
+    };
+  }, [hasUnsavedCompleteDraft]);
+
   const [submittedTeamId, setSubmittedTeamId] = useState<string | null>(null);
   const [saveTemplateState, setSaveTemplateState] = useState<
     "idle" | "saving" | "saved" | "error"
@@ -306,6 +399,9 @@ export default function TeamEntryForm({
     }
 
     if (dryRunMode || betaMode || provisionalDraftMode) {
+      if (provisionalDraftMode && !initialDraft) {
+        recordRocketEntryFunnelEvent("review_opened");
+      }
       setDryRunReviewOpen(true);
       return;
     }
@@ -343,6 +439,7 @@ export default function TeamEntryForm({
 
       const data = await res.json();
       if (provisionalDraftMode) {
+        setLastSavedDraftFingerprint(currentDraftFingerprint);
         setDraftSaved(true);
         setDryRunReviewOpen(false);
         return;
@@ -622,7 +719,7 @@ export default function TeamEntryForm({
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-[#0a3d2a] dark:text-green-400">
                     {selectedCount === 5
-                      ? "Team Complete!"
+                      ? "5 of 5 selected — one step left"
                       : `${selectedCount}/5 Selected`}
                   </p>
                   <div className="mt-1 flex gap-1">
@@ -648,7 +745,7 @@ export default function TeamEntryForm({
                   >
                     {selectionFeedback ??
                       (selectedCount === TEAM_ENTRY_TIERS.length
-                        ? "Tap a golfer to change your pick"
+                        ? "Next: review and save your team"
                         : "Tap a golfer to add them")}
                   </p>
                 </div>
@@ -665,8 +762,8 @@ export default function TeamEntryForm({
                     ? "✓ Submitted!"
                     : provisionalDraftMode
                       ? initialDraft
-                        ? "Review updated draft →"
-                        : "Review draft →"
+                        ? "Review & save changes →"
+                        : "Review & save team →"
                       : dryRunMode
                         ? "Review dry run →"
                         : isEditing
@@ -954,7 +1051,7 @@ export default function TeamEntryForm({
                   : showConfetti
                     ? "✓"
                     : provisionalDraftMode
-                      ? "Review"
+                      ? "Review & save"
                       : dryRunMode
                         ? "Review"
                         : betaMode
@@ -1001,8 +1098,8 @@ export default function TeamEntryForm({
                     ? "✓ Done!"
                     : provisionalDraftMode
                       ? initialDraft
-                        ? "Review updated draft "
-                        : "Review draft "
+                        ? "Review & save changes "
+                        : "Review & save team "
                       : dryRunMode
                         ? "Review dry run "
                         : isEditing
@@ -1051,7 +1148,7 @@ function TeamReviewModal({
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-zinc-300 sm:hidden" />
         <p className="text-xs font-black uppercase tracking-[0.16em] text-[#9b7b25] dark:text-[#d7bc6a]">
           {provisionalDraftMode
-            ? "Provisional field"
+            ? "One final step"
             : dryRunMode
               ? "Rehearsal only"
               : editMode
@@ -1063,7 +1160,7 @@ function TeamReviewModal({
           className="mt-1 text-2xl font-black text-[#0a3d2a] dark:text-green-400"
         >
           {provisionalDraftMode
-            ? "Review provisional draft"
+            ? "Confirm your five picks"
             : dryRunMode
               ? "Review dry-run team"
               : editMode
@@ -1072,7 +1169,7 @@ function TeamReviewModal({
         </h2>
         <p className="mt-1 text-sm leading-5 text-zinc-500 dark:text-zinc-400">
           {provisionalDraftMode
-            ? "This saves your five picks without creating an official team yet. The verified final field will confirm the team automatically; only an invalid pick may be replaced by the nearest-ranked available golfer in the same tier."
+            ? "Check these are the five golfers you want, then save your team. You will not need to do anything else unless we notify you of a field change. We will make it official automatically after Monday’s verified final field."
             : dryRunMode
               ? "This checks the same five-tier rules as a real entry. Nothing will be saved and your Test Pass stays unlocked."
               : editMode
@@ -1142,12 +1239,12 @@ function TeamReviewModal({
           >
             {submitting
               ? provisionalDraftMode
-                ? "Saving draft…"
+                ? "Saving your team…"
                 : dryRunMode
                   ? "Checking…"
                   : "Saving…"
               : provisionalDraftMode
-                ? "Save provisional draft"
+                ? "Save my team"
                 : dryRunMode
                   ? "Complete dry run"
                   : editMode
@@ -1181,26 +1278,24 @@ function DraftSavedModal({
       aria-labelledby="draft-saved-title"
     >
       <div className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 text-center shadow-2xl dark:bg-zinc-900 sm:max-w-lg sm:rounded-3xl sm:p-6">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-3xl dark:bg-amber-900/30">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl dark:bg-emerald-900/30">
           ✓
         </div>
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700 dark:text-amber-400">
-          Provisional draft saved
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">
+          Entry saved · No action needed
         </p>
         <h2
           id="draft-saved-title"
           className="mt-1 text-2xl font-black text-[#0a3d2a] dark:text-green-400"
         >
-          Your weekend picks are safe
+          You&apos;re done for now
         </h2>
         <p className="mx-auto mt-2 max-w-sm text-sm leading-5 text-zinc-500 dark:text-zinc-400">
-          No official team was created and your Test Pass remains unlocked. We
-          will confirm these picks automatically after the verified final
-          field. If a pick becomes invalid, we will notify you, select the
-          nearest-ranked available golfer in the same tier and let you amend it
-          before first tee.
+          Your five picks are saved. You do not need to do anything else. We
+          will make your team official automatically after Monday&apos;s
+          verified final field. If anything changes, we will notify you.
         </p>
-        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left dark:border-amber-900 dark:bg-amber-950/30">
+        <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left dark:border-emerald-900 dark:bg-emerald-950/30">
           <p className="font-black text-zinc-900 dark:text-white">{teamName}</p>
           <div className="mt-3 space-y-1.5">
             {players.map((player) => (
@@ -1225,7 +1320,7 @@ function DraftSavedModal({
             disabled={leaving}
             className="press-feedback min-h-11 rounded-xl border border-zinc-300 px-4 text-sm font-bold text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200"
           >
-            Edit draft
+            Change picks
           </button>
           <button
             type="button"
@@ -1243,7 +1338,7 @@ function DraftSavedModal({
                   className="h-4 w-4 rounded-full border-2 border-white border-r-transparent motion-safe:animate-spin"
                 />
               ) : null}
-              {leaving ? "Opening…" : "View saved draft"}
+              {leaving ? "Opening…" : "View my saved team"}
             </span>
           </button>
         </div>

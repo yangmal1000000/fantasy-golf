@@ -255,29 +255,34 @@ export default async function EnterTeamPage({
             <section className="mb-6 overflow-hidden rounded-2xl border border-amber-300 bg-amber-50 shadow-sm dark:border-amber-800 dark:bg-amber-950/30">
               <div className="p-5 sm:p-6">
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700 dark:text-amber-400">
-                  Official initial field · draft mode
+                  Initial field · save your picks now
                 </p>
                 <h2 className="mt-1 text-xl font-black text-zinc-900 dark:text-white">
-                  Start your team now
+                  Choose five golfers, then save your team
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                  Four Monday qualifiers plus possible withdrawals and
-                  alternates are still pending. Saving below keeps your Test
-                  Pass unlocked and does not create an official team.
+                  Once your entry is saved, you are done. We will make it
+                  official automatically after Monday&apos;s verified final
+                  field and notify you if anything changes.
                 </p>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                  If one of your picks changes, we will notify you and suggest
-                  the nearest-ranked available golfer in the same tier. You can
-                  amend it before first tee. If nothing changes, the verified
-                  final field fixes your team automatically.
-                </p>
-                {betaState?.entryOpensAt && (
-                  <RocketFieldOpeningCountdown
-                    expectedAt={betaState.entryOpensAt}
-                    serverNow={new Date().toISOString()}
-                    milestone="final-field"
-                  />
-                )}
+                <details className="mt-3 max-w-2xl rounded-xl border border-amber-200 bg-white/60 px-4 py-3 text-sm dark:border-amber-900 dark:bg-black/10">
+                  <summary className="cursor-pointer font-bold text-zinc-700 dark:text-zinc-200">
+                    Why isn&apos;t it official yet?
+                  </summary>
+                  <p className="mt-3 leading-6 text-zinc-600 dark:text-zinc-300">
+                    Four Monday qualifiers plus possible withdrawals and
+                    alternates are still pending. If one of your picks changes,
+                    we will use the nearest-ranked available golfer in the same
+                    tier, notify you and let you amend it before first tee.
+                  </p>
+                  {betaState?.entryOpensAt && (
+                    <RocketFieldOpeningCountdown
+                      expectedAt={betaState.entryOpensAt}
+                      serverNow={new Date().toISOString()}
+                      milestone="final-field"
+                    />
+                  )}
+                </details>
               </div>
             </section>
           )}

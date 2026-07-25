@@ -528,6 +528,12 @@ function customerDisplayName(
 }
 
 function formatAuditAction(action: string): string {
+  if (action === "rocket_funnel_five_picks_selected") {
+    return "Selected all five Rocket golfers";
+  }
+  if (action === "rocket_funnel_review_opened") {
+    return "Opened Rocket team confirmation";
+  }
   return action
     .split("_")
     .map((part, index) =>

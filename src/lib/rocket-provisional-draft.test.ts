@@ -44,13 +44,13 @@ test("a Rocket provisional draft is stored on the unlocked pass without creating
 });
 
 test("weekend drafting explicitly authorises automatic final-field confirmation", () => {
-  assert.match(entryPage, /Official initial field · draft mode/);
+  assert.match(entryPage, /Initial field · save your picks now/);
   assert.match(entryPage, /Four Monday qualifiers/);
-  assert.match(entryPage, /fixes your team automatically/);
-  assert.match(entryForm, /Save provisional draft/);
-  assert.match(entryForm, /No official team was created/);
-  assert.match(entryForm, /confirm the team automatically/);
-  assert.match(entryForm, /nearest-ranked available golfer in the same tier/);
+  assert.match(entryPage, /official automatically/);
+  assert.match(entryForm, /Save my team/);
+  assert.match(entryForm, /You&apos;re done for now/);
+  assert.match(entryForm, /make your team official automatically/);
+  assert.match(draftRoute, /rocket_provisional_draft_saved/);
   assert.match(teamRoute, /provisionalDraftUsed/);
   assert.match(teamRoute, /draftTeam: Prisma\.DbNull/);
 });
