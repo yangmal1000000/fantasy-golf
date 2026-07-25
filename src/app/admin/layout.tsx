@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { isAdminOwner } from "@/lib/admin-owner";
 import AdminSidebar from "./components/AdminSidebar";
 
 export default async function AdminLayout({
@@ -13,7 +12,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminSidebar canViewCustomers={isAdminOwner(user.email)} />
+      <AdminSidebar canViewCustomers={user.isAdmin} />
       {/* Sidebar is fixed w-64, so add left padding on large screens */}
       <div className="lg:pl-64">
         <div className="min-h-screen">{children}</div>

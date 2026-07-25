@@ -61,7 +61,7 @@ export default async function CustomersPage({
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8a6b1f] dark:text-[#d7bc6a]">
-              Owner only · read-only
+              Admin only · read-only
             </p>
             <h1 className="mt-1 text-3xl font-black tracking-tight">Customers</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500 dark:text-zinc-400">

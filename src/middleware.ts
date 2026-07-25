@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/utils/supabase/middleware";
-import { isTargetJudgeCoordinator } from "@/lib/target-judge-access";
+import { isAdminPortalUser } from "@/lib/admin-access";
 
 export async function middleware(request: NextRequest) {
   const { response, verifiedEmail } = await updateSession(request);
@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
 
   if (
     (protectedApi || protectedPage) &&
-    !isTargetJudgeCoordinator(verifiedEmail) &&
+    !isAdminPortalUser(verifiedEmail) &&
     !cronAuthorized
   ) {
     if (protectedApi) {
