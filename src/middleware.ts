@@ -30,7 +30,19 @@ export async function middleware(request: NextRequest) {
   const protectedPage =
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||
-    pathname === "/rocket-control";
+    pathname === "/rocket-control" ||
+    pathname === "/target-control";
+  const quarantinedLegacyAdminPage = [
+    "/admin/auto-subs",
+    "/admin/blog",
+    "/admin/data",
+    "/admin/revenue",
+    "/admin/season",
+    "/admin/settings",
+    "/admin/tournaments",
+  ].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
   const auditedPiiReveal =
     request.method === "POST" &&
     /^\/api\/admin\/customers\/[^/]+\/pii$/.test(pathname);
@@ -44,6 +56,13 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/tournaments/rocket-classic/side-games/");
 
   if (disabledRocketSideGame) {
+    return new NextResponse("Not Found", {
+      status: 404,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+
+  if (quarantinedLegacyAdminPage) {
     return new NextResponse("Not Found", {
       status: 404,
       headers: { "Content-Type": "text/plain; charset=utf-8" },

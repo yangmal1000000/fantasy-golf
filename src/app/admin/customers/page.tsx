@@ -16,7 +16,7 @@ import { CustomerAccessBadge, CustomerStageBadge } from "./CustomerBadges";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 10;
 const ACCESS_OPTIONS = ["owner", "active", "deactivated", "revoked", "account"] as const;
 
 type SearchParams = {

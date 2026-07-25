@@ -119,105 +119,99 @@ export default async function AdminDashboard() {
           </div>
         </section>
 
-        <div className="mt-7 grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-          <div className="space-y-6">
-            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
-              <SectionHeading
-                eyebrow="System signals"
-                title="Health and freshness"
-                detail={`Database cockpit read: ${cockpit.databaseLatencyMs} ms`}
-              />
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {cockpit.health.map((item) => {
-                  const body = (
-                    <>
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs font-black text-zinc-500 dark:text-zinc-400">
-                          {item.label}
-                        </p>
-                        <ToneDot tone={item.tone} />
-                      </div>
-                      <p className="mt-2 text-lg font-black">{item.value}</p>
-                      <p className="mt-1 min-h-10 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                        {item.detail}
-                      </p>
-                      <p className="mt-2 text-[10px] text-zinc-400">Source: {item.source}</p>
-                    </>
-                  );
-                  return item.href ? (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="press-feedback rounded-2xl bg-zinc-50 p-4 transition hover:bg-zinc-100 dark:bg-zinc-950/60 dark:hover:bg-zinc-950"
-                    >
-                      {body}
-                    </Link>
-                  ) : (
-                    <div
-                      key={item.label}
-                      className="rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-950/60"
-                    >
-                      {body}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="p-5 sm:p-6">
-                <SectionHeading
-                  eyebrow="Automation"
-                  title="Job heartbeat"
-                  detail="A missing first run is labelled honestly; viewing this page never creates a run."
-                />
-              </div>
-              {cockpit.jobs.length === 0 ? (
-                <div className="border-t border-zinc-100 px-5 py-10 text-center text-sm text-zinc-500 dark:border-zinc-800">
-                  No instrumented jobs have run yet. The field and scoring endpoints will
-                  register their first heartbeat on their next authorised execution.
-                </div>
+        <section className="mt-7 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+          <SectionHeading
+            eyebrow="System signals"
+            title="Health and freshness"
+            detail={`Database cockpit read: ${cockpit.databaseLatencyMs} ms`}
+          />
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {cockpit.health.map((item) => {
+              const body = (
+                <>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-black text-zinc-500 dark:text-zinc-400">
+                      {item.label}
+                    </p>
+                    <ToneDot tone={item.tone} />
+                  </div>
+                  <p className="mt-2 text-lg font-black">{item.value}</p>
+                  <p className="mt-1 min-h-10 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                    {item.detail}
+                  </p>
+                  <p className="mt-2 break-words text-[10px] text-zinc-400">
+                    Source: {item.source}
+                  </p>
+                </>
+              );
+              return item.href ? (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="press-feedback rounded-2xl bg-zinc-50 p-4 transition hover:bg-zinc-100 dark:bg-zinc-950/60 dark:hover:bg-zinc-950"
+                >
+                  {body}
+                </Link>
               ) : (
-                <div className="border-t border-zinc-100 dark:border-zinc-800">
-                  {cockpit.jobs.map((job) => (
-                    <div
-                      key={job.key}
-                      className="grid gap-3 border-b border-zinc-100 px-5 py-4 last:border-0 dark:border-zinc-800 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <ToneDot tone={job.tone} />
-                          <p className="font-black">{job.name}</p>
-                        </div>
-                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                          {job.summary ?? `Observed from ${job.source}`}
-                        </p>
-                        <p className="mt-1 text-[10px] text-zinc-400">
-                          Source: {job.source}
-                          {job.recordsProcessed !== null
-                            ? ` · ${job.recordsProcessed} records`
-                            : ""}
-                        </p>
-                      </div>
-                      <div className="sm:text-right">
-                        <p className="text-xs font-black">{job.status}</p>
-                        <p className="mt-1 text-[10px] text-zinc-400">
-                          {job.completedAt
-                            ? formatDateTime(job.completedAt)
-                            : job.lastRunAt
-                              ? `Started ${formatDateTime(job.lastRunAt)}`
-                              : "Awaiting first run"}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                <div
+                  key={item.label}
+                  className="rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-950/60"
+                >
+                  {body}
                 </div>
-              )}
-            </section>
+              );
+            })}
           </div>
+        </section>
 
-          <aside className="space-y-6">
-            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+        <section className="mt-6 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="p-5 sm:p-6">
+            <SectionHeading
+              eyebrow="Automation"
+              title="Job heartbeat"
+              detail="Application, Vercel, GitHub, OpenClaw and push jobs are declared here; viewing this page never creates a run."
+            />
+          </div>
+          <div className="grid gap-px border-t border-zinc-200 bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 sm:grid-cols-2 xl:grid-cols-3">
+            {cockpit.jobs.map((job) => (
+              <div
+                key={job.key}
+                className="min-w-0 bg-white p-5 dark:bg-zinc-900"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-2">
+                    <ToneDot tone={job.tone} />
+                    <p className="min-w-0 font-black">{job.name}</p>
+                  </div>
+                  <p className="shrink-0 text-[10px] font-black">{job.status}</p>
+                </div>
+                <p className="mt-2 min-h-8 text-xs leading-4 text-zinc-500 dark:text-zinc-400">
+                  {job.summary ?? `Observed from ${job.source}`}
+                </p>
+                <div className="mt-3 flex flex-wrap items-end justify-between gap-2 border-t border-zinc-100 pt-2 text-[10px] text-zinc-400 dark:border-zinc-800">
+                  <p>
+                    Source: {job.source}
+                    {job.recordsProcessed !== null
+                      ? ` · ${job.recordsProcessed} records`
+                      : ""}
+                  </p>
+                  <p>
+                    {job.completedAt
+                      ? formatDateTime(job.completedAt)
+                      : job.lastRunAt
+                        ? `Started ${formatDateTime(job.lastRunAt)}`
+                        : job.status === "SCHEDULED"
+                          ? "Scheduled"
+                          : "Awaiting first run"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="mt-6 grid items-start gap-6 xl:grid-cols-3">
+          <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
               <SectionHeading eyebrow="Competition state" title="Rocket field" />
               {cockpit.campaign ? (
                 <div className="mt-5 space-y-3">
@@ -266,9 +260,9 @@ export default async function AdminDashboard() {
                   The configured Rocket campaign could not be loaded.
                 </p>
               )}
-            </section>
+          </section>
 
-            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+          <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
               <SectionHeading
                 eyebrow="Traceability"
                 title="Recent Rocket events"
@@ -293,9 +287,9 @@ export default async function AdminDashboard() {
                   ))
                 )}
               </div>
-            </section>
+          </section>
 
-            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+          <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
               <SectionHeading eyebrow="Access boundary" title="Safe admin tools" />
               <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                 This cockpit is read-only. Operational controls remain separated and are
@@ -330,8 +324,7 @@ export default async function AdminDashboard() {
                   </p>
                 )}
               </div>
-            </section>
-          </aside>
+          </section>
         </div>
 
         <p className="mt-7 text-center text-xs text-zinc-400">

@@ -9,7 +9,6 @@ import {
   grantRocketBetaPass,
 } from "@/lib/rocket-beta";
 import { isRocketBetaRegistrationOpen } from "@/lib/rocket-beta-access";
-import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import { TARGET_JUDGE_ROUND_SLUG } from "@/lib/target-judge-core";
 import {
   targetPilotReference,
@@ -38,7 +37,6 @@ class TargetPilotRequestError extends Error {
 export async function GET() {
   try {
     const { user, state } = await requirePilotUser();
-    await ensureTargetJudgeSchema();
     return privateJson(await readPilotStatus(user, state));
   } catch (error) {
     return handleError(error);
@@ -51,7 +49,6 @@ export async function POST(request: NextRequest) {
     assertJsonRequest(request);
     const { user } = await requirePilotUser();
     const email = user.email.trim().toLowerCase();
-    await ensureTargetJudgeSchema();
     const campaign = await ensureRocketBetaCampaign();
     if (!campaign) {
       throw new TargetPilotRequestError("The Rocket Classic beta is not ready", 404);

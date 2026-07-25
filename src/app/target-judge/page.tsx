@@ -4,7 +4,6 @@ import SignInPrompt from "@/components/SignInPrompt";
 import { prisma } from "@/lib/prisma";
 import { isTargetJudgeCoordinator } from "@/lib/target-judge-access";
 import { TARGET_JUDGE_ROUND_SLUG } from "@/lib/target-judge-core";
-import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import { getVerifiedTargetEmail } from "@/lib/target-judge-server";
 import TargetJudgeClient from "./TargetJudgeClient";
 
@@ -28,7 +27,6 @@ export default async function TargetJudgePage() {
     );
   }
 
-  await ensureTargetJudgeSchema();
   const round = await prisma.targetJudgingRound.findUnique({
     where: { slug: TARGET_JUDGE_ROUND_SLUG },
     select: { panelMode: true },

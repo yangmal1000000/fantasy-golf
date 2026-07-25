@@ -9,6 +9,10 @@ import {
   ROCKET_LIVE_SYNC_START,
   ROCKET_LIVE_SYNC_STOP,
 } from "@/lib/rocket-live-window";
+import {
+  OPERATIONAL_JOB_CONTRACTS,
+  type OperationalJobContract,
+} from "@/lib/operational-jobs";
 
 export type OperationsTone = "healthy" | "warning" | "critical" | "waiting";
 
@@ -69,7 +73,8 @@ export interface OperationsCockpit {
 export async function readOperationsCockpit(): Promise<OperationsCockpit> {
   const generatedAt = new Date();
   const dbStartedAt = performance.now();
-  const [campaign, accounts, jobs, notificationActivity] = await Promise.all([
+  const [campaign, accounts, jobs, notificationActivity, pushSubscriptions] =
+    await Promise.all([
     prisma.rocketBetaCampaign.findUnique({
       where: { slug: ROCKET_BETA_CAMPAIGN_SLUG },
       select: {
@@ -120,6 +125,7 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
       _count: { _all: true },
       _max: { createdAt: true },
     }),
+    readPushSubscriptionCount(),
   ]);
   const databaseLatencyMs = Math.max(1, Math.round(performance.now() - dbStartedAt));
 
@@ -293,8 +299,8 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
           : "waiting",
       ),
       healthMetric(
-        "Notifications",
-        "AVAILABLE",
+        "In-app notices",
+        notificationActivity._count._all > 0 ? "RECORDED" : "NONE",
         notificationActivity._max.createdAt
           ? `${notificationActivity._count._all} total · latest ${formatRelative(
               notificationActivity._max.createdAt,
@@ -302,7 +308,22 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
             )}`
           : "No recorded notifications",
         "Notification",
-        "healthy",
+        "waiting",
+      ),
+      healthMetric(
+        "Push delivery",
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY &&
+          process.env.VAPID_PRIVATE_KEY
+          ? "CONFIGURED"
+          : "NOT CONFIGURED",
+        `${pushSubscriptions} active subscription${
+          pushSubscriptions === 1 ? "" : "s"
+        } · delivery attempts are recorded below`,
+        "VAPID configuration + PushSubscription",
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY &&
+          process.env.VAPID_PRIVATE_KEY
+          ? "waiting"
+          : "warning",
       ),
       healthMetric(
         "Live runner",
@@ -376,27 +397,63 @@ function mapJobs(
   }>,
   now: Date,
 ): OperationsJobStatus[] {
-  return jobs.map((job) => {
-    const run = job.runs[0] ?? null;
-    const outsideLiveWindow =
-      job.key === "rocket-live-scoring" &&
-      (now < ROCKET_LIVE_SYNC_START || now > ROCKET_LIVE_SYNC_STOP);
+  const databaseJobs = new Map(jobs.map((job) => [job.key, job]));
+  const contracts = [
+    ...OPERATIONAL_JOB_CONTRACTS,
+    ...jobs
+      .filter(
+        (job) =>
+          !OPERATIONAL_JOB_CONTRACTS.some(
+            (contract) => contract.key === job.key,
+          ),
+      )
+      .map<OperationalJobContract>((job) => ({
+        key: job.key,
+        name: job.name,
+        source: job.source,
+        staleAfterMinutes: job.staleAfterMinutes ?? undefined,
+        scheduleKind: "manual",
+      })),
+  ];
+
+  return contracts.map((contract) => {
+    const job = databaseJobs.get(contract.key);
+    const run = job?.runs[0] ?? null;
+    const beforeFirstRun = Boolean(
+      contract.firstExpectedAt && now < contract.firstExpectedAt,
+    );
+    const afterWindow = Boolean(
+      contract.windowEndsAt && now > contract.windowEndsAt,
+    );
+    const outsideLiveWindow = beforeFirstRun || afterWindow;
     const stale =
       run?.completedAt &&
-      job.staleAfterMinutes &&
+      contract.staleAfterMinutes &&
       !outsideLiveWindow &&
       now.getTime() - run.completedAt.getTime() >
-        job.staleAfterMinutes * 60_000;
+        contract.staleAfterMinutes * 60_000;
+    const missingExpectedRun = Boolean(
+      !run &&
+        contract.firstExpectedAt &&
+        contract.staleAfterMinutes &&
+        now.getTime() - contract.firstExpectedAt.getTime() >
+          contract.staleAfterMinutes * 60_000 &&
+        !afterWindow,
+    );
     const status = stale
       ? "STALE"
+      : missingExpectedRun
+        ? "STALE"
       : run?.status ??
-        (job.key === "rocket-live-scoring"
-          ? now < ROCKET_LIVE_SYNC_START
-            ? "SCHEDULED"
-            : now > ROCKET_LIVE_SYNC_STOP
-              ? "WINDOW ENDED"
-              : "AWAITING FIRST RUN"
-          : "AWAITING MANUAL RUN");
+        (beforeFirstRun
+          ? "SCHEDULED"
+          : afterWindow
+            ? "WINDOW ENDED"
+            : contract.scheduleKind === "event"
+              ? "READY"
+              : contract.scheduleKind === "manual"
+                ? "AWAITING MANUAL RUN"
+                : "AWAITING FIRST RUN");
     const tone: OperationsTone =
       status === "FAILED" || status === "STALE"
         ? "critical"
@@ -404,9 +461,9 @@ function mapJobs(
           ? "healthy"
           : "waiting";
     return {
-      key: job.key,
-      name: job.name,
-      source: job.source,
+      key: contract.key,
+      name: contract.name,
+      source: contract.source,
       status,
       tone,
       lastRunAt: run?.startedAt ?? null,
@@ -415,6 +472,17 @@ function mapJobs(
       summary: run?.summary ?? null,
     };
   });
+}
+
+async function readPushSubscriptionCount(): Promise<number> {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ count: bigint }>>`
+      SELECT COUNT(*)::bigint AS count FROM "PushSubscription"
+    `;
+    return Number(rows[0]?.count ?? 0);
+  } catch {
+    return 0;
+  }
 }
 
 function buildIncidents(input: {

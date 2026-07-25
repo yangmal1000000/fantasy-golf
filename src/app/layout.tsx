@@ -11,6 +11,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import NavLinks from "@/components/NavLinks";
 import MobileMenu from "@/components/MobileMenu";
 import { GolfFlagIcon } from "@/components/icons";
+import RouteShell from "@/components/RouteShell";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -132,11 +133,13 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col bg-[#faf9f6] dark:bg-[#0d0f0e]">
         <AuthProvider>
           <PushRegistration />
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          {/* Mobile bottom tab bar */}
-          <MobileNav />
+          <RouteShell
+            header={<Navbar />}
+            footer={<Footer />}
+            mobileNavigation={<MobileNav />}
+          >
+            {children}
+          </RouteShell>
         </AuthProvider>
       </body>
     </html>

@@ -1,7 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import { TARGET_V2_SCENARIOS as TARGET_SCENARIOS } from "@/lib/target-v2";
 import { isTargetJudgeCoordinator } from "@/lib/target-judge-access";
 import {
@@ -54,7 +53,6 @@ type TargetJudgeIdentity = {
 export async function GET(request: NextRequest) {
   try {
     const identity = await resolveJudgeIdentity(request);
-    await ensureTargetJudgeSchema();
     return privateJson(await readJudgeContext(identity));
   } catch (error) {
     return handleError(error);
@@ -65,7 +63,6 @@ export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
     const identity = await resolveJudgeIdentity(request);
-    await ensureTargetJudgeSchema();
     const body = (await request.json()) as {
       phase?: unknown;
       declaration?: unknown;

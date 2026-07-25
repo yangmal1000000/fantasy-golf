@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/auth/"],
+        disallow: ["/admin", "/admin/", "/api/", "/auth/"],
       },
     ],
     sitemap: "https://fantasy-golf-phi.vercel.app/sitemap.xml",

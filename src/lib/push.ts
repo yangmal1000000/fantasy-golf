@@ -1,5 +1,9 @@
 import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
+import {
+  beginOperationalRun,
+  completeOperationalRun,
+} from "@/lib/operational-jobs";
 
 /**
  * Push notification infrastructure.
@@ -41,8 +45,39 @@ export interface PushPayload {
  * Send a push notification to all subscriptions belonging to a user.
  * Silently skips if VAPID keys aren't configured.
  */
-export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
-  if (!ensureConfigured()) return;
+export interface PushDeliveryResult {
+  configured: boolean;
+  subscriptions: number;
+  delivered: number;
+  failed: number;
+  removed: number;
+}
+
+export async function sendPushToUser(
+  userId: string,
+  payload: PushPayload,
+): Promise<PushDeliveryResult> {
+  const run = await beginOperationalRun(
+    {
+      key: "push-delivery",
+      name: "Push delivery",
+      source: "web-push",
+    },
+    "notification",
+  );
+  if (!ensureConfigured()) {
+    await completeOperationalRun(run, {
+      status: "SKIPPED",
+      summary: "VAPID is not configured",
+    });
+    return {
+      configured: false,
+      subscriptions: 0,
+      delivered: 0,
+      failed: 0,
+      removed: 0,
+    };
+  }
 
   try {
     const subs = await prisma.$queryRawUnsafe<
@@ -59,33 +94,78 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
       tag: payload.tag ?? "fantasy-golf",
     });
 
-    await Promise.allSettled(
-      subs.map((sub) =>
-        webpush
-          .sendNotification(
+    if (subs.length === 0) {
+      await completeOperationalRun(run, {
+        status: "SKIPPED",
+        summary: "No push subscription for this delivery",
+      });
+      return {
+        configured: true,
+        subscriptions: 0,
+        delivered: 0,
+        failed: 0,
+        removed: 0,
+      };
+    }
+
+    const outcomes = await Promise.all(
+      subs.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
             {
               endpoint: sub.endpoint,
               keys: { p256dh: sub.p256dh, auth: sub.auth },
             },
             message,
-          )
-          .catch(async (err: unknown) => {
-            // 410 / 404 → subscription is dead, remove it
-            const statusCode =
-              err && typeof err === "object" && "statusCode" in err
-                ? (err as { statusCode: number }).statusCode
-                : 0;
-            if (statusCode === 410 || statusCode === 404) {
-              await prisma.$executeRawUnsafe(
+          );
+          return "delivered" as const;
+        } catch (err: unknown) {
+          const statusCode =
+            err && typeof err === "object" && "statusCode" in err
+              ? (err as { statusCode: number }).statusCode
+              : 0;
+          if (statusCode === 410 || statusCode === 404) {
+            await prisma
+              .$executeRawUnsafe(
                 `DELETE FROM "PushSubscription" WHERE endpoint = $1`,
                 sub.endpoint,
-              ).catch(() => {});
-            }
-          }),
-      ),
+              )
+              .catch(() => {});
+            return "removed" as const;
+          }
+          return "failed" as const;
+        }
+      }),
     );
+    const delivered = outcomes.filter((outcome) => outcome === "delivered").length;
+    const failed = outcomes.filter((outcome) => outcome === "failed").length;
+    const removed = outcomes.filter((outcome) => outcome === "removed").length;
+    await completeOperationalRun(run, {
+      status: failed > 0 ? "FAILED" : "SUCCESS",
+      recordsProcessed: subs.length,
+      summary: `${delivered}/${subs.length} delivered · ${removed} expired removed`,
+      errorSummary:
+        failed > 0 ? `${failed} push delivery attempt(s) failed` : undefined,
+    });
+    return {
+      configured: true,
+      subscriptions: subs.length,
+      delivered,
+      failed,
+      removed,
+    };
   } catch {
-    // Push failures should never crash the calling code
+    await completeOperationalRun(run, {
+      status: "FAILED",
+      errorSummary: "Push delivery infrastructure failed",
+    });
+    return {
+      configured: true,
+      subscriptions: 0,
+      delivered: 0,
+      failed: 1,
+      removed: 0,
+    };
   }
 }
 

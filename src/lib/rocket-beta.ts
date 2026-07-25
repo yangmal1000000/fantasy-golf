@@ -16,7 +16,6 @@ import {
   ROCKET_BETA_ENTRY_OPENS_AT,
 } from "@/lib/rocket-beta-config";
 import { parseRocketDraft, type RocketDraft } from "@/lib/rocket-draft";
-import { ensureRocketBetaSchema } from "@/lib/rocket-beta-schema";
 import { TARGET_JUDGE_ROUND_SLUG } from "@/lib/target-judge-core";
 
 export const ROCKET_BETA_CAMPAIGN_SLUG = "rocket-classic-2026-beta";
@@ -72,8 +71,6 @@ export async function ensureRocketBetaCampaign() {
       throw error;
     }
   }
-
-  await ensureRocketBetaSchema();
 
   const [tournament, round] = await Promise.all([
     prisma.tournament.findUnique({

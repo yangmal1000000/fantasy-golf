@@ -22,13 +22,12 @@ test("server functions run beside the Frankfurt Supabase project", () => {
   assert.deepEqual(vercelConfig.regions, ["fra1"]);
 });
 
-test("existing Rocket campaigns avoid request-time schema setup and upserts", () => {
+test("Rocket campaign reads never perform request-time schema setup", () => {
   const existingLookup = rocketBetaSource.indexOf(
     "prisma.rocketBetaCampaign.findUnique",
   );
-  const schemaSetup = rocketBetaSource.indexOf("await ensureRocketBetaSchema()");
   assert.ok(existingLookup >= 0);
-  assert.ok(schemaSetup > existingLookup);
+  assert.doesNotMatch(rocketBetaSource, /ensureRocketBetaSchema|\$executeRaw/);
   assert.match(rocketBetaSource, /if \(existing\) return existing/);
   assert.match(rocketBetaSource, /error\.code !== "P2021"/);
 });

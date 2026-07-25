@@ -5,7 +5,6 @@ import {
   ensureRocketBetaCampaign,
   ROCKET_BETA_CAMPAIGN_SLUG,
 } from "@/lib/rocket-beta";
-import { ensureTargetJudgeSchema } from "@/lib/target-judge-schema";
 import {
   TARGET_JUDGE_ROUND_SLUG,
   TARGET_SCENARIO_VERSION,
@@ -52,7 +51,6 @@ const TARGET_V2_MIGRATION_BACKUP =
 export async function GET() {
   try {
     await requireTargetJudgeCoordinator();
-    await ensureTargetJudgeSchema();
     return privateJson(await readControlDto());
   } catch (error) {
     return handleError(error);
@@ -63,7 +61,6 @@ export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
     const actorEmail = await requireTargetJudgeCoordinator();
-    await ensureTargetJudgeSchema();
     await ensureRocketBetaCampaign();
     const body = (await request.json()) as { action?: unknown; panel?: unknown };
 
