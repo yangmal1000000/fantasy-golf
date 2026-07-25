@@ -25,6 +25,10 @@ const migration = readFileSync(
   ),
   "utf8",
 );
+const rocketField = readFileSync(
+  new URL("./rocket-field-freeze.ts", import.meta.url),
+  "utf8",
+);
 
 test("the admin cockpit is truthful and its monitoring path is read-only", () => {
   assert.match(dashboard, /Live operations cockpit/);
@@ -66,4 +70,9 @@ test("admin audit history is append-only to the runtime role", () => {
     migration,
     /REVOKE UPDATE, DELETE, TRUNCATE ON TABLE "AdminAuditEvent" FROM fantasy_golf_app/,
   );
+});
+
+test("the signed field endpoint never runs request-time schema DDL", () => {
+  assert.doesNotMatch(rocketField, /ensureRocketBetaSchema/);
+  assert.doesNotMatch(rocketField, /\$executeRaw/);
 });

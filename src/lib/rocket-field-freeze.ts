@@ -7,7 +7,6 @@ import {
   reconcileRocketDraft,
   type RocketReserveCandidate,
 } from "@/lib/rocket-draft";
-import { ensureRocketBetaSchema } from "@/lib/rocket-beta-schema";
 import {
   assignRocketFieldTiers,
   ROCKET_FIELD_TIER_ORDER,
@@ -61,8 +60,6 @@ export async function stageRocketBetaField(
   const apply = mode === "apply";
   validateManifest(manifest, freeze);
   if (apply) validateOfficialInitialManifest(manifest);
-  await ensureRocketBetaSchema();
-
   const [
     rankings,
     tournament,
