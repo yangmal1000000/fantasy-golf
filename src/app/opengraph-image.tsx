@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Fantasy Golf — Rocket Classic free test flight";
+export const alt = "Fantasy Golf — prepare for the next five-player test flight";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -53,7 +53,7 @@ export default function OpenGraphImage() {
               textTransform: "uppercase",
             }}
           >
-            Free test flight · Detroit
+            Next test flight · preparing
           </div>
           <div
             style={{
@@ -66,7 +66,7 @@ export default function OpenGraphImage() {
               maxWidth: 900,
             }}
           >
-            Read the target. Build the team.
+            Be ready when the next field opens.
           </div>
           <div
             style={{
@@ -76,7 +76,7 @@ export default function OpenGraphImage() {
               marginTop: 25,
             }}
           >
-            Rocket Classic · Detroit Golf Club · 30 Jul–2 Aug 2026
+            Event, course and dates announced only after lifecycle checks
           </div>
         </div>
 
@@ -87,7 +87,7 @@ export default function OpenGraphImage() {
             fontSize: 18,
           }}
         >
-          Open to signed-up users · no payment · no cash value · no prize
+          No event entry is open · no payment requested · browser alerts are optional
         </div>
       </div>
     ),

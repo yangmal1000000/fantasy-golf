@@ -13,6 +13,7 @@ const pushRegistration = source("../components/PushRegistration.tsx");
 const home = source("../app/page.tsx");
 const layout = source("../app/layout.tsx");
 const sitemap = source("../app/sitemap.ts");
+const openGraph = source("../app/opengraph-image.tsx");
 
 test("the next-event preview never invents an event or open entry", () => {
   assert.match(page, /The event, course and dates have not been announced/);
@@ -59,5 +60,8 @@ test("the completed journey leads to the future event without hiding Rocket", ()
   assert.match(page, /\/tournaments\/rocket-classic\/leaderboard/);
   assert.match(layout, /Target judgement meets five-player test flights/);
   assert.doesNotMatch(layout, /Rocket Classic free test flight/);
+  assert.match(openGraph, /Next test flight · preparing/);
+  assert.match(openGraph, /Event, course and dates announced only after lifecycle checks/);
+  assert.doesNotMatch(openGraph, /Detroit Golf Club/);
   assert.match(sitemap, /\/next-event/);
 });
