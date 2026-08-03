@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 /**
  * PlayerAvatar — Shows player photo if available, falls back to initials avatar.
  *
@@ -58,13 +62,14 @@ interface PlayerAvatarProps {
 export default function PlayerAvatar({
   name,
   country,
-  photoUrl,
+ photoUrl,
   size = "sm",
 }: PlayerAvatarProps) {
   const dim = size === "sm" ? 28 : 48;
+  const [imageFailed, setImageFailed] = useState(false);
 
   // If we have a real photo, show it
-  if (photoUrl) {
+  if (photoUrl && !imageFailed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -75,12 +80,7 @@ export default function PlayerAvatar({
         className="shrink-0 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800"
         style={{ width: dim, height: dim }}
         loading="lazy"
-        onError={(e) => {
-          // Hide broken image, show fallback by replacing with initials avatar
-          (e.target as HTMLImageElement).style.display = "none";
-          const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement | null;
-          if (fallback) fallback.style.display = "";
-        }}
+        onError={() => setImageFailed(true)}
       />
     );
   }
