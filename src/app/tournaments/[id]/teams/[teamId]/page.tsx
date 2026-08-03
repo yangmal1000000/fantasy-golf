@@ -351,7 +351,7 @@ export default async function TeamDetailPage({
                   />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="truncate font-bold text-zinc-900 dark:text-white">{p.playerName}</h3>
+                      <h3 className="truncate font-bold text-zinc-900">{p.playerName}</h3>
                       <Flag countryCode={playerCountry} size="sm" />
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5">
@@ -426,14 +426,14 @@ export default async function TeamDetailPage({
               </div>
 
               {/* Player total */}
-              <div className="mt-2 flex items-center justify-between border-t border-white/50 dark:border-zinc-700/50 pt-2 text-sm">
-                <span className="text-zinc-600 dark:text-zinc-400">
+              <div className="mt-2 flex items-center justify-between border-t border-zinc-300/70 pt-2 text-sm">
+                <span className="text-zinc-600">
                   Total:{" "}
-                  <span className="font-bold text-zinc-900 dark:text-white">
+                  <span className="font-bold text-zinc-900">
                     {p.roundsPlayed > 0 ? p.totalStrokes : "—"}
                   </span>
                 </span>
-                <span className="text-zinc-500 dark:text-zinc-400">
+                <span className="text-zinc-500">
                   {p.roundsPlayed} rounds
                   {p.isEstimated.some((e) => e) && (
                     <span className="ml-1 text-xs text-orange-500">

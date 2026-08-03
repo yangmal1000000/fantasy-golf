@@ -38,6 +38,15 @@ test("personal recap appears only for the team owner and uses sealed data", () =
   assert.match(teamPage, /See the sealed leaderboard/);
 });
 
+test("light tier cards keep dark identity and total text in dark mode", () => {
+  assert.match(teamPage, /truncate font-bold text-zinc-900/);
+  assert.match(teamPage, /border-t border-zinc-300\/70/);
+  assert.doesNotMatch(
+    teamPage,
+    /truncate font-bold text-zinc-900 dark:text-white/,
+  );
+});
+
 test("mobile team entry names the exact next requirement", () => {
   assert.match(teamEntry, /teamEntryProgress\(/);
   assert.match(teamEntry, /entryProgress\.guidance/);
