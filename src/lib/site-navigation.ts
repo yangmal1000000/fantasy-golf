@@ -1,7 +1,8 @@
 export const ROCKET_BETA_PATH = "/tournaments/rocket-classic";
+export const NEXT_EVENT_PATH = "/next-event";
 
 export const SITE_NAV_LINKS = [
-  { href: ROCKET_BETA_PATH, label: "Rocket Beta" },
+  { href: NEXT_EVENT_PATH, label: "Next Test" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/tournaments", label: "Tournaments" },
   { href: "/players", label: "Players" },
@@ -17,9 +18,5 @@ function matchesPath(pathname: string, href: string) {
 }
 
 export function isSiteNavItemActive(pathname: string, href: string) {
-  if (href === "/tournaments") {
-    return matchesPath(pathname, href) && !matchesPath(pathname, ROCKET_BETA_PATH);
-  }
-
   return matchesPath(pathname, href);
 }

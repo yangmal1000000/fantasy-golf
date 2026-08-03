@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   isSiteNavItemActive,
+  NEXT_EVENT_PATH,
   ROCKET_BETA_PATH,
 } from "./site-navigation";
 
@@ -19,21 +20,14 @@ const notificationBellSource = readFileSync(
   "utf8",
 );
 
-test("Rocket has one active top-level navigation item", () => {
+test("the future event has one dedicated active navigation item", () => {
+  assert.equal(isSiteNavItemActive(NEXT_EVENT_PATH, NEXT_EVENT_PATH), true);
   assert.equal(
-    isSiteNavItemActive(ROCKET_BETA_PATH, ROCKET_BETA_PATH),
-    true,
-  );
-  assert.equal(
-    isSiteNavItemActive(ROCKET_BETA_PATH, "/tournaments"),
+    isSiteNavItemActive(NEXT_EVENT_PATH, "/tournaments"),
     false,
   );
   assert.equal(
-    isSiteNavItemActive(`${ROCKET_BETA_PATH}/enter`, ROCKET_BETA_PATH),
-    true,
-  );
-  assert.equal(
-    isSiteNavItemActive(`${ROCKET_BETA_PATH}/enter`, "/tournaments"),
+    isSiteNavItemActive(ROCKET_BETA_PATH, NEXT_EVENT_PATH),
     false,
   );
 });
@@ -42,6 +36,10 @@ test("other tournament routes keep Tournaments active", () => {
   assert.equal(isSiteNavItemActive("/tournaments", "/tournaments"), true);
   assert.equal(
     isSiteNavItemActive("/tournaments/other-event", "/tournaments"),
+    true,
+  );
+  assert.equal(
+    isSiteNavItemActive(`${ROCKET_BETA_PATH}/leaderboard`, "/tournaments"),
     true,
   );
   assert.equal(

@@ -24,7 +24,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL("https://fantasy-golf-phi.vercel.app"),
   title: "Fantasy Golf",
-  description: "Complete Target, unlock a Test Pass and build a five-player Rocket Classic beta team.",
+  description: "Complete Target, unlock one Test Pass and build a five-player fantasy golf team.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Fantasy Golf",
-    description: "Target judgement meets live fantasy golf in the free Rocket Classic test flight.",
+    description: "Target judgement meets live fantasy golf in free test flights.",
     url: "https://fantasy-golf-phi.vercel.app",
     siteName: "Fantasy Golf",
     type: "website",
@@ -42,14 +42,14 @@ export const metadata: Metadata = {
         url: "https://fantasy-golf-phi.vercel.app/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Fantasy Golf — Rocket Classic free test flight",
+        alt: "Fantasy Golf — Target judgement and five-player test flights",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Fantasy Golf",
-    description: "Target judgement meets live fantasy golf in the free Rocket Classic test flight.",
+    description: "Target judgement meets live fantasy golf in free test flights.",
     images: ["https://fantasy-golf-phi.vercel.app/opengraph-image"],
   },
 };
@@ -98,6 +98,8 @@ function Footer() {
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
           <Link href="/how-to-play" className="transition hover:text-[#c8a951]">How to Play</Link>
           <span className="text-white/30">·</span>
+          <Link href="/next-event" className="transition hover:text-[#c8a951]">Next Test</Link>
+          <span className="text-white/30">·</span>
           <Link href="/tournaments" className="transition hover:text-[#c8a951]">Tournaments</Link>
           <span className="text-white/30">·</span>
           <Link href="/players" className="transition hover:text-[#c8a951]">Players</Link>
@@ -108,7 +110,7 @@ function Footer() {
           <span className="text-white/30">·</span>
           <Link href="/contact" className="transition hover:text-[#c8a951]">Contact</Link>
         </div>
-        <p className="mt-3 text-xs">Fantasy Golf &middot; Rocket Classic free test flight</p>
+        <p className="mt-3 text-xs">Fantasy Golf &middot; Target judgement meets five-player test flights</p>
         <p className="mt-1 text-xs text-white/65">For entertainment purposes only. Not affiliated with the R&amp;A, PGA Tour, or DP World Tour.</p>
         <p className="mt-1 text-xs text-white/60">Course images are artistic impressions, not actual photographs.</p>
       </div>

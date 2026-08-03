@@ -230,10 +230,10 @@ export default function HowToPlayPage() {
           Build your dream team.
         </p>
         <Link
-          href="/tournaments"
+          href="/next-event"
           className="mt-4 inline-block rounded-full bg-[#c8a951] px-8 py-3 font-bold text-[#1a1a1a] transition hover:bg-[#d4b76a] touch-target"
         >
-          Get Started →
+          Prepare for the next test →
         </Link>
       </section>
     </div>

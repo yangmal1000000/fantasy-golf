@@ -162,7 +162,7 @@ export default async function Home() {
                   eventComplete
                     ? personalFinal
                       ? "/tournaments/rocket-classic/leaderboard"
-                      : "/how-to-play"
+                      : "/next-event"
                     : "/tournaments/rocket-classic"
                 }
                 className="rounded-xl border border-white/20 bg-white/8 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/15"
@@ -170,7 +170,7 @@ export default async function Home() {
                 {eventComplete
                   ? personalFinal
                     ? "Final leaderboard"
-                    : "How Fantasy Golf works"
+                    : "Prepare for the next test"
                   : "Rocket Classic hub"}
               </Link>
             </div>
@@ -400,10 +400,10 @@ export default async function Home() {
             </ul>
             {eventComplete && (
               <Link
-                href="/how-to-play"
+                href="/next-event"
                 className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-[#0a3d2a] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#174f39]"
               >
-                See how the next game works →
+                Prepare for the next test →
               </Link>
             )}
           </div>
