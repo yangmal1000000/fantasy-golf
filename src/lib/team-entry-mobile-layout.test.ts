@@ -58,7 +58,8 @@ test("team selection gives immediate tactile and visible feedback", () => {
   assert.match(teamEntrySource, /selectionFeedback/);
   assert.match(teamEntrySource, /✓ \$\{player\.name\} selected/);
   assert.match(teamEntrySource, /aria-live="polite"/);
-  assert.match(teamEntrySource, /Next: review and save your team/);
+  assert.match(teamEntrySource, /entryProgress\.guidance/);
+  assert.match(teamEntrySource, /entryProgress\.mobileAction/);
   assert.match(teamEntrySource, /dark:bg-\[#c8a951\]\/15/);
 });
 

@@ -20,7 +20,9 @@ const operations = readFileSync(
 );
 
 test("five selected golfers never masquerade as a saved team", () => {
-  assert.match(entryForm, /5 of 5 selected — one step left/);
+  assert.match(entryForm, /5 of 5 selected · name needed/);
+  assert.match(entryForm, /5 of 5 selected · ready to review/);
+  assert.match(entryForm, /entryProgress\.guidance/);
   assert.match(entryForm, /Review & save/);
   assert.match(entryForm, /Confirm your five picks/);
   assert.match(entryForm, /Save my team/);

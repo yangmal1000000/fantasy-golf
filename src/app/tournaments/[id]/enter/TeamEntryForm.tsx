@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TIER_CONFIG, TIER_ORDER, formatGBP } from "@/lib/ui";
 import { TEAM_ENTRY_TIERS } from "@/lib/team-entry-validation";
+import { teamEntryProgress } from "@/lib/team-entry-progress";
 import { rocketTierCopy } from "@/lib/rocket-tiers";
 import SelectionWheel from "@/components/SelectionWheel";
 import Confetti from "@/components/Confetti";
@@ -152,6 +153,17 @@ export default function TeamEntryForm({
   );
   const teamNameInputRef = useRef<HTMLInputElement>(null);
   const selectedCount = Object.keys(selections).length;
+  const teamNameReady = teamName.trim().length > 0;
+  const mobileReviewLabel = provisionalDraftMode
+    ? "Review & save"
+    : isEditing
+      ? "Review changes"
+      : "Review";
+  const entryProgress = teamEntryProgress({
+    selectedCount,
+    hasTeamName: teamNameReady,
+    reviewLabel: mobileReviewLabel,
+  });
   const previousSelectedCount = useRef(selectedCount);
   const allTiersFilled = TEAM_ENTRY_TIERS.every((tier) => selections[tier]);
   const currentDraftFingerprint = createDraftFingerprint(teamName, selections);
@@ -719,8 +731,10 @@ export default function TeamEntryForm({
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-[#0a3d2a] dark:text-green-400">
                     {selectedCount === 5
-                      ? "5 of 5 selected — one step left"
-                      : `${selectedCount}/5 Selected`}
+                      ? teamNameReady
+                        ? "5 of 5 selected · ready to review"
+                        : "5 of 5 selected · name needed"
+                      : `${selectedCount} of 5 selected`}
                   </p>
                   <div className="mt-1 flex gap-1">
                     {TEAM_ENTRY_TIERS.map((t) => (
@@ -744,9 +758,7 @@ export default function TeamEntryForm({
                     aria-atomic="true"
                   >
                     {selectionFeedback ??
-                      (selectedCount === TEAM_ENTRY_TIERS.length
-                        ? "Next: review and save your team"
-                        : "Tap a golfer to add them")}
+                      entryProgress.guidance}
                   </p>
                 </div>
               </div>
@@ -1038,7 +1050,7 @@ export default function TeamEntryForm({
                   </span>
                 </p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {selectedCount}/5 selected
+                  {entryProgress.guidance}
                 </p>
               </div>
               <button
@@ -1050,13 +1062,7 @@ export default function TeamEntryForm({
                   ? "..."
                   : showConfetti
                     ? "✓"
-                    : provisionalDraftMode
-                      ? "Review & save"
-                      : dryRunMode
-                        ? "Review"
-                        : betaMode
-                          ? "Review"
-                          : "Submit "}
+                    : entryProgress.mobileAction}
               </button>
             </div>
           </div>

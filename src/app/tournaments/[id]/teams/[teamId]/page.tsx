@@ -20,6 +20,7 @@ import {
   overlayRocketFinalLeaderboard,
   verifyRocketFinalResult,
 } from "@/lib/rocket-finalization-core";
+import { buildRocketFinalRecap } from "@/lib/rocket-customer-journey";
 
 export default async function TeamDetailPage({
   params,
@@ -86,6 +87,11 @@ export default async function TeamDetailPage({
     ? finalVerification.result.teams.find((entry) => entry.teamId === teamId) ??
       null
     : null;
+  const isTeamOwner = user?.id === team.userId;
+  const personalFinalRecap =
+    finalVerification?.ok && isTeamOwner
+      ? buildRocketFinalRecap(finalVerification.result, teamId)
+      : null;
   const betaState =
     isRocketBeta && user?.id === team.userId
       ? await getRocketBetaStateForUser(user)
@@ -221,6 +227,46 @@ export default async function TeamDetailPage({
             not reproduce its sealed hash.
           </p>
         </div>
+      )}
+
+      {personalFinalRecap?.personalTeam && (
+        <section className="mt-4 overflow-hidden rounded-2xl border border-[#c8a951]/45 bg-[#fffaf0] dark:border-[#c8a951]/30 dark:bg-[#c8a951]/10">
+          <div className="bg-[#0a3d2a] px-5 py-4 text-white">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#e4cc85]">
+              Your final recap
+            </p>
+            <h2 className="mt-1 text-xl font-black">
+              You finished {personalFinalRecap.personalPlacement} of{" "}
+              {personalFinalRecap.teamCount}
+            </h2>
+          </div>
+          <div className="p-5">
+            <p className="text-sm leading-6 text-zinc-700 dark:text-zinc-200">
+              <span className="font-black">
+                {personalFinalRecap.personalTeam.teamName}
+              </span>{" "}
+              closed at {personalFinalRecap.personalScore} across 20 scored
+              rounds. {personalFinalRecap.shotsFromLead === 0
+                ? "You share the winning position."
+                : `${personalFinalRecap.shotsFromLead} shots separated you from ${personalFinalRecap.winners.map((winner) => winner.teamName).join(" and ")}.`}
+            </p>
+            {personalFinalRecap.personalTeam.estimatedRounds > 0 && (
+              <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                {personalFinalRecap.personalTeam.estimatedRounds} round
+                {personalFinalRecap.personalTeam.estimatedRounds === 1
+                  ? " was"
+                  : "s were"}{" "}
+                completed under the published cut or withdrawal policy.
+              </p>
+            )}
+            <Link
+              href={`/tournaments/${tournamentId}/leaderboard`}
+              className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0a3d2a] px-4 py-2.5 text-sm font-black text-white"
+            >
+              See the sealed leaderboard →
+            </Link>
+          </div>
+        </section>
       )}
 
       {/* Share Card */}
