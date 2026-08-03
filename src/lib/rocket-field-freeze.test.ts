@@ -32,7 +32,10 @@ const recalcRouteSource = readFileSync(
 );
 
 test("Rocket final-field freeze is tied to the correct official PGA TOUR field", () => {
-  assert.match(freezeSource, /ROCKET_OFFICIAL_FIELD_ID = "R2026524"/);
+  assert.match(
+    freezeSource,
+    /ROCKET_OFFICIAL_FIELD_ID.*rocket-official-config/,
+  );
   assert.match(
     freezeSource,
     /manifest\.officialFieldId !== ROCKET_OFFICIAL_FIELD_ID/,

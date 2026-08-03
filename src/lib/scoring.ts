@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import {
   applyFantasyScorePolicy,
   compareTeamScoreKeys,
@@ -37,6 +38,11 @@ export interface TeamScoreResult {
   position: number;
 }
 
+type LeaderboardReader = Pick<
+  Prisma.TransactionClient,
+  "tournament" | "team" | "score"
+>;
+
 // ---------- Core Helpers ----------
 
 export function getEstimatedScore(
@@ -60,14 +66,15 @@ const TIER_ORDER: Record<string, number> = {
  * Replaces the old N+1 approach that took 5+ seconds.
  */
 export async function calculateLeaderboard(
-  tournamentId: string
+  tournamentId: string,
+  db: LeaderboardReader = prisma,
 ): Promise<TeamScoreResult[]> {
   // Query 1: Tournament
-  const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId } });
+  const tournament = await db.tournament.findUnique({ where: { id: tournamentId } });
   if (!tournament) throw new Error(`Tournament ${tournamentId} not found`);
 
   // Query 2: All teams with selections, players, users in one go
-  const teams = await prisma.team.findMany({
+  const teams = await db.team.findMany({
     where: { tournamentId },
     include: {
       user: true,
@@ -84,7 +91,7 @@ export async function calculateLeaderboard(
   if (teams.length === 0) return [];
 
   // Query 3: ALL scores for this tournament in one shot
-  const allScores = await prisma.score.findMany({
+  const allScores = await db.score.findMany({
     where: { tournamentId },
   });
 

@@ -16,6 +16,10 @@ import PlayerAvatar from "@/components/PlayerAvatar";
 import Flag from "@/components/Flag";
 import Sparkline from "@/components/Sparkline";
 import ShareCard from "@/components/ShareCard";
+import {
+  overlayRocketFinalLeaderboard,
+  verifyRocketFinalResult,
+} from "@/lib/rocket-finalization-core";
 
 export default async function TeamDetailPage({
   params,
@@ -23,8 +27,9 @@ export default async function TeamDetailPage({
   params: Promise<{ id: string; teamId: string }>;
 }) {
   const { id: tournamentId, teamId } = await params;
+  const isRocketBeta = tournamentId === ROCKET_BETA_TOURNAMENT_ID;
 
-  const [tournament, team, subLogs, user] = await Promise.all([
+  const [tournament, team, subLogs, user, betaCampaign] = await Promise.all([
     prisma.tournament.findUnique({ where: { id: tournamentId } }),
     prisma.team.findUnique({
       where: { id: teamId },
@@ -44,6 +49,12 @@ export default async function TeamDetailPage({
       orderBy: { createdAt: "asc" },
     }),
     getCurrentUser(),
+    isRocketBeta
+      ? prisma.rocketBetaCampaign.findUnique({
+          where: { tournamentId },
+          select: { finalizedAt: true, results: true, resultsHash: true },
+        })
+      : Promise.resolve(null),
   ]);
 
   // Fetch player names for sub logs separately (no schema relations)
@@ -61,7 +72,20 @@ export default async function TeamDetailPage({
   const subLogPlayerMap = new Map(subLogPlayers.map((p) => [p.id, p]));
 
   if (!tournament || !team) notFound();
-  const isRocketBeta = tournament.id === ROCKET_BETA_TOURNAMENT_ID;
+  const finalVerification = betaCampaign?.finalizedAt
+    ? verifyRocketFinalResult({
+        value: betaCampaign.results,
+        expectedHash: betaCampaign.resultsHash,
+        expectedTournamentId: tournamentId,
+      })
+    : null;
+  const finalIntegrityFailed = Boolean(
+    betaCampaign?.finalizedAt && !finalVerification?.ok,
+  );
+  const sealedTeam = finalVerification?.ok
+    ? finalVerification.result.teams.find((entry) => entry.teamId === teamId) ??
+      null
+    : null;
   const betaState =
     isRocketBeta && user?.id === team.userId
       ? await getRocketBetaStateForUser(user)
@@ -81,11 +105,19 @@ export default async function TeamDetailPage({
       calculateTeamScore(teamId),
       calculateLeaderboard(tournamentId),
     ]);
-    scoreResult = {
-      ...calculated,
-      position:
-        leaderboard.find((entry) => entry.teamId === teamId)?.position ?? 0,
-    };
+    if (finalVerification?.ok) {
+      scoreResult =
+        overlayRocketFinalLeaderboard(
+          leaderboard,
+          finalVerification.result,
+        ).find((entry) => entry.teamId === teamId) ?? null;
+    } else if (!finalIntegrityFailed) {
+      scoreResult = {
+        ...calculated,
+        position:
+          leaderboard.find((entry) => entry.teamId === teamId)?.position ?? 0,
+      };
+    }
   } catch {
     // scores not calculated yet
   }
@@ -127,9 +159,11 @@ export default async function TeamDetailPage({
       <div className="rounded-2xl bg-gradient-to-r from-[#0a3d2a] to-[#0a3d2a] p-5 text-white shadow-lg sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold sm:text-2xl">{team.name}</h1>
+            <h1 className="truncate text-xl font-bold sm:text-2xl">
+              {sealedTeam?.teamName ?? team.name}
+            </h1>
             <p className="mt-1 text-sm text-white/70">
-              {team.user?.name ?? team.user?.email}
+              {sealedTeam?.ownerName ?? team.user?.name ?? team.user?.email}
             </p>
           </div>
           {scoreResult && scoreResult.roundsScored > 0 && (
@@ -179,10 +213,20 @@ export default async function TeamDetailPage({
         )}
       </div>
 
+      {finalIntegrityFailed && (
+        <div className="mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-xs leading-5 text-red-950 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-200">
+          <p className="font-black">Final result verification unavailable</p>
+          <p>
+            Final position and totals are hidden because the stored result did
+            not reproduce its sealed hash.
+          </p>
+        </div>
+      )}
+
       {/* Share Card */}
       <div className="mt-4 sm:mt-6">
         <ShareCard
-          teamName={team.name}
+          teamName={sealedTeam?.teamName ?? team.name}
           tournamentName={tournament.name}
           players={sharePlayers}
           totalStrokes={scoreResult?.totalStrokes}

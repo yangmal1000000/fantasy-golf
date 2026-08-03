@@ -24,6 +24,10 @@ import {
 import { roundScoreClass, toParClass, toParDisplay } from "@/lib/score-colors";
 import { calculateLeaderboard, type TeamScoreResult } from "@/lib/scoring";
 import {
+  overlayRocketFinalLeaderboard,
+  verifyRocketFinalResult,
+} from "@/lib/rocket-finalization-core";
+import {
   assignRocketFieldTiers,
   ROCKET_FIELD_TIER_ORDER,
   ROCKET_MIN_RANKED_PLAYERS,
@@ -125,7 +129,19 @@ export default async function TournamentDetailPage({
       : Promise.resolve(null),
     isRocketBeta ? ensureRocketBetaCampaign() : Promise.resolve(null),
   ]);
-  const betaResult = parseRocketBetaResult(betaCampaign?.results);
+  const betaResultVerification = betaCampaign?.finalizedAt
+    ? verifyRocketFinalResult({
+        value: betaCampaign.results,
+        expectedHash: betaCampaign.resultsHash,
+        expectedTournamentId: id,
+      })
+    : null;
+  const betaResult = betaResultVerification?.ok
+    ? betaResultVerification
+    : null;
+  const betaResultIntegrityFailed = Boolean(
+    betaCampaign?.finalizedAt && !betaResultVerification?.ok,
+  );
 
   // Fetch scores for this tournament
   const scores = await prisma.score.findMany({
@@ -193,7 +209,9 @@ export default async function TournamentDetailPage({
   }
   const isCompleted = tournament.status === "completed";
   const rocketCampaignLabel = betaCampaign?.finalizedAt
-    ? "FINAL TEST RESULT"
+    ? betaResult
+      ? "FINAL TEST RESULT"
+      : "RESULT CHECK"
     : isCompleted
       ? "RESULTS PENDING"
       : tournament.status === "in_progress"
@@ -300,10 +318,18 @@ export default async function TournamentDetailPage({
   }
 
   // Fetch fantasy team leaderboard for mini-leaderboard
-  let fantasyLeaderboard: TeamScoreResult[] = [];
+  let liveFantasyLeaderboard: TeamScoreResult[] = [];
   try {
-    fantasyLeaderboard = await calculateLeaderboard(id);
+    liveFantasyLeaderboard = await calculateLeaderboard(id);
   } catch {}
+  const fantasyLeaderboard = betaResult
+    ? overlayRocketFinalLeaderboard(
+        liveFantasyLeaderboard,
+        betaResult.result,
+      )
+    : betaResultIntegrityFailed
+      ? []
+      : liveFantasyLeaderboard;
   const hasFantasyTeams = fantasyLeaderboard.length > 0;
   const topTeams = fantasyLeaderboard.slice(0, 5);
 
@@ -564,6 +590,16 @@ export default async function TournamentDetailPage({
           </div>
           <p className="mt-3 border-t border-[#c8a951]/20 pt-3 text-[11px] leading-5 text-zinc-500">
             Test-flight result only. No payment, cash value or prize.
+          </p>
+        </section>
+      )}
+
+      {isRocketBeta && betaResultIntegrityFailed && (
+        <section className="mt-3 rounded-xl border border-red-300 bg-red-50 p-4 text-xs leading-5 text-red-950 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-200">
+          <p className="font-black">Final result verification unavailable</p>
+          <p>
+            The stored result did not reproduce its sealed hash. Winner and
+            standings data are hidden pending operations review.
           </p>
         </section>
       )}
@@ -1207,21 +1243,4 @@ export default async function TournamentDetailPage({
       )}
     </div>
   );
-}
-
-function parseRocketBetaResult(value: unknown) {
-  if (!value || typeof value !== "object" || !("teams" in value)) return null;
-  const teams = (value as { teams?: unknown }).teams;
-  if (!Array.isArray(teams)) return null;
-  const winners = teams.filter(
-    (team): team is { teamName: string; position: number; vsPar: number } =>
-      Boolean(
-        team &&
-        typeof team === "object" &&
-        (team as { position?: unknown }).position === 1 &&
-        typeof (team as { teamName?: unknown }).teamName === "string" &&
-        typeof (team as { vsPar?: unknown }).vsPar === "number",
-      ),
-  );
-  return winners.length > 0 ? { winners } : null;
 }

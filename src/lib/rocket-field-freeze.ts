@@ -14,6 +14,9 @@ import {
   ROCKET_MIN_RANKED_PLAYERS,
 } from "@/lib/rocket-tiers";
 import { sendPushToUser } from "@/lib/push";
+import { ROCKET_OFFICIAL_FIELD_ID } from "@/lib/rocket-official-config";
+
+export { ROCKET_OFFICIAL_FIELD_ID } from "@/lib/rocket-official-config";
 
 export type FieldEvidence = {
   publisher: string;
@@ -39,7 +42,6 @@ export type FieldManifest = {
 
 type Ranking = { rank: number; name: string; country: string | null };
 
-export const ROCKET_OFFICIAL_FIELD_ID = "R2026524";
 export const ROCKET_COMMITMENT_DEADLINE = "2026-07-24T21:00:00.000Z";
 export const ROCKET_REQUIRED_TIERS = [...ROCKET_FIELD_TIER_ORDER];
 

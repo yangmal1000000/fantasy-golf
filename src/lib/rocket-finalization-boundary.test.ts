@@ -28,7 +28,11 @@ test("post-event sync uses official status evidence before finalization", () => 
       dataSync.indexOf("await processAutoSubs(tournament.id)"),
   );
   assert.match(dataSync, /finalizeRocketCampaign/);
-  assert.match(dataSync, /officialReconciliation\?\.tournamentStatus === "COMPLETED"/);
+  assert.match(dataSync, /officialReconciliation\?\.finalizationReady/);
+  assert.doesNotMatch(
+    dataSync,
+    /liveState\?\.status === "completed" \|\|/,
+  );
 });
 
 test("manual recovery bypasses the expired window only with a sealed-result gate", () => {
@@ -46,4 +50,7 @@ test("public Rocket surfaces distinguish open, provisional and sealed states", (
   assert.match(leaderboardPage, /Final result sealed/);
   assert.match(leaderboardPage, /Provisional standings/);
   assert.match(leaderboardPage, /No winner is final yet/);
+  assert.match(leaderboardPage, /verifyRocketFinalResult/);
+  assert.match(leaderboardPage, /overlayRocketFinalLeaderboard/);
+  assert.match(leaderboardPage, /Final result verification unavailable/);
 });

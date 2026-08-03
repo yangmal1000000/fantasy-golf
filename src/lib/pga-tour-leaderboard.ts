@@ -1,9 +1,12 @@
+import { createHash } from "node:crypto";
+
 export interface PgaTourPlayerRow {
   name: string;
   position: string;
   playerState: string;
   rounds: (number | null)[];
   withdrew: boolean;
+  disqualified: boolean;
   madeCut: boolean | null;
 }
 
@@ -12,6 +15,17 @@ export interface PgaTourLeaderboardEvidence {
   tournamentStatus: string;
   sourceUrl: string;
   players: PgaTourPlayerRow[];
+}
+
+export interface PgaTourEvidenceAssessment {
+  ok: boolean;
+  finalizationReady: boolean;
+  fieldPlayers: number;
+  officialPlayers: number;
+  matchedFieldPlayers: number;
+  requiredMatches: number;
+  evidenceHash: string;
+  errors: string[];
 }
 
 type JsonRecord = Record<string, unknown>;
@@ -67,6 +81,8 @@ export function parsePgaTourLeaderboardHtml(
     const playerState = stringValue(scoring.playerState).toUpperCase();
     const rawRounds = Array.isArray(scoring.rounds) ? scoring.rounds : [];
     const rounds = [0, 1, 2, 3].map((index) => parseRound(rawRounds[index]));
+    const disqualified =
+      playerState === "DISQUALIFIED" || position === "DQ";
     const withdrew =
       playerState === "WITHDRAWN" ||
       position === "WD" ||
@@ -79,7 +95,17 @@ export function parsePgaTourLeaderboardHtml(
           ? true
           : null;
 
-    return [{ name, position, playerState, rounds, withdrew, madeCut }];
+    return [
+      {
+        name,
+        position,
+        playerState,
+        rounds,
+        withdrew,
+        disqualified,
+        madeCut,
+      },
+    ];
   });
 
   if (players.length === 0) {
@@ -92,6 +118,69 @@ export function parsePgaTourLeaderboardHtml(
     sourceUrl,
     players,
   };
+}
+
+export function assessPgaTourLeaderboardEvidence(input: {
+  evidence: PgaTourLeaderboardEvidence;
+  fieldPlayerNames: readonly string[];
+}): PgaTourEvidenceAssessment {
+  const officialNames = new Set(
+    input.evidence.players.map((player) => normalizeGolfPlayerName(player.name)),
+  );
+  const fieldNames = new Set(
+    input.fieldPlayerNames.map((name) => normalizeGolfPlayerName(name)),
+  );
+  const matchedFieldPlayers = [...fieldNames].filter((name) =>
+    officialNames.has(name),
+  ).length;
+  const allowedMissing = Math.min(5, Math.floor(fieldNames.size * 0.05));
+  const requiredMatches = Math.max(1, fieldNames.size - allowedMissing);
+  const errors: string[] = [];
+  if (fieldNames.size === 0) errors.push("Frozen tournament field is empty");
+  if (matchedFieldPlayers < requiredMatches) {
+    errors.push(
+      `Official leaderboard matched ${matchedFieldPlayers}/${fieldNames.size} field players; ${requiredMatches} required`,
+    );
+  }
+  if (officialNames.size < requiredMatches) {
+    errors.push(
+      `Official leaderboard contained ${officialNames.size} unique players; ${requiredMatches} required`,
+    );
+  }
+  const ok = errors.length === 0;
+  return {
+    ok,
+    finalizationReady:
+      ok && input.evidence.tournamentStatus === "COMPLETED",
+    fieldPlayers: fieldNames.size,
+    officialPlayers: officialNames.size,
+    matchedFieldPlayers,
+    requiredMatches,
+    evidenceHash: hashPgaTourLeaderboardEvidence(input.evidence),
+    errors,
+  };
+}
+
+export function hashPgaTourLeaderboardEvidence(
+  evidence: PgaTourLeaderboardEvidence,
+): string {
+  const canonical = {
+    leaderboardId: evidence.leaderboardId,
+    tournamentStatus: evidence.tournamentStatus,
+    sourceUrl: evidence.sourceUrl,
+    players: [...evidence.players]
+      .map((player) => ({
+        name: normalizeGolfPlayerName(player.name),
+        position: player.position,
+        playerState: player.playerState,
+        rounds: player.rounds,
+        withdrew: player.withdrew,
+        disqualified: player.disqualified,
+        madeCut: player.madeCut,
+      }))
+      .sort((left, right) => left.name.localeCompare(right.name)),
+  };
+  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
 }
 
 export async function fetchPgaTourLeaderboard(

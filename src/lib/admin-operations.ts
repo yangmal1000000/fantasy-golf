@@ -14,6 +14,10 @@ import {
   type OperationalJobContract,
 } from "@/lib/operational-jobs";
 import { calculateLeaderboard } from "@/lib/scoring";
+import {
+  rocketFinalResultMatchesLiveLeaderboard,
+  verifyRocketFinalResult,
+} from "@/lib/rocket-finalization-core";
 
 const ROCKET_ENTRY_FUNNEL_ACTIONS = [
   "rocket_funnel_five_picks_selected",
@@ -96,6 +100,8 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
         provisionalFieldReadyAt: true,
         updatedAt: true,
         finalizedAt: true,
+        results: true,
+        resultsHash: true,
         members: {
           select: {
             active: true,
@@ -242,6 +248,23 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
     (team) => team.scoreState === "FINAL" && team.roundsScored === 20,
   ).length;
   const incompleteTeams = leaderboard.length - completeTeams;
+  const finalVerification = campaign.finalizedAt
+    ? verifyRocketFinalResult({
+        value: campaign.results,
+        expectedHash: campaign.resultsHash,
+        expectedTournamentId: campaign.tournamentId,
+      })
+    : null;
+  const finalResultIntegrityIssue = campaign.finalizedAt
+    ? !finalVerification?.ok
+      ? finalVerification?.issue ?? "Final result verification failed"
+      : !rocketFinalResultMatchesLiveLeaderboard(
+          leaderboard,
+          finalVerification.result,
+        )
+        ? "Mutable scoring rows no longer match the sealed final result"
+        : null
+    : null;
   const incidents = buildIncidents({
     databaseLatencyMs,
     campaignStatus: campaign.status,
@@ -249,6 +272,7 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
     tournamentStatus: tournament?.status ?? "missing",
     teamCount: leaderboard.length,
     incompleteTeams,
+    finalResultIntegrityIssue,
     jobs: jobsMapped,
   });
 
@@ -341,18 +365,24 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
       healthMetric(
         "Scoring",
         campaign.finalizedAt
-          ? "FINAL"
+          ? finalResultIntegrityIssue
+            ? "FINAL INTEGRITY ALERT"
+            : "FINAL"
           : tournament?.status === "in_progress"
             ? "LIVE"
             : tournament?.status === "completed"
               ? "AWAITING FINALIZATION"
               : "WAITING",
-        scoreActivity._max.updatedAt
+        finalResultIntegrityIssue
+          ? finalResultIntegrityIssue
+          : scoreActivity._max.updatedAt
           ? `${completeTeams}/${leaderboard.length} teams complete · ${scoreActivity._count._all} score rows · updated ${formatRelative(scoreActivity._max.updatedAt, generatedAt)}`
           : "No Rocket scores yet",
         "Score + sealed Rocket result",
         campaign.finalizedAt
-          ? "healthy"
+          ? finalResultIntegrityIssue
+            ? "critical"
+            : "healthy"
           : tournament?.status === "completed" && incompleteTeams > 0
             ? "critical"
             : tournament?.status === "in_progress" && !scoreActivity._max.updatedAt
@@ -554,6 +584,7 @@ function buildIncidents(input: {
   tournamentStatus: string;
   teamCount: number;
   incompleteTeams: number;
+  finalResultIntegrityIssue: string | null;
   jobs: OperationsJobStatus[];
 }): OperationsCockpit["incidents"] {
   const incidents: OperationsCockpit["incidents"] = [];
@@ -580,6 +611,14 @@ function buildIncidents(input: {
       id: "final-without-field",
       title: "Final campaign has no frozen field",
       detail: "Campaign and field state are inconsistent.",
+      tone: "critical",
+    });
+  }
+  if (input.finalResultIntegrityIssue) {
+    incidents.push({
+      id: "final-result-integrity",
+      title: "Sealed result integrity alert",
+      detail: input.finalResultIntegrityIssue,
       tone: "critical",
     });
   }

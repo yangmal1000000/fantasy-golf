@@ -7,9 +7,10 @@ import {
   ensureRocketBetaCampaign,
 } from "@/lib/rocket-beta";
 import { ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED } from "@/lib/rocket-beta-config";
-import { finalizeRocketCampaign } from "@/lib/rocket-finalization";
+import { syncLiveScores } from "@/lib/data-sync";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const PRIVATE_HEADERS = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -68,13 +69,22 @@ export async function POST(request: NextRequest) {
         break;
       case "finalize":
         {
-          const finalization = await finalizeRocketCampaign({
-            tournamentId: campaign.tournamentId,
+          const result = await syncLiveScores(campaign.tournamentId, {
             actorUserId: actor.id,
             actorEmail: actor.email,
           });
-          if (!finalization.ready) {
-            throw new ControlError(finalization.issues.join("; "), 409);
+          const finalization = result.details?.finalization as
+            | { ready?: boolean; issues?: string[] }
+            | null
+            | undefined;
+          if (!result.ok || !finalization?.ready) {
+            throw new ControlError(
+              [
+                ...(result.errors ?? []),
+                ...(finalization?.issues ?? []),
+              ].join("; ") || "Verified finalization did not complete",
+              409,
+            );
           }
         }
         break;
@@ -142,20 +152,23 @@ async function setCampaignStatus(
   if (!campaign || campaign.finalizedAt) {
     throw new ControlError("A finalized campaign cannot be reopened", 409);
   }
-  await prisma.$transaction([
-    prisma.rocketBetaCampaign.update({
-      where: { id: campaignId },
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.rocketBetaCampaign.updateMany({
+      where: { id: campaignId, finalizedAt: null },
       data: { status: rawStatus },
-    }),
-    prisma.rocketBetaAudit.create({
+    });
+    if (updated.count !== 1) {
+      throw new ControlError("A finalized campaign cannot be reopened", 409);
+    }
+    await tx.rocketBetaAudit.create({
       data: {
         campaignId,
         actorUserId,
         actorEmail,
         action: rawStatus === "OPEN" ? "campaign_opened" : "campaign_paused",
       },
-    }),
-  ]);
+    });
+  });
 }
 
 async function readControl() {

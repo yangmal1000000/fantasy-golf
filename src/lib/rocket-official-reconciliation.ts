@@ -1,27 +1,39 @@
-import { createHash } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
+  assessPgaTourLeaderboardEvidence,
   fetchPgaTourLeaderboard,
   normalizeGolfPlayerName,
   type PgaTourLeaderboardEvidence,
 } from "@/lib/pga-tour-leaderboard";
-import { ROCKET_OFFICIAL_FIELD_ID } from "@/lib/rocket-field-freeze";
+import {
+  ROCKET_OFFICIAL_FIELD_ID,
+  ROCKET_OFFICIAL_LEADERBOARD_URL,
+} from "@/lib/rocket-official-config";
+import { deriveRocketOfficialPlayerState } from "@/lib/rocket-official-reconciliation-core";
 
-export const ROCKET_OFFICIAL_LEADERBOARD_URL =
-  "https://www.pgatour.com/tournaments/2026/rocket-classic/R2026524/leaderboard";
+export { ROCKET_OFFICIAL_LEADERBOARD_URL } from "@/lib/rocket-official-config";
 
 export interface OfficialReconciliationSummary {
   ok: boolean;
+  finalizationReady: boolean;
+  sealedResult: boolean;
+  skipped: boolean;
   source: string;
   leaderboardId: string;
   tournamentStatus: string;
+  fieldPlayers: number;
   officialPlayers: number;
+  matchedFieldPlayers: number;
+  requiredMatches: number;
   selectedPlayers: number;
   statusesUpdated: number;
   scoresCreated: number;
   scoresUpdated: number;
   dnsPlayers: string[];
   withdrawnPlayers: string[];
+  disqualifiedPlayers: string[];
+  evidenceHash: string | null;
   errors: string[];
 }
 
@@ -33,6 +45,20 @@ export interface OfficialReconciliationSummary {
 export async function reconcileRocketOfficialLeaderboard(
   tournamentId: string,
 ): Promise<OfficialReconciliationSummary> {
+  const campaign = await prisma.rocketBetaCampaign.findUnique({
+    where: { tournamentId },
+    select: { id: true, finalizedAt: true },
+  });
+  if (campaign?.finalizedAt) {
+    return {
+      ...emptySummary(),
+      ok: true,
+      sealedResult: true,
+      skipped: true,
+      tournamentStatus: "SEALED",
+    };
+  }
+
   let evidence: PgaTourLeaderboardEvidence;
   try {
     evidence = await fetchPgaTourLeaderboard({
@@ -43,16 +69,37 @@ export async function reconcileRocketOfficialLeaderboard(
     return failure(error);
   }
 
-  const selected = await prisma.tournamentPlayer.findMany({
-    where: { tournamentId, selections: { some: {} } },
-    select: {
-      id: true,
-      playerId: true,
-      madeCut: true,
-      withdrew: true,
-      player: { select: { name: true } },
-    },
+  const [fieldPlayers, selected] = await Promise.all([
+    prisma.tournamentPlayer.findMany({
+      where: { tournamentId },
+      select: { player: { select: { name: true } } },
+    }),
+    prisma.tournamentPlayer.findMany({
+      where: { tournamentId, selections: { some: {} } },
+      select: {
+        id: true,
+        playerId: true,
+        madeCut: true,
+        withdrew: true,
+        player: { select: { name: true } },
+      },
+    }),
+  ]);
+  const assessment = assessPgaTourLeaderboardEvidence({
+    evidence,
+    fieldPlayerNames: fieldPlayers.map((player) => player.player.name),
   });
+  if (!assessment.ok) {
+    return failure(new Error(assessment.errors.join("; ")), {
+      tournamentStatus: evidence.tournamentStatus,
+      fieldPlayers: assessment.fieldPlayers,
+      officialPlayers: assessment.officialPlayers,
+      matchedFieldPlayers: assessment.matchedFieldPlayers,
+      requiredMatches: assessment.requiredMatches,
+      selectedPlayers: selected.length,
+      evidenceHash: assessment.evidenceHash,
+    });
+  }
   const existingScores = await prisma.score.findMany({
     where: {
       tournamentId,
@@ -77,7 +124,7 @@ export async function reconcileRocketOfficialLeaderboard(
       score,
     ]),
   );
-  const completed = evidence.tournamentStatus === "COMPLETED";
+  const completed = assessment.finalizationReady;
   const statusUpdates: Array<{
     id: string;
     madeCut: boolean | null;
@@ -98,6 +145,7 @@ export async function reconcileRocketOfficialLeaderboard(
   }> = [];
   const dnsPlayers: string[] = [];
   const withdrawnPlayers: string[] = [];
+  const disqualifiedPlayers: string[] = [];
 
   for (const selectedPlayer of selected) {
     const official = officialByName.get(
@@ -106,13 +154,20 @@ export async function reconcileRocketOfficialLeaderboard(
     const hasAnyScore = existingScores.some(
       (score) => score.playerId === selectedPlayer.playerId,
     );
-    const absentFinalStarter = completed && !official && !hasAnyScore;
-    const withdrew =
-      selectedPlayer.withdrew || official?.withdrew === true || absentFinalStarter;
-    const madeCut = official?.madeCut ?? selectedPlayer.madeCut;
+    const derived = deriveRocketOfficialPlayerState({
+      currentWithdrew: selectedPlayer.withdrew,
+      currentMadeCut: selectedPlayer.madeCut,
+      official,
+      hasAnyScore,
+      finalizationReady: completed,
+    });
+    const { absentFinalStarter, withdrew, madeCut } = derived;
 
     if (absentFinalStarter) dnsPlayers.push(selectedPlayer.player.name);
     if (official?.withdrew) withdrawnPlayers.push(selectedPlayer.player.name);
+    if (official?.disqualified) {
+      disqualifiedPlayers.push(selectedPlayer.player.name);
+    }
     if (
       withdrew !== selectedPlayer.withdrew ||
       madeCut !== selectedPlayer.madeCut
@@ -145,11 +200,16 @@ export async function reconcileRocketOfficialLeaderboard(
   }
 
   if (statusUpdates.length || scoreCreates.length || scoreUpdates.length) {
-    const campaign = await prisma.rocketBetaCampaign.findUnique({
-      where: { tournamentId },
-      select: { id: true },
-    });
-    await prisma.$transaction(async (tx) => {
+    const applied = await prisma.$transaction(async (tx) => {
+      const lockedCampaign = await tx.$queryRaw<
+        Array<{ finalizedAt: Date | null }>
+      >(Prisma.sql`
+        SELECT "finalizedAt" FROM "RocketBetaCampaign"
+        WHERE "tournamentId" = ${tournamentId}
+        FOR SHARE
+      `);
+      if (lockedCampaign[0]?.finalizedAt) return false;
+
       for (const update of statusUpdates) {
         await tx.tournamentPlayer.update({
           where: { id: update.id },
@@ -181,53 +241,90 @@ export async function reconcileRocketOfficialLeaderboard(
           scoresUpdated: scoreUpdates.length,
           dnsPlayers,
           withdrawnPlayers,
+          disqualifiedPlayers,
+          fieldPlayers: assessment.fieldPlayers,
+          matchedFieldPlayers: assessment.matchedFieldPlayers,
+          requiredMatches: assessment.requiredMatches,
+          evidenceHash: assessment.evidenceHash,
         };
         await tx.rocketBetaAudit.create({
           data: {
             campaignId: campaign.id,
             actorEmail: "system:official-leaderboard",
             action: "official_leaderboard_reconciled",
-            payload: {
-              ...payload,
-              evidenceHash: createHash("sha256")
-                .update(JSON.stringify(payload))
-                .digest("hex"),
-            },
+            payload,
           },
         });
       }
+      return true;
     });
+    if (!applied) {
+      return {
+        ...emptySummary(),
+        ok: true,
+        sealedResult: true,
+        skipped: true,
+        tournamentStatus: "SEALED",
+      };
+    }
   }
 
   return {
     ok: true,
+    finalizationReady: assessment.finalizationReady,
+    sealedResult: false,
+    skipped: false,
     source: evidence.sourceUrl,
     leaderboardId: evidence.leaderboardId,
     tournamentStatus: evidence.tournamentStatus,
-    officialPlayers: evidence.players.length,
+    fieldPlayers: assessment.fieldPlayers,
+    officialPlayers: assessment.officialPlayers,
+    matchedFieldPlayers: assessment.matchedFieldPlayers,
+    requiredMatches: assessment.requiredMatches,
     selectedPlayers: selected.length,
     statusesUpdated: statusUpdates.length,
     scoresCreated: scoreCreates.length,
     scoresUpdated: scoreUpdates.length,
     dnsPlayers,
     withdrawnPlayers,
+    disqualifiedPlayers,
+    evidenceHash: assessment.evidenceHash,
     errors: [],
   };
 }
 
-function failure(error: unknown): OfficialReconciliationSummary {
+function failure(
+  error: unknown,
+  details: Partial<OfficialReconciliationSummary> = {},
+): OfficialReconciliationSummary {
+  return {
+    ...emptySummary(),
+    ...details,
+    errors: [error instanceof Error ? error.message : String(error)],
+  };
+}
+
+function emptySummary(): OfficialReconciliationSummary {
   return {
     ok: false,
+    finalizationReady: false,
+    sealedResult: false,
+    skipped: false,
     source: ROCKET_OFFICIAL_LEADERBOARD_URL,
     leaderboardId: ROCKET_OFFICIAL_FIELD_ID,
     tournamentStatus: "UNKNOWN",
+    fieldPlayers: 0,
     officialPlayers: 0,
+    matchedFieldPlayers: 0,
+    requiredMatches: 0,
     selectedPlayers: 0,
     statusesUpdated: 0,
     scoresCreated: 0,
     scoresUpdated: 0,
     dnsPlayers: [],
     withdrawnPlayers: [],
-    errors: [error instanceof Error ? error.message : String(error)],
+    disqualifiedPlayers: [],
+    evidenceHash: null,
+    errors: [],
   };
 }

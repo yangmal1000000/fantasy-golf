@@ -11,6 +11,7 @@
  * check the `ok` field.
  */
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { ROCKET_FIELD_TOURNAMENT_ID } from "./rocket-tiers";
 import { processAutoSubs } from "./auto-sub";
@@ -590,6 +591,13 @@ async function processESPNCompetitors(
   let playersLinked = 0;
   let scoresCreated = 0;
   let scoresUpdated = 0;
+  const rocketCampaign = await prisma.rocketBetaCampaign.findUnique({
+    where: { tournamentId },
+    select: { fieldFrozenAt: true, finalizedAt: true },
+  }).catch(() => null);
+  if (rocketCampaign?.finalizedAt) {
+    return { playersLinked: 0, scoresCreated: 0, scoresUpdated: 0 };
+  }
 
   // 1. Load all existing players into a map (case-insensitive)
   const existingPlayers = await prisma.player.findMany({ select: { id: true, name: true, country: true, dataGolfRank: true } });
@@ -611,11 +619,7 @@ async function processESPNCompetitors(
       withdrew: tp.withdrew,
     });
   }
-  const frozenBeta = await prisma.rocketBetaCampaign.findUnique({
-    where: { tournamentId },
-    select: { fieldFrozenAt: true },
-  }).catch(() => null);
-  const fieldIsFrozen = Boolean(frozenBeta?.fieldFrozenAt);
+  const fieldIsFrozen = Boolean(rocketCampaign?.fieldFrozenAt);
 
   const existingScores = await prisma.score.findMany({
     where: { tournamentId },
@@ -725,61 +729,81 @@ async function processESPNCompetitors(
     }
   }
 
-  // 4. Batch write: create new tournament players
-  if (newTPs.length > 0) {
-    try {
-      await prisma.tournamentPlayer.createMany({
-        data: newTPs.map(({ tournamentId: tid, playerId, tier, madeCut, withdrew }) => ({
-          tournamentId: tid, playerId, tier, madeCut, withdrew,
-        })),
-        skipDuplicates: true,
-      });
-    } catch {
-      // Fallback to individual creates
-      for (const tp of newTPs) {
-        try {
-          await prisma.tournamentPlayer.create({ data: tp });
-        } catch { /* race condition */ }
+  const applyWrites = async (db: Prisma.TransactionClient) => {
+    // 4. Batch write: create new tournament players
+    if (newTPs.length > 0) {
+      try {
+        await db.tournamentPlayer.createMany({
+          data: newTPs.map(({ tournamentId: tid, playerId, tier, madeCut, withdrew }) => ({
+            tournamentId: tid, playerId, tier, madeCut, withdrew,
+          })),
+          skipDuplicates: true,
+        });
+      } catch {
+        // Fallback to individual creates
+        for (const tp of newTPs) {
+          try {
+            await db.tournamentPlayer.create({ data: tp });
+          } catch { /* race condition */ }
+        }
       }
     }
-  }
 
-  // 5. Batch update tournament player tiers/madeCut
-  for (const update of tpUpdates) {
-    try {
-      await prisma.tournamentPlayer.update({
-        where: { tournamentId_playerId: { tournamentId, playerId: update.playerId } },
-        data: {
-          tier: update.tier,
-          madeCut: update.madeCut,
-          withdrew: update.withdrew,
-        },
-      });
-    } catch { /* ignore */ }
-  }
+    // 5. Batch update tournament player tiers/madeCut
+    for (const update of tpUpdates) {
+      try {
+        await db.tournamentPlayer.update({
+          where: { tournamentId_playerId: { tournamentId, playerId: update.playerId } },
+          data: {
+            tier: update.tier,
+            madeCut: update.madeCut,
+            withdrew: update.withdrew,
+          },
+        });
+      } catch { /* ignore */ }
+    }
 
-  // 6. Batch create new scores
-  if (newScores.length > 0) {
-    try {
-      await prisma.score.createMany({ data: newScores, skipDuplicates: true });
-    } catch {
-      // Fallback
-      for (const s of newScores) {
-        try { await prisma.score.create({ data: s }); } catch { /* race */ }
+    // 6. Batch create new scores
+    if (newScores.length > 0) {
+      try {
+        await db.score.createMany({ data: newScores, skipDuplicates: true });
+      } catch {
+        // Fallback
+        for (const s of newScores) {
+          try { await db.score.create({ data: s }); } catch { /* race */ }
+        }
       }
     }
+
+    // 7. Batch update scores
+    for (const update of scoreUpdates) {
+      try {
+        await db.score.update({
+          where: { tournamentId_playerId_round: { tournamentId, playerId: update.playerId, round: update.round } },
+          data: { strokes: update.strokes, isEstimated: false },
+        });
+      } catch { /* ignore */ }
+    }
+  };
+
+  if (tournamentId === ROCKET_FIELD_TOURNAMENT_ID) {
+    return prisma.$transaction(async (tx) => {
+      const campaign = await tx.$queryRaw<Array<{ finalizedAt: Date | null }>>(
+        Prisma.sql`
+          SELECT "finalizedAt" FROM "RocketBetaCampaign"
+          WHERE "tournamentId" = ${tournamentId}
+          FOR SHARE
+        `,
+      );
+      if (campaign[0]?.finalizedAt) {
+        return { playersLinked: 0, scoresCreated: 0, scoresUpdated: 0 };
+      }
+      await applyWrites(tx);
+      return { playersLinked, scoresCreated, scoresUpdated };
+    });
   }
 
-  // 7. Batch update scores
-  for (const update of scoreUpdates) {
-    try {
-      await prisma.score.update({
-        where: { tournamentId_playerId_round: { tournamentId, playerId: update.playerId, round: update.round } },
-        data: { strokes: update.strokes, isEstimated: false },
-      });
-    } catch { /* ignore */ }
-  }
-
+  await applyWrites(prisma);
   return { playersLinked, scoresCreated, scoresUpdated };
 }
 
@@ -799,6 +823,7 @@ export async function syncTournamentResults(tournamentId?: string): Promise<Sync
   let totalScoresUpdated = 0;
   let totalPlayersLinked = 0;
   let tournamentsProcessed = 0;
+  let sealedTournamentsSkipped = 0;
 
   // Determine which tournaments to sync
   let tournaments: Array<{ id: string; name: string; startDate: Date; endDate: Date; status: string }>;
@@ -816,6 +841,13 @@ export async function syncTournamentResults(tournamentId?: string): Promise<Sync
 
   for (const tournament of tournaments) {
     try {
+      if (
+        tournament.id === ROCKET_FIELD_TOURNAMENT_ID &&
+        (await isRocketResultSealed(tournament.id))
+      ) {
+        sealedTournamentsSkipped += 1;
+        continue;
+      }
       // Format dates for ESPN API
       const startDate = tournament.startDate.toISOString().slice(0, 10).replace(/-/g, "");
       const endDate = tournament.endDate.toISOString().slice(0, 10).replace(/-/g, "");
@@ -852,7 +884,7 @@ export async function syncTournamentResults(tournamentId?: string): Promise<Sync
   }
 
   return {
-    ok: true,
+    ok: errors.length === 0,
     created: totalScoresCreated,
     updated: totalScoresUpdated,
     details: {
@@ -860,6 +892,7 @@ export async function syncTournamentResults(tournamentId?: string): Promise<Sync
       playersLinked: totalPlayersLinked,
       scoresCreated: totalScoresCreated,
       scoresUpdated: totalScoresUpdated,
+      sealedTournamentsSkipped,
     },
     errors,
   };
@@ -874,7 +907,10 @@ export async function syncTournamentResults(tournamentId?: string): Promise<Sync
  *
  * @param tournamentId  Optional: specific tournament to sync. If omitted, syncs all in_progress.
  */
-export async function syncLiveScores(tournamentId?: string): Promise<SyncResult> {
+export async function syncLiveScores(
+  tournamentId?: string,
+  finalizationActor?: { actorUserId?: string | null; actorEmail?: string | null },
+): Promise<SyncResult> {
   const errors: string[] = [];
   let totalScoresCreated = 0;
   let totalScoresUpdated = 0;
@@ -906,6 +942,19 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
 
   for (const tournament of tournaments) {
     try {
+      if (
+        tournament.id === ROCKET_FIELD_TOURNAMENT_ID &&
+        (await isRocketResultSealed(tournament.id))
+      ) {
+        finalization = await finalizeRocketCampaign({
+          tournamentId: tournament.id,
+          actorUserId: finalizationActor?.actorUserId,
+          actorEmail:
+            finalizationActor?.actorEmail ?? "system:live-score-sync",
+        });
+        tournamentsProcessed++;
+        continue;
+      }
       const startDate = tournament.startDate.toISOString().slice(0, 10).replace(/-/g, "");
       const endDate = tournament.endDate.toISOString().slice(0, 10).replace(/-/g, "");
       const dateRange = `${startDate}-${endDate}`;
@@ -962,6 +1011,15 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
         if (!officialReconciliation.ok) {
           errors.push(...officialReconciliation.errors);
         }
+        if (
+          liveState?.status === "completed" &&
+          officialReconciliation.ok &&
+          !officialReconciliation.finalizationReady
+        ) {
+          errors.push(
+            "Official leaderboard is not complete enough for finalization",
+          );
+        }
       }
       const substitutions = await processAutoSubs(tournament.id);
       substitutionsProcessed += substitutions.subsProcessed;
@@ -971,13 +1029,27 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
       await recalculateTeamScores(tournament.id);
       if (
         tournament.id === ROCKET_FIELD_TOURNAMENT_ID &&
-        (liveState?.status === "completed" ||
-          officialReconciliation?.tournamentStatus === "COMPLETED")
+        officialReconciliation?.finalizationReady
       ) {
         finalization = await finalizeRocketCampaign({
           tournamentId: tournament.id,
-          actorEmail: "system:live-score-sync",
+          actorUserId: finalizationActor?.actorUserId,
+          actorEmail:
+            finalizationActor?.actorEmail ?? "system:live-score-sync",
+          officialEvidence: {
+            ok: officialReconciliation.ok,
+            finalizationReady: officialReconciliation.finalizationReady,
+            source: officialReconciliation.source,
+            leaderboardId: officialReconciliation.leaderboardId,
+            tournamentStatus: officialReconciliation.tournamentStatus,
+            evidenceHash: officialReconciliation.evidenceHash,
+            fieldPlayers: officialReconciliation.fieldPlayers,
+            matchedFieldPlayers:
+              officialReconciliation.matchedFieldPlayers,
+            requiredMatches: officialReconciliation.requiredMatches,
+          },
         });
+        if (!finalization.ready) errors.push(...finalization.issues);
       }
 
       tournamentsProcessed++;
@@ -987,7 +1059,7 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
   }
 
   return {
-    ok: true,
+    ok: errors.length === 0,
     created: totalScoresCreated,
     updated: totalScoresUpdated,
     details: {
@@ -999,6 +1071,14 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
     },
     errors,
   };
+}
+
+async function isRocketResultSealed(tournamentId: string) {
+  const campaign = await prisma.rocketBetaCampaign.findUnique({
+    where: { tournamentId },
+    select: { finalizedAt: true },
+  });
+  return Boolean(campaign?.finalizedAt);
 }
 
 // ── Cleanup old year-suffixed tournaments ─────────────────────────────────

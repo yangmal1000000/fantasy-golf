@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { calculateLeaderboard } from "@/lib/scoring";
 import { ROCKET_BETA_TOURNAMENT_ID } from "@/lib/rocket-beta";
+import {
+  overlayRocketFinalLeaderboard,
+  verifyRocketFinalResult,
+} from "@/lib/rocket-finalization-core";
 import { majorTheme } from "@/lib/ui";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -28,17 +32,45 @@ export default async function LeaderboardPage({
   const isRocketBeta = tournament.id === ROCKET_BETA_TOURNAMENT_ID;
   const theme = majorTheme(tournament.id);
   const potTotal = tournament._count.teams * tournament.entryFee;
-  const [teams, betaCampaign] = await Promise.all([
+  const [liveTeams, betaCampaign] = await Promise.all([
     calculateLeaderboard(id),
     isRocketBeta
       ? prisma.rocketBetaCampaign.findUnique({
           where: { tournamentId: id },
-          select: { status: true, finalizedAt: true, resultsHash: true },
+          select: {
+            status: true,
+            finalizedAt: true,
+            results: true,
+            resultsHash: true,
+          },
         })
       : Promise.resolve(null),
   ]);
+  const finalVerification = betaCampaign?.finalizedAt
+    ? verifyRocketFinalResult({
+        value: betaCampaign.results,
+        expectedHash: betaCampaign.resultsHash,
+        expectedTournamentId: id,
+      })
+    : null;
+  const finalIntegrityFailed = Boolean(
+    betaCampaign?.finalizedAt && !finalVerification?.ok,
+  );
+  const teams = finalVerification?.ok
+    ? overlayRocketFinalLeaderboard(liveTeams, finalVerification.result)
+    : finalIntegrityFailed
+      ? []
+      : liveTeams;
   const hasFantasyTeams = teams.length > 0;
-  const resultIsFinal = Boolean(betaCampaign?.finalizedAt);
+  const resultIsFinal = finalVerification?.ok === true;
+  const sealedEstimatedRounds = new Map(
+    finalVerification?.ok
+      ? finalVerification.result.teams.map((team) => [
+          team.teamId,
+          team.estimatedRounds,
+        ])
+      : [],
+  );
 
   return (
     <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
@@ -70,16 +102,24 @@ export default async function LeaderboardPage({
       {isRocketBeta && (
         <div
           className={`mb-3 rounded-xl border p-3 text-xs leading-5 ${
-            resultIsFinal
+            finalIntegrityFailed
+              ? "border-red-300 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-200"
+              : resultIsFinal
               ? "border-green-200 bg-green-50 text-green-900 dark:border-green-900/60 dark:bg-green-950/20 dark:text-green-200"
               : "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200"
           }`}
         >
           <p className="font-black">
-            {resultIsFinal ? "Final result sealed" : "Provisional standings"}
+            {finalIntegrityFailed
+              ? "Final result verification unavailable"
+              : resultIsFinal
+                ? "Final result sealed"
+                : "Provisional standings"}
           </p>
           <p>
-            {resultIsFinal
+            {finalIntegrityFailed
+              ? "Standings are hidden because the stored result did not reproduce its sealed hash. Operations review is required."
+              : resultIsFinal
               ? "All teams have 20 scored rounds. Cut and withdrawal estimates follow the published beta policy."
               : "Positions can still change while any team has fewer than 20 scored rounds. No winner is final yet."}
           </p>
@@ -105,6 +145,15 @@ export default async function LeaderboardPage({
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {teams.map((team) => {
+                const estimatedRounds = resultIsFinal
+                  ? (sealedEstimatedRounds.get(team.teamId) ?? 0)
+                  : team.players.reduce(
+                      (total, player) =>
+                        total +
+                        player.isEstimated.filter((estimated) => estimated)
+                          .length,
+                      0,
+                    );
                 return (
                   <tr key={team.teamId} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                     <td className="px-3 py-2.5">
@@ -118,17 +167,8 @@ export default async function LeaderboardPage({
                       </Link>
                       <p className="text-xs text-zinc-500">
                         {team.ownerName} · {team.roundsScored}/20 rounds scored
-                        {team.players.some((player) =>
-                          player.isEstimated.some((estimated) => estimated),
-                        )
-                          ? ` · ${team.players.reduce(
-                              (total, player) =>
-                                total +
-                                player.isEstimated.filter(
-                                  (estimated) => estimated,
-                                ).length,
-                              0,
-                            )} estimated`
+                        {estimatedRounds > 0
+                          ? ` · ${estimatedRounds} estimated`
                           : ""}
                       </p>
                       {/* Player chips */}
@@ -160,10 +200,16 @@ export default async function LeaderboardPage({
         </div>
       ) : (
         <div className="rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 p-8 text-center">
-          <p className="text-sm text-zinc-500">No fantasy teams with scores yet.</p>
-          <Link href={isRocketBeta ? `/tournaments/${id}` : `/tournaments/${id}/enter`} className="mt-3 inline-block rounded-full bg-[#0a3d2a] px-5 py-2 text-sm font-bold text-white hover:bg-[#1a5c3e]">
-            {isRocketBeta ? "View beta journey →" : "Enter Team →"}
-          </Link>
+          <p className="text-sm text-zinc-500">
+            {finalIntegrityFailed
+              ? "Verified final standings are temporarily unavailable."
+              : "No fantasy teams with scores yet."}
+          </p>
+          {!finalIntegrityFailed && (
+            <Link href={isRocketBeta ? `/tournaments/${id}` : `/tournaments/${id}/enter`} className="mt-3 inline-block rounded-full bg-[#0a3d2a] px-5 py-2 text-sm font-bold text-white hover:bg-[#1a5c3e]">
+              {isRocketBeta ? "View beta journey →" : "Enter Team →"}
+            </Link>
+          )}
         </div>
       )}
     </div>
