@@ -39,11 +39,14 @@ async function syncLive(request: Request) {
       : "manual",
   );
   try {
+    const { searchParams } = new URL(request.url);
     const isScheduledRun = isAuthorizedCronHeader(
       request.headers.get("authorization"),
       process.env.CRON_SECRET,
     );
-    if (isScheduledRun && !isRocketLiveSyncWindow()) {
+    const force = searchParams.get("force") === "true";
+    const requireFinal = searchParams.get("requireFinal") === "true";
+    if (isScheduledRun && !isRocketLiveSyncWindow() && !force) {
       await completeOperationalRun(run, {
         status: "SKIPPED",
         summary: "Outside the configured Rocket live-scoring window",
@@ -59,18 +62,50 @@ async function syncLive(request: Request) {
       });
     }
 
-    const { searchParams } = new URL(request.url);
     const tournamentId = searchParams.get("tournamentId") ?? undefined;
 
     const result = await syncLiveScores(tournamentId);
+    const finalization = result.details?.finalization as
+      | {
+          ready?: boolean;
+          finalized?: boolean;
+          alreadyFinal?: boolean;
+          issues?: string[];
+        }
+      | null
+      | undefined;
+    const finalGatePassed = Boolean(
+      finalization?.ready &&
+        (finalization.finalized || finalization.alreadyFinal),
+    );
+    const responseOk = result.ok && (!requireFinal || finalGatePassed);
     await completeOperationalRun(run, {
-      status: result.ok ? "SUCCESS" : "FAILED",
+      status: responseOk ? "SUCCESS" : "FAILED",
       recordsProcessed:
         typeof result.updated === "number" ? result.updated : undefined,
-      summary: result.ok ? "Live scores synchronized" : undefined,
-      errorSummary: result.ok ? undefined : "Live score provider returned an error",
+      summary: responseOk
+        ? requireFinal
+          ? "Rocket scores synchronized and final result sealed"
+          : "Live scores synchronized"
+        : undefined,
+      errorSummary: responseOk
+        ? undefined
+        : requireFinal
+          ? finalization?.issues?.join("; ") || "Rocket finalization gate failed"
+          : "Live score provider returned an error",
     });
-    return NextResponse.json(result, { status: result.ok ? 200 : 502 });
+    return NextResponse.json(
+      responseOk
+        ? result
+        : {
+            ...result,
+            ok: false,
+            error: requireFinal
+              ? "Rocket finalization gate failed"
+              : "Live score provider returned an error",
+          },
+      { status: responseOk ? 200 : requireFinal ? 409 : 502 },
+    );
   } catch (e) {
     await completeOperationalRun(run, {
       status: "FAILED",

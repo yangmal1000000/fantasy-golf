@@ -28,8 +28,17 @@ export default async function LeaderboardPage({
   const isRocketBeta = tournament.id === ROCKET_BETA_TOURNAMENT_ID;
   const theme = majorTheme(tournament.id);
   const potTotal = tournament._count.teams * tournament.entryFee;
-  const teams = await calculateLeaderboard(id);
+  const [teams, betaCampaign] = await Promise.all([
+    calculateLeaderboard(id),
+    isRocketBeta
+      ? prisma.rocketBetaCampaign.findUnique({
+          where: { tournamentId: id },
+          select: { status: true, finalizedAt: true, resultsHash: true },
+        })
+      : Promise.resolve(null),
+  ]);
   const hasFantasyTeams = teams.length > 0;
+  const resultIsFinal = Boolean(betaCampaign?.finalizedAt);
 
   return (
     <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
@@ -58,6 +67,30 @@ export default async function LeaderboardPage({
         </div>
       </div>
 
+      {isRocketBeta && (
+        <div
+          className={`mb-3 rounded-xl border p-3 text-xs leading-5 ${
+            resultIsFinal
+              ? "border-green-200 bg-green-50 text-green-900 dark:border-green-900/60 dark:bg-green-950/20 dark:text-green-200"
+              : "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200"
+          }`}
+        >
+          <p className="font-black">
+            {resultIsFinal ? "Final result sealed" : "Provisional standings"}
+          </p>
+          <p>
+            {resultIsFinal
+              ? "All teams have 20 scored rounds. Cut and withdrawal estimates follow the published beta policy."
+              : "Positions can still change while any team has fewer than 20 scored rounds. No winner is final yet."}
+          </p>
+          {resultIsFinal && betaCampaign?.resultsHash && (
+            <p className="mt-1 font-mono text-[10px] opacity-65">
+              Result {betaCampaign.resultsHash.slice(0, 12)}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Fantasy team standings */}
       {hasFantasyTeams ? (
         <div className="overflow-hidden rounded-xl bg-white dark:bg-zinc-900 shadow-sm border border-zinc-200 dark:border-zinc-800">
@@ -76,7 +109,7 @@ export default async function LeaderboardPage({
                   <tr key={team.teamId} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                     <td className="px-3 py-2.5">
                       <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                        team.position === 1 ? "bg-[#c8a951] text-[#1a1a1a]" : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
+                        team.position === 1 && (!isRocketBeta || resultIsFinal) ? "bg-[#c8a951] text-[#1a1a1a]" : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
                       }`}>{team.position || "—"}</span>
                     </td>
                     <td className="px-3 py-2.5">
@@ -85,6 +118,18 @@ export default async function LeaderboardPage({
                       </Link>
                       <p className="text-xs text-zinc-500">
                         {team.ownerName} · {team.roundsScored}/20 rounds scored
+                        {team.players.some((player) =>
+                          player.isEstimated.some((estimated) => estimated),
+                        )
+                          ? ` · ${team.players.reduce(
+                              (total, player) =>
+                                total +
+                                player.isEstimated.filter(
+                                  (estimated) => estimated,
+                                ).length,
+                              0,
+                            )} estimated`
+                          : ""}
                       </p>
                       {/* Player chips */}
                       <div className="mt-1 flex gap-1">

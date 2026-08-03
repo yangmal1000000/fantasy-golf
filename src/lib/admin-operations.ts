@@ -13,6 +13,7 @@ import {
   OPERATIONAL_JOB_CONTRACTS,
   type OperationalJobContract,
 } from "@/lib/operational-jobs";
+import { calculateLeaderboard } from "@/lib/scoring";
 
 const ROCKET_ENTRY_FUNNEL_ACTIONS = [
   "rocket_funnel_five_picks_selected",
@@ -176,6 +177,7 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
     fieldGroups,
     scoreActivity,
     entryFunnelEvents,
+    leaderboard,
   ] = await Promise.all([
     prisma.targetPilotEntry.count({ where: { roundId: campaign.targetRoundId } }),
     prisma.team.count({ where: { tournamentId: campaign.tournamentId } }),
@@ -204,6 +206,7 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
         actorUserId: true,
       },
     }),
+    calculateLeaderboard(campaign.tournamentId).catch(() => []),
   ]);
 
   const passes = campaign.members.flatMap((member) => member.passes);
@@ -235,10 +238,17 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
       ? "PROVISIONAL"
       : "NOT READY";
   const jobsMapped = mapJobs(jobs, generatedAt);
+  const completeTeams = leaderboard.filter(
+    (team) => team.scoreState === "FINAL" && team.roundsScored === 20,
+  ).length;
+  const incompleteTeams = leaderboard.length - completeTeams;
   const incidents = buildIncidents({
     databaseLatencyMs,
     campaignStatus: campaign.status,
     fieldStatus,
+    tournamentStatus: tournament?.status ?? "missing",
+    teamCount: leaderboard.length,
+    incompleteTeams,
     jobs: jobsMapped,
   });
 
@@ -330,17 +340,25 @@ export async function readOperationsCockpit(): Promise<OperationsCockpit> {
       ),
       healthMetric(
         "Scoring",
-        tournament?.status === "in_progress" ? "LIVE" : "WAITING",
+        campaign.finalizedAt
+          ? "FINAL"
+          : tournament?.status === "in_progress"
+            ? "LIVE"
+            : tournament?.status === "completed"
+              ? "AWAITING FINALIZATION"
+              : "WAITING",
         scoreActivity._max.updatedAt
-          ? `${scoreActivity._count._all} score rows · updated ${formatRelative(
-              scoreActivity._max.updatedAt,
-              generatedAt,
-            )}`
+          ? `${completeTeams}/${leaderboard.length} teams complete · ${scoreActivity._count._all} score rows · updated ${formatRelative(scoreActivity._max.updatedAt, generatedAt)}`
           : "No Rocket scores yet",
-        "Score",
-        tournament?.status === "in_progress" && !scoreActivity._max.updatedAt
-          ? "warning"
-          : "waiting",
+        "Score + sealed Rocket result",
+        campaign.finalizedAt
+          ? "healthy"
+          : tournament?.status === "completed" && incompleteTeams > 0
+            ? "critical"
+            : tournament?.status === "in_progress" && !scoreActivity._max.updatedAt
+              ? "warning"
+              : "waiting",
+        "/rocket-control",
       ),
       healthMetric(
         "In-app notices",
@@ -533,6 +551,9 @@ function buildIncidents(input: {
   databaseLatencyMs: number;
   campaignStatus: string;
   fieldStatus: string;
+  tournamentStatus: string;
+  teamCount: number;
+  incompleteTeams: number;
   jobs: OperationsJobStatus[];
 }): OperationsCockpit["incidents"] {
   const incidents: OperationsCockpit["incidents"] = [];
@@ -559,6 +580,20 @@ function buildIncidents(input: {
       id: "final-without-field",
       title: "Final campaign has no frozen field",
       detail: "Campaign and field state are inconsistent.",
+      tone: "critical",
+    });
+  }
+  if (
+    input.tournamentStatus === "completed" &&
+    input.campaignStatus !== "FINAL"
+  ) {
+    incidents.push({
+      id: "rocket-result-not-final",
+      title: "Rocket result is not sealed",
+      detail:
+        input.incompleteTeams > 0
+          ? `${input.incompleteTeams} of ${input.teamCount} teams still lack a complete 20-round score.`
+          : "All team scores are complete, but campaign finalization has not succeeded.",
       tone: "critical",
     });
   }

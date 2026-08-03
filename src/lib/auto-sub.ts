@@ -46,6 +46,12 @@ export interface AutoSubResult {
     tier: string;
     wdPlayerName: string;
   }[];
+  postLock: {
+    teamId: string;
+    teamName: string;
+    tier: string;
+    wdPlayerName: string;
+  }[];
 }
 
 export async function processAutoSubs(
@@ -53,7 +59,7 @@ export async function processAutoSubs(
 ): Promise<AutoSubResult> {
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
-    select: { id: true, name: true, currentRound: true },
+    select: { id: true, name: true, currentRound: true, status: true },
   });
 
   if (!tournament) {
@@ -63,6 +69,7 @@ export async function processAutoSubs(
       subs: [],
       pending: [],
       unresolved: [],
+      postLock: [],
     };
   }
 
@@ -95,6 +102,7 @@ export async function processAutoSubs(
       subs: [],
       pending: [],
       unresolved: [],
+      postLock: [],
     };
   }
 
@@ -126,6 +134,30 @@ export async function processAutoSubs(
       subs: [],
       pending: [],
       unresolved: [],
+      postLock: [],
+    };
+  }
+
+  // Once play has begun, changing a confirmed team would use information that
+  // was not available at the lock. Leave the selection intact and let the
+  // published post-lock withdrawal score policy complete its four rounds.
+  if (
+    tournament.currentRound > 0 ||
+    tournament.status === "in_progress" ||
+    tournament.status === "completed"
+  ) {
+    return {
+      tournamentId,
+      subsProcessed: 0,
+      subs: [],
+      pending: [],
+      unresolved: [],
+      postLock: affectedSelections.map((selection) => ({
+        teamId: selection.team.id,
+        teamName: selection.team.name,
+        tier: selection.tournamentPlayer.tier,
+        wdPlayerName: selection.tournamentPlayer.player.name,
+      })),
     };
   }
 
@@ -348,6 +380,7 @@ export async function processAutoSubs(
     subs,
     pending,
     unresolved,
+    postLock: [],
   };
 }
 

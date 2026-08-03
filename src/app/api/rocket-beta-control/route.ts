@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { adminApiGuard } from "@/lib/admin-auth";
 import { getCurrentUser } from "@/lib/auth";
@@ -9,7 +7,7 @@ import {
   ensureRocketBetaCampaign,
 } from "@/lib/rocket-beta";
 import { ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED } from "@/lib/rocket-beta-config";
-import { calculateLeaderboard } from "@/lib/scoring";
+import { finalizeRocketCampaign } from "@/lib/rocket-finalization";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +67,16 @@ export async function POST(request: NextRequest) {
         );
         break;
       case "finalize":
-        await finalizeCampaign(campaign.id, actor.id, actor.email);
+        {
+          const finalization = await finalizeRocketCampaign({
+            tournamentId: campaign.tournamentId,
+            actorUserId: actor.id,
+            actorEmail: actor.email,
+          });
+          if (!finalization.ready) {
+            throw new ControlError(finalization.issues.join("; "), 409);
+          }
+        }
         break;
       default:
         throw new ControlError("Unknown Rocket beta control action");
@@ -149,90 +156,6 @@ async function setCampaignStatus(
       },
     }),
   ]);
-}
-
-async function finalizeCampaign(
-  campaignId: string,
-  actorUserId: string,
-  actorEmail: string,
-) {
-  const campaign = await prisma.rocketBetaCampaign.findUnique({
-    where: { id: campaignId },
-    include: { passes: true },
-  });
-  if (!campaign) throw new ControlError("Campaign not found", 404);
-  if (campaign.finalizedAt) return;
-  if (!campaign.fieldFrozenAt || !campaign.fieldHash) {
-    throw new ControlError("Freeze the final field before finalization", 409);
-  }
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: campaign.tournamentId },
-  });
-  if (!tournament || tournament.status !== "completed") {
-    throw new ControlError("The Rocket Classic must be marked completed first", 409);
-  }
-  const leaderboard = await calculateLeaderboard(campaign.tournamentId);
-  if (leaderboard.length === 0) {
-    throw new ControlError("At least one confirmed team is required", 409);
-  }
-  if (
-    leaderboard.some(
-      (team) => team.scoreState !== "FINAL" || team.roundsScored !== 20,
-    )
-  ) {
-    throw new ControlError("Every confirmed team needs a complete 20-round score", 409);
-  }
-
-  const finalizedAt = new Date();
-  const result = {
-    version: "rocket-beta-result-v1",
-    scoringPolicy: "relative-to-par-per-scored-round-v1",
-    tournamentId: campaign.tournamentId,
-    fieldVersion: campaign.fieldVersion,
-    fieldHash: campaign.fieldHash,
-    finalizedAt: finalizedAt.toISOString(),
-    teams: leaderboard.map((team) => ({
-      teamId: team.teamId,
-      teamName: team.teamName,
-      ownerName: team.ownerName,
-      position: team.position,
-      totalStrokes: team.totalStrokes,
-      vsPar: team.vsPar,
-      tied: leaderboard.filter((candidate) => candidate.position === team.position).length > 1,
-    })),
-  };
-  const resultsHash = sha256(result);
-
-  await prisma.$transaction(
-    async (tx) => {
-      const updated = await tx.rocketBetaCampaign.updateMany({
-        where: { id: campaignId, finalizedAt: null },
-        data: {
-          status: "FINAL",
-          results: result as unknown as Prisma.InputJsonValue,
-          resultsHash,
-          finalizedAt,
-        },
-      });
-      if (updated.count !== 1) return;
-      await tx.rocketBetaAudit.create({
-        data: {
-          campaignId,
-          actorUserId,
-          actorEmail,
-          action: "beta_result_finalized",
-          payload: {
-            teamCount: leaderboard.length,
-            winnerTeamIds: leaderboard
-              .filter((team) => team.position === 1)
-              .map((team) => team.teamId),
-            resultsHash,
-          },
-        },
-      });
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-  );
 }
 
 async function readControl() {
@@ -330,8 +253,4 @@ function handleError(error: unknown) {
   }
   console.error("Rocket beta control error", error);
   return privateJson({ error: "Unable to update Rocket beta control" }, { status: 500 });
-}
-
-function sha256(value: unknown) {
-  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }

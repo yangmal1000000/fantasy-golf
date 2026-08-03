@@ -125,4 +125,7 @@ test("Rocket withdrawals notify before the lock and use deterministic reserves a
   assert.match(autoSub, /type: "team_change_required"/);
   assert.match(autoSub, /chooseNearestRankReserve/);
   assert.match(autoSub, /entryClosesAt/);
+  assert.match(autoSub, /tournament\.currentRound > 0/);
+  assert.match(autoSub, /published post-lock withdrawal score policy/);
+  assert.match(autoSub, /postLock: affectedSelections\.map/);
 });

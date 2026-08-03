@@ -17,6 +17,12 @@ import { processAutoSubs } from "./auto-sub";
 import { recalculateTeamScores } from "./team-scores";
 import { applyCutLogic } from "./scoring";
 import { deriveLiveTournamentState } from "./live-sync-state";
+import { reconcileRocketOfficialLeaderboard } from "./rocket-official-reconciliation";
+import {
+  closeRocketCampaignForEvent,
+  finalizeRocketCampaign,
+  type RocketFinalizationSummary,
+} from "./rocket-finalization";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -874,6 +880,13 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
   let totalScoresUpdated = 0;
   let tournamentsProcessed = 0;
   let substitutionsProcessed = 0;
+  let officialReconciliation: Awaited<
+    ReturnType<typeof reconcileRocketOfficialLeaderboard>
+  > | null = null;
+  let campaignLifecycle: Awaited<
+    ReturnType<typeof closeRocketCampaignForEvent>
+  > | null = null;
+  let finalization: RocketFinalizationSummary | null = null;
 
   let tournaments: Array<{ id: string; name: string; startDate: Date; endDate: Date }>;
 
@@ -931,18 +944,41 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
           where: { id: tournament.id },
           data: liveState,
         });
+        if (tournament.id === ROCKET_FIELD_TOURNAMENT_ID) {
+          campaignLifecycle = await closeRocketCampaignForEvent(
+            tournament.id,
+            liveState.status,
+          );
+        }
       }
 
       // Process all competitors using batch helper
       const result = await processESPNCompetitors(tournament.id, competitors);
       totalScoresCreated += result.scoresCreated;
       totalScoresUpdated += result.scoresUpdated;
+      if (tournament.id === ROCKET_FIELD_TOURNAMENT_ID) {
+        officialReconciliation =
+          await reconcileRocketOfficialLeaderboard(tournament.id);
+        if (!officialReconciliation.ok) {
+          errors.push(...officialReconciliation.errors);
+        }
+      }
       const substitutions = await processAutoSubs(tournament.id);
       substitutionsProcessed += substitutions.subsProcessed;
       if (espnCurrentRound >= 3) {
         await applyCutLogic(tournament.id);
       }
       await recalculateTeamScores(tournament.id);
+      if (
+        tournament.id === ROCKET_FIELD_TOURNAMENT_ID &&
+        (liveState?.status === "completed" ||
+          officialReconciliation?.tournamentStatus === "COMPLETED")
+      ) {
+        finalization = await finalizeRocketCampaign({
+          tournamentId: tournament.id,
+          actorEmail: "system:live-score-sync",
+        });
+      }
 
       tournamentsProcessed++;
     } catch (e) {
@@ -954,7 +990,13 @@ export async function syncLiveScores(tournamentId?: string): Promise<SyncResult>
     ok: true,
     created: totalScoresCreated,
     updated: totalScoresUpdated,
-    details: { tournamentsProcessed, substitutionsProcessed },
+    details: {
+      tournamentsProcessed,
+      substitutionsProcessed,
+      officialReconciliation,
+      campaignLifecycle,
+      finalization,
+    },
     errors,
   };
 }

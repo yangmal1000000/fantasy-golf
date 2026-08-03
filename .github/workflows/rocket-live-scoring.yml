@@ -11,6 +11,11 @@ on:
         required: false
         default: false
         type: boolean
+      finalize:
+        description: "Run the post-event official reconciliation and require a sealed final result"
+        required: false
+        default: false
+        type: boolean
 
 permissions: {}
 
@@ -27,6 +32,7 @@ jobs:
         env:
           CRON_SECRET: ${{ secrets.ROCKET_CRON_SECRET }}
           PROBE: ${{ inputs.probe || 'false' }}
+          FINALIZE: ${{ inputs.finalize || 'false' }}
         run: |
           set -euo pipefail
 
@@ -34,9 +40,16 @@ jobs:
           start="$(date -u -d '2026-07-30T10:00:00Z' +%s)"
           stop="$(date -u -d '2026-08-03T02:00:00Z' +%s)"
 
-          if [[ "$PROBE" != "true" ]] && (( now < start || now >= stop )); then
+          if [[ "$PROBE" != "true" && "$FINALIZE" != "true" ]] && (( now < start || now >= stop )); then
             echo "Outside the Rocket Classic live-scoring window; no request sent."
             exit 0
+          fi
+
+          endpoint="https://fantasy-golf-phi.vercel.app/api/sync/live?tournamentId=rocket-classic"
+          if [[ "$FINALIZE" == "true" ]]; then
+            endpoint="${endpoint}&force=true&requireFinal=true"
+          elif [[ "$PROBE" == "true" ]]; then
+            endpoint="${endpoint}&force=true"
           fi
 
           output="$RUNNER_TEMP/rocket-live-sync.json"
@@ -48,14 +61,14 @@ jobs:
               --output "$output" \
               --write-out "%{http_code}" \
               --header "Authorization: Bearer $CRON_SECRET" \
-              "https://fantasy-golf-phi.vercel.app/api/sync/live?tournamentId=rocket-classic"
+              "$endpoint"
           )"
 
           if [[ "$status" != "200" ]]; then
             echo "Live-score sync returned HTTP $status."
-            jq -c '{ok, error, errors, details}' "$output" || true
+            jq -c '{ok, error, errors, officialReconciliation: .details.officialReconciliation, finalization: .details.finalization}' "$output" || true
             exit 1
           fi
 
           jq -e '.ok == true' "$output" >/dev/null
-          jq -c '{ok, created, updated, skipped, details, errors}' "$output"
+          jq -c '{ok, created, updated, skipped, officialReconciliation: .details.officialReconciliation, campaignLifecycle: .details.campaignLifecycle, finalization: .details.finalization, errors}' "$output"

@@ -192,6 +192,15 @@ export default async function TournamentDetailPage({
     playerCountryMap.set(tp.playerId, tp.player.country);
   }
   const isCompleted = tournament.status === "completed";
+  const rocketCampaignLabel = betaCampaign?.finalizedAt
+    ? "FINAL TEST RESULT"
+    : isCompleted
+      ? "RESULTS PENDING"
+      : tournament.status === "in_progress"
+        ? "LIVE TEST FLIGHT"
+        : betaCampaign?.status === "OPEN"
+          ? "OPEN TEST FLIGHT"
+          : "ENTRY CLOSED";
 
   // Cut line info: count players who made the cut (played R3) vs total
   const totalScorers = sortedScorers.length;
@@ -343,7 +352,7 @@ export default async function TournamentDetailPage({
             <span
               className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${isRocketBeta ? "border border-[#e4cc85]/40 bg-[#e4cc85]/15 text-[#f0d986]" : status.badgeClass}`}
             >
-              {isRocketBeta ? "OPEN TEST FLIGHT" : status.label}
+              {isRocketBeta ? rocketCampaignLabel : status.label}
             </span>
             {cat && (
               <span className="rounded-md bg-white/15 px-2 py-0.5 text-[10px] font-semibold">
@@ -502,19 +511,27 @@ export default async function TournamentDetailPage({
                 <div>
                   <dt className="text-zinc-500">Beta lock</dt>
                   <dd className="mt-0.5 font-bold text-zinc-800 dark:text-zinc-100">
-                    {formatRocketBetaEntryDeadline({
-                      closesAt: betaCampaign?.entryClosesAt ?? "",
-                      confirmed: ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED,
-                    })}
+                    {betaCampaign?.finalizedAt
+                      ? "Closed · result sealed"
+                      : tournament.status === "completed" ||
+                          tournament.status === "in_progress"
+                        ? "Closed"
+                        : formatRocketBetaEntryDeadline({
+                            closesAt: betaCampaign?.entryClosesAt ?? "",
+                            confirmed: ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED,
+                          })}
                   </dd>
                 </div>
               </dl>
               <p className="mt-3 text-[11px] leading-5 text-zinc-500">
-                {!ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED
+                {!isCompleted &&
+                tournament.status !== "in_progress" &&
+                !ROCKET_BETA_ENTRY_DEADLINE_CONFIRMED
                   ? "Exact lock time will be shown once the official tee sheet is verified. "
                   : null}
-                Open to verified signed-up users. No payment, cash value or
-                prize.
+                {betaCampaign?.finalizedAt
+                  ? "The no-payment test flight is complete."
+                  : "Open to verified signed-up users. No payment, cash value or prize."}
               </p>
             </div>
           </div>
@@ -592,7 +609,14 @@ export default async function TournamentDetailPage({
         className={`mt-4 grid grid-cols-2 gap-2 ${tournament._count.teams > 0 && !isRocketBeta ? "sm:grid-cols-4" : "sm:grid-cols-2"} `}
       >
         {isRocketBeta ? (
-          betaState?.approved ? (
+          !canEnter &&
+          !(betaState?.passState === "REDEEMED" && betaState.teamId) ? (
+            <div className="flex items-center justify-center gap-1.5 rounded-lg bg-zinc-100 px-4 py-2.5 text-sm font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+              {betaCampaign?.finalizedAt
+                ? "Test Flight Complete"
+                : "Entries Closed"}
+            </div>
+          ) : betaState?.approved ? (
             betaState.passState === "REDEEMED" && betaState.teamId ? (
               <Link
                 href={`/tournaments/${tournament.id}/teams/${betaState.teamId}`}
